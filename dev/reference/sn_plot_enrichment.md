@@ -11,7 +11,8 @@ sn_plot_enrichment(
   n = 20L,
   minimum_overlap = 0.1,
   object = NULL,
-  result_id = "default"
+  result_id = "default",
+  style = "classic"
 )
 ```
 
@@ -41,6 +42,11 @@ sn_plot_enrichment(
 - result_id:
 
   Stored enrichment result name used when `object` is supplied.
+
+- style:
+
+  Presentation preset; see
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md).
 
 ## Value
 

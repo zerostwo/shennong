@@ -35,7 +35,8 @@ sn_plot_dot(
   title = NULL,
   x_label = NULL,
   y_label = NULL,
-  object = NULL
+  object = NULL,
+  style = "classic"
 )
 ```
 
@@ -166,6 +167,13 @@ sn_plot_dot(
 - object:
 
   Alias for `x`; supply only one of `x` and `object`.
+
+- style:
+
+  Presentation preset: `classic`, `atlas`, `atlas_outline`, or
+  `atlas_module`. See
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md)
+  and the atlas-figure-styles article.
 
 ## Value
 

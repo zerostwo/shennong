@@ -1,6 +1,9 @@
-# Plot expression in spatial coordinates
+# Plot expression or numeric metadata in spatial coordinates
 
-Plot expression in spatial coordinates
+Features share one continuous scale across all panels. Assay/layer
+selection is exact: a missing layer errors instead of falling back to
+counts. Missing requested features warn; no available features is an
+error. Numeric metadata takes precedence over a gene with the same name.
 
 ## Usage
 
@@ -11,7 +14,26 @@ sn_plot_spatial_feature(
   spatial_cols = NULL,
   assay = NULL,
   layer = "data",
-  point_size = 1.5
+  point_size = 1.5,
+  cells = NULL,
+  split_by = NULL,
+  images = NULL,
+  cols = NULL,
+  palette = "viridis",
+  pt_size = NULL,
+  alpha = 1,
+  na_value = "grey80",
+  limits = NULL,
+  order = TRUE,
+  show_legend = TRUE,
+  show_axis = FALSE,
+  show_border = TRUE,
+  title = NULL,
+  ncol = NULL,
+  flip_y = TRUE,
+  raster = FALSE,
+  raster_dpi = 512,
+  style = "classic"
 )
 ```
 
@@ -23,20 +45,104 @@ sn_plot_spatial_feature(
 
 - features:
 
-  Features to plot.
+  Gene names or numeric metadata columns, in panel order.
 
 - spatial_cols:
 
-  Coordinate metadata columns.
+  Two numeric metadata columns in x, y order. Recognized metadata
+  coordinates take precedence over native images unless `images` is
+  supplied. Coordinates are never rescaled or registered across
+  sections.
 
 - assay, layer:
 
-  Expression assay and layer.
+  Expression assay and exact layer. Metadata-only maps do not require an
+  expression layer.
 
 - point_size:
 
-  Point size.
+  Point size in mm; retained for positional compatibility.
+
+- cells:
+
+  Optional cell names to plot, in the requested order.
+
+- split_by:
+
+  Metadata column identifying sections or panels. Required to separate
+  sections when using metadata coordinates; no sample column is guessed.
+
+- images:
+
+  Optional Seurat image/FOV names. Native images are used when metadata
+  coordinates are absent. Each image is plotted separately using
+  full-resolution Visium coordinates or FOV centroids; histology and
+  cell segmentation outlines are not drawn. Overlapping image cell sets
+  are rejected.
+
+- cols:
+
+  Explicit colors; named vectors match categorical labels. For feature
+  maps these are gradient colors.
+
+- palette:
+
+  Shennong palette name or color vector.
+
+- pt_size:
+
+  Alias matching
+  [`sn_plot_dim()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_dim.md).
+  Supply only one size argument.
+
+- alpha:
+
+  Point opacity between zero and one.
+
+- na_value:
+
+  Color for missing group or feature values.
+
+- limits:
+
+  Optional common color limits. Out-of-range colors are clamped;
+  original values remain in the plot data and exported source table.
+
+- order:
+
+  Draw higher values last and missing values first.
+
+- show_legend, show_axis, show_border:
+
+  Show the legend, coordinate axes or panel border.
+
+- title:
+
+  Optional plot title.
+
+- ncol:
+
+  Number of facet columns.
+
+- flip_y:
+
+  Reverse the y axis for image coordinates. Set FALSE for Cartesian
+  coordinates.
+
+- raster:
+
+  Rasterize only point layers with ggrastr; labels stay vector.
+
+- raster_dpi:
+
+  Raster resolution (scalar or vector, whose maximum is used).
+
+- style:
+
+  Presentation preset; see
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md).
+  Coordinates, shared limits and source values are unchanged.
 
 ## Value
 
-A faceted `ggplot` object.
+A faceted `ggplot` with fixed spatial aspect and one common color scale.

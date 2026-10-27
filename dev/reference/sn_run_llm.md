@@ -59,7 +59,4 @@ sn_run_llm(
   messages = list(list(role = "user", content = "Summarize this result.")),
   provider = provider
 )
-#> $text
-#> [1] "received 1 messages"
-#> 
 ```

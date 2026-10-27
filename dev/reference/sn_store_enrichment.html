@@ -145,121 +145,24 @@ discovery and reproducibility.</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Seurat"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">10</span> <span class="op">*</span> <span class="fl">12</span>, lambda <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">10</span>, ncol <span class="op">=</span> <span class="fl">12</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>    <span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"TRAC"</span>, <span class="st">"LTB"</span>, <span class="st">"MS4A1"</span>,</span></span>
-<span class="r-in"><span>    <span class="st">"CD79A"</span>, <span class="st">"HLA-DRA"</span>, <span class="st">"LYZ"</span>, <span class="st">"ACTB"</span>, <span class="st">"MALAT1"</span></span></span>
-<span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cell"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></span><span class="op">(</span><span class="va">counts</span>, species <span class="op">=</span> <span class="st">"human"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">enrich_tbl</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>    ID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GO:0001"</span>, <span class="st">"GO:0002"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>    Description <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"immune response"</span>, <span class="st">"lymphocyte activation"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>    NES <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2.1</span>, <span class="fl">1.7</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>    p.adjust <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.03</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">sn_store_enrichment</span><span class="op">(</span><span class="va">obj</span>, <span class="va">enrich_tbl</span>, result_id <span class="op">=</span> <span class="st">"demo_gsea"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">obj</span>, type <span class="op">=</span> <span class="st">"enrichment"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">obj</span>, type <span class="op">=</span> <span class="st">"enrichment"</span>, result_id <span class="op">=</span> <span class="st">"demo_gsea"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-09-28 08:50:02] Initializing Seurat object for project: Shennong.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-09-28 08:50:02] Running QC metrics for human.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> INFO [2026-09-28 08:50:02] Seurat object initialization complete.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $schema_version</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "2.0.0"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $method</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "ora"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $backend</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "clusterProfiler"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $models</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $models$backend_results</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $models$backend_results$GOBP</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 4</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   ID      Description             NES p.adjust</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> GO:0001 immune response         2.1     0.01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> GO:0002 lymphocyte activation   1.7     0.03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $analysis</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "ora"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $database</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "GOBP"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $species</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $source_de_result_id</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $gene_col</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "gene"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $score_col</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $parameters</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$package_versions</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$package_versions$Shennong</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "0.3.0.9000"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$package_versions$R</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "4.6.1"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$random_seed</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$timestamp</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "2026-09-28 08:50:02 UTC"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$result_id</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "demo_gsea"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $provenance$analysis_type</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "enrichment"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $analysis_type</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "enrichment"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $result_id</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "demo_gsea"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $input</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $tables</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $tables$primary</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 4</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   ID      Description             NES p.adjust</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> GO:0001 immune response         2.1     0.01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> GO:0002 lymphocyte activation   1.7     0.03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $embeddings</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $graphs</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $diagnostics</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> list()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $warnings</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> character(0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Seurat"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">10</span> <span class="op">*</span> <span class="fl">12</span>, lambda <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">10</span>, ncol <span class="op">=</span> <span class="fl">12</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"TRAC"</span>, <span class="st">"LTB"</span>, <span class="st">"MS4A1"</span>,</span>
+<span>    <span class="st">"CD79A"</span>, <span class="st">"HLA-DRA"</span>, <span class="st">"LYZ"</span>, <span class="st">"ACTB"</span>, <span class="st">"MALAT1"</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cell"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span></span>
+<span>  <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></span><span class="op">(</span><span class="va">counts</span>, species <span class="op">=</span> <span class="st">"human"</span><span class="op">)</span></span>
+<span>  <span class="va">enrich_tbl</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    ID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GO:0001"</span>, <span class="st">"GO:0002"</span><span class="op">)</span>,</span>
+<span>    Description <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"immune response"</span>, <span class="st">"lymphocyte activation"</span><span class="op">)</span>,</span>
+<span>    NES <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2.1</span>, <span class="fl">1.7</span><span class="op">)</span>,</span>
+<span>    p.adjust <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.03</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">sn_store_enrichment</span><span class="op">(</span><span class="va">obj</span>, <span class="va">enrich_tbl</span>, result_id <span class="op">=</span> <span class="st">"demo_gsea"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">obj</span>, type <span class="op">=</span> <span class="st">"enrichment"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">obj</span>, type <span class="op">=</span> <span class="st">"enrichment"</span>, result_id <span class="op">=</span> <span class="st">"demo_gsea"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

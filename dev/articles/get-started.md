@@ -74,7 +74,7 @@ pbmc <- sn_run_cluster(
   resolution = 1.2, seed = 717,
   verbose = FALSE
 )
-#> WARN [2026-09-28 08:52:05] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 0).
+#> WARN [2026-10-27 21:26:46] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 0).
 table(pbmc$seurat_clusters)
 #> 
 #>  0  1  2  3  4  5 
@@ -120,15 +120,8 @@ markers <- sn_get_de_result(
   direction = "up", top_n = 3, top_scope = "group"
 )
 head(markers)
-#> # A tibble: 6 × 7
-#>          p_val avg_log2FC pct.1 pct.2  p_val_adj cluster gene  
-#>          <dbl>      <dbl> <dbl> <dbl>      <dbl> <fct>   <chr> 
-#> 1 0.000000756       10.1  0.381     0 0.000174   0       LILRA3
-#> 2 0.00000431         9.40 0.333     0 0.000991   0       VSTM1 
-#> 3 0.000128           9.33 0.238     0 0.0293     0       IL17RA
-#> 4 0.0000000208      13.0  0.476     0 0.00000479 1       GZMH  
-#> 5 0.000000756       11.5  0.381     0 0.000174   1       AKR1C3
-#> 6 0.00346           11.0  0.143     0 0.796      1       S100B
+#> # A tibble: 0 × 1
+#> # ℹ 1 variable: gene <chr>
 ```
 
 This selects up to three positive markers **per cluster**. Add
@@ -184,21 +177,14 @@ sn_list_results(pbmc)
 #> # A tibble: 2 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results de         cluster_… de       wilcox 2026-09-2…    236 NA    
-#> 2 shennong.results program_s… marker_p… program… mean   2026-09-2…     80 NA
+#> 1 shennong.results de         cluster_… de       wilcox 2026-10-2…      0 NA    
+#> 2 shennong.results program_s… marker_p… program… mean   2026-10-2…     80 NA
 full_de <- sn_get_result(pbmc, type = "de", result_id = "cluster_markers")
 full_de$parameters
 #> list()
 head(full_de$tables$primary)
-#> # A tibble: 6 × 7
-#>      p_val avg_log2FC pct.1 pct.2     p_val_adj cluster gene    
-#>      <dbl>      <dbl> <dbl> <dbl>         <dbl> <fct>   <chr>   
-#> 1 2.12e-11       4.47 0.81  0.068 0.00000000488 0       CFD     
-#> 2 4.94e-11       3.50 0.952 0.254 0.0000000114  0       LST1    
-#> 3 5.91e-11       3.31 1     0.322 0.0000000136  0       AIF1    
-#> 4 1.04e-10       4.29 0.81  0.119 0.0000000238  0       SERPINA1
-#> 5 1.52e-10       2.59 1     0.22  0.0000000350  0       TYMP    
-#> 6 1.78e-10       3.69 0.857 0.136 0.0000000409  0       IFITM3
+#> # A tibble: 0 × 1
+#> # ℹ 1 variable: gene <chr>
 ```
 
 [`sn_list_results()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_results.md)

@@ -211,7 +211,7 @@ sn_plot_dot(pbmc, features = "top_markers", result_id = "cluster_markers")
 pbmc <- sn_run_enrichment(
   pbmc,
   source_de_result_id = "cluster_markers",
-  gene_clusters = gene ~ cluster,
+  mapping = gene ~ cluster,
   database = c("GOBP", "H"),
   universe = rownames(pbmc),
   result_id = "cluster_pathways",

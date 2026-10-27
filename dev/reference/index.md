@@ -377,7 +377,7 @@
 - [`sn_plot_spatial()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial.md)
   : Plot spatial coordinates colored by metadata
 - [`sn_plot_spatial_feature()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial_feature.md)
-  : Plot expression in spatial coordinates
+  : Plot expression or numeric metadata in spatial coordinates
 - [`sn_plot_spatial_domain()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial_domain.md)
   : Plot spatial-domain assignments
 - [`sn_plot_spatial_svg()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial_svg.md)
@@ -385,7 +385,7 @@
 - [`sn_plot_spatial_neighborhood()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial_neighborhood.md)
   : Plot spatial-neighborhood enrichment or co-occurrence
 - [`sn_plot_spatial_deconvolution()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial_deconvolution.md)
-  : Plot spatial deconvolution proportions
+  : Plot spatial deconvolution proportions or abundances
 - [`sn_plot_spatial_communication()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial_communication.md)
   : Plot spatially constrained communication
 
@@ -589,6 +589,22 @@
 - [`sn_plot_association()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_association.md)
   : Plot a numeric association or sample-to-sample expression
   correlation
+
+- [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md)
+  : List publication-inspired themes and structural plotting styles
+
+- [`sn_plot_matrix()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_matrix.md)
+  : Plot a supplied quantitative matrix or bubble matrix
+
+- [`sn_plot_effect()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_effect.md)
+  : Plot supplied effect estimates, confidence intervals or signed
+  scores
+
+- [`sn_plot_overlap()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_overlap.md)
+  : Plot exact set intersections as an UpSet panel
+
+- [`sn_plot_network()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_network.md)
+  : Plot a supplied cell association or cellular-module network
 
 - [`sn_list_figure_profiles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_figure_profiles.md)
   : List publication figure profiles

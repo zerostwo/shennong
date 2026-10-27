@@ -26,7 +26,8 @@ sn_plot_barplot(
   x_label = NULL,
   y_label = NULL,
   title = NULL,
-  angle_x = 0
+  angle_x = 0,
+  style = "classic"
 )
 ```
 
@@ -104,6 +105,11 @@ sn_plot_barplot(
 
   Rotation angle for x-axis text.
 
+- style:
+
+  Presentation preset; see
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md).
+
 ## Value
 
 A ggplot object.
@@ -113,5 +119,4 @@ A ggplot object.
 ``` r
 plot_data <- data.frame(group = c("A", "B"), value = c(10, 15), type = c("x", "y"))
 sn_plot_barplot(plot_data, x = group, y = value, fill = type)
-
 ```

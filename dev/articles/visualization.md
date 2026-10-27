@@ -12,6 +12,40 @@ groups, and acquisition batches are all retained from the source study.
 The chunks execute in real-data builds and remain safe during ordinary
 package checks when the local fixture is unavailable.
 
+## Atlas-inspired presentation
+
+Use `style = "atlas"`, `"atlas_outline"`, or `"atlas_module"` on the
+embedding, feature, dot, heatmap, violin, composition and association
+helpers. `classic` preserves their previous defaults.
+[`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md)
+lists these presets. The [Zhang atlas figure
+guide](https://zerostwo.github.io/shennong/dev/articles/atlas-figure-styles.md)
+includes paper links, a 38-figure classification, rendered examples,
+scientific encoding boundaries and a source-data reproduction of Nature
+CM Fig. 2c. Independent bubble encodings and module networks use
+[`sn_plot_matrix()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_matrix.md)
+and
+[`sn_plot_network()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_network.md)
+with already computed inputs.
+
+Structural `style` values select different layouts:
+[`sn_plot_matrix()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_matrix.md)
+supports triangles, circular/annotated/clustered matrices and aligned
+summary tracks;
+[`sn_plot_distribution()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_distribution.md)
+supports paired, raincloud and split/stacked violins. The existing
+`sn_plot_heatmap(mode="average")` and
+[`sn_plot_violin()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_violin.md)
+expose these layouts too.
+[`sn_plot_effect()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_effect.md),
+[`sn_plot_overlap()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_overlap.md)
+and
+[`sn_plot_network()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_network.md)
+cover forests, signed bars, UpSet, supplied clone trees, bipartite
+networks, weighted ribbons and matched rewiring panels. Query
+`sn_list_plot_styles("sn_plot_matrix")` for exact inputs and source
+panels.
+
 ## Prepare one clustered object
 
 The plot wrappers expect the same Seurat object produced by the analysis
@@ -87,7 +121,16 @@ the point layer is rasterized after the regular ggplot point size is
 applied, so small values such as `pt_size = 0.01` behave like ordinary
 [`geom_point()`](https://ggplot2.tidyverse.org/reference/geom_point.html)
 sizes. When `ggrastr` is unavailable, the plot remains usable through
-the vector point layer.
+the vector point layer. Expression maps default to `order = FALSE`,
+preserving cell drawing order. Set `order = TRUE` to draw
+high-expression cells last, for example
+`sn_plot_feature(pbmc, features = "IL7R", reduction = "umap", order = TRUE)`.
+This control applies to classic and atlas expression maps; density mode
+and nebula/glass styles are unaffected. The default `stroke_size = NULL`
+uses zero stroke, so outlines cannot overwhelm a small `pt_size`;
+explicit nonzero strokes remain available. For dense embeddings, for
+example, use
+`sn_plot_feature(pbmc, features = "IL7R", reduction = "umap", pt_size = 0.05)`.
 
 ``` r
 
@@ -285,7 +328,8 @@ sn_plot_heatmap(
 Use `mode = "average"` when the comparison is about the group-level
 pattern rather than every individual cell. This averages expression
 within each group and then z-scores each gene by default, giving a
-compact marker-panel summary.
+compact marker-panel summary. The selected `layer` is used directly; the
+default `scale.data` layer is filled for requested features when needed.
 
 ``` r
 
@@ -295,6 +339,24 @@ sn_plot_heatmap(
   group_by = "seurat_clusters",
   mode = "average",
   palette = "RdBu"
+)
+```
+
+For native heatmap objects and dendrograms, select
+`backend = "pheatmap"` or `backend = "complexheatmap"`. The compact
+average layout keeps groups as rows and features as columns, so
+`cluster_rows` clusters groups and `cluster_cols` clusters features.
+
+``` r
+
+sn_plot_heatmap(
+  object = pbmc,
+  features = c("IL7R", "CCR7", "MS4A1", "CD79A", "LYZ", "NKG7"),
+  group_by = "seurat_clusters",
+  mode = "average",
+  backend = "complexheatmap",
+  cluster_rows = TRUE,
+  cluster_cols = TRUE
 )
 ```
 
@@ -641,3 +703,22 @@ precedence over `aspect_ratio`. With one size and an aspect ratio the
 other is derived; C also derives a missing size using its default
 coordinate ratio. Export to a canvas large enough to include the panel
 plus labels, title, legend and margins.
+
+## Spatial coordinate maps
+
+Use
+[`sn_plot_spatial()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial.md)
+for metadata groups,
+[`sn_plot_spatial_feature()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial_feature.md)
+for genes or numeric metadata, and
+[`sn_plot_spatial_domain()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial_domain.md)
+for stored domains. They share dimension-plot controls (`pt_size`,
+`cols`/`palette`, labels, legend/axis/border visibility) while retaining
+equal spatial coordinate units. Native Seurat image/FOV centroids are
+supported; coordinate maps do not draw histology or segmentation
+outlines. With metadata coordinates, set `split_by = "section"` to keep
+independent sections apart. Features use the exact requested assay/layer
+and a common continuous scale across panels. See the [spatial workflow
+guide](https://zerostwo.github.io/shennong/dev/articles/spatial-workflows.md)
+for complete examples, coordinate precedence, missing values, raster
+export, and stored-result retrieval.

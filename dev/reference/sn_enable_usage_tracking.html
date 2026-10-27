@@ -150,14 +150,13 @@ default is fail-open: warn once and preserve the scientific call.</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">database</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"shennong-usage.sqlite"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">sn_enable_usage_tracking</span><span class="op">(</span><span class="va">database</span>, mode <span class="op">=</span> <span class="st">"development"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span><span class="va">object</span>, integration_method <span class="op">=</span> <span class="st">"unintegrated"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="sn_disable_usage_tracking.html">sn_disable_usage_tracking</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="sn_summarize_usage.html">sn_summarize_usage</a></span><span class="op">(</span><span class="va">database</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
+<span><span class="va">database</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"shennong-usage.sqlite"</span><span class="op">)</span></span>
+<span><span class="fu">sn_enable_usage_tracking</span><span class="op">(</span><span class="va">database</span>, mode <span class="op">=</span> <span class="st">"development"</span><span class="op">)</span></span>
+<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="sn_run_cluster.html">sn_run_cluster</a></span><span class="op">(</span><span class="va">object</span>, integration_method <span class="op">=</span> <span class="st">"unintegrated"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="sn_disable_usage_tracking.html">sn_disable_usage_tracking</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="sn_summarize_usage.html">sn_summarize_usage</a></span><span class="op">(</span><span class="va">database</span><span class="op">)</span></span>
+<span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

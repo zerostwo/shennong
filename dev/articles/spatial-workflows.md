@@ -12,6 +12,85 @@ article without downloading data. Optional R or external adapter
 backends have additional, explicit gates and are never replaced with
 synthetic output.
 
+## Spatial maps with the same controls as dimension plots
+
+[`sn_plot_spatial()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial.md)
+and
+[`sn_plot_spatial_feature()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_spatial_feature.md)
+use Shennong palettes, 8 pt text, compact legends, and an equal spatial
+aspect. Use `pt_size`, `cols`/`palette`, `show_legend`, `show_axis`,
+`show_border`, and `title` as in dimension plots. Existing positional
+calls and `point_size` remain valid; supply only one size argument.
+These are coordinate maps: native image/FOV coordinates are supported,
+while histology and segmentation outlines are not drawn.
+
+``` r
+
+# Named colors keep group identities stable across figures.
+region_colors <- c(T_zone = "#1F78B4", B_zone = "#33A02C", Other = "#BDBDBD")
+sn_plot_spatial(
+  object, group_by = "region", split_by = "section",
+  spatial_cols = c("spatial_x", "spatial_y"),
+  cols = region_colors, pt_size = 0.8, label = TRUE, repel = TRUE
+)
+
+# Native Visium coordinates need no metadata copy. Each selected image is
+# separated automatically. FOV objects use centroids, never polygon vertices.
+sn_plot_spatial(object, group_by = "region", images = "slice1", label = TRUE)
+
+# Gene panels follow the requested order. All panels share the same color scale.
+sn_plot_spatial_feature(
+  object, features = c("CD3D", "MS4A1"), assay = "Spatial", layer = "data",
+  split_by = "section", palette = "viridis", pt_size = 0.8,
+  limits = c(0, 3), raster = TRUE, raster_dpi = 600
+)
+# Numeric metadata (QC, scores, or imported abundances) is also supported.
+sn_plot_spatial_feature(object, features = "nCount_Spatial", images = "slice1")
+```
+
+For metadata coordinates, explicitly set `split_by` to the section
+column; Shennong does not guess the sample from `orig.ident`. Metadata
+coordinates have priority unless `images` is supplied. Native Visium
+images use full resolution coordinates; FOVs use their native centroid
+units. Multiple native images always remain separate, including when
+`split_by` adds another grouping. Facet axes share a common coordinate
+extent and never register or rescale sections. Plot sections with
+different coordinate units in separate calls. The y axis is reversed by
+default for image coordinates; use `flip_y = FALSE` for Cartesian
+coordinates. Labels are anchored on observed spots near each group’s
+median within each panel. `repel = TRUE` can move labels for legibility.
+
+The requested expression `assay` and `layer` are now strict: a missing
+layer raises an error, rather than changing the plot to raw counts.
+Normalize first for a `data` map, or explicitly request
+`layer = "counts"`. Numeric metadata needs no expression layer and takes
+priority over a gene with the same name. Missing features are reported.
+Higher values draw last; `NA` is drawn first using `na_value`. `limits`
+clamps displayed colors only; the original values remain in plot data
+and figure-bundle exports. Deconvolution plots likewise preserve
+supplied proportions or abundances without normalization.
+
+Stored domains use their recorded coordinates and section boundaries.
+Discover and retrieve the result before selecting it for plotting:
+
+``` r
+
+sn_list_results(object, type = "spatial_domains")
+domains <- sn_get_result(object, type = "spatial_domains", result_id = "banksy_domains")
+sn_plot_spatial_domain(object, result_id = "banksy_domains", label = TRUE,
+                       palette = "Paired", pt_size = 0.8)
+# The retrieved result is accepted directly as well.
+sn_plot_spatial_domain(domains, label = TRUE)
+```
+
+The returned figures are ordinary editable ggplots. `raster = TRUE`
+requires `ggrastr` and rasterizes points only, retaining vector labels
+and legends for PDF output.
+[`sn_save_figure()`](https://zerostwo.github.io/shennong/dev/reference/sn_save_figure.md)
+and
+[`sn_export_figure_bundle()`](https://zerostwo.github.io/shennong/dev/reference/sn_export_figure_bundle.md)
+can use the attached figure specification and source data.
+
 ## Load the real sections and preserve their coordinates
 
 The fixture retains the original Seurat spatial images. Shennong’s

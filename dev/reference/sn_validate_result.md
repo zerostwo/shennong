@@ -36,15 +36,4 @@ result <- list(
     timestamp = "2026-01-01 UTC", result_id = "example", analysis_type = "demo")
 )
 sn_validate_result(result, error = FALSE)
-#> $valid
-#> [1] TRUE
-#> 
-#> $errors
-#> character(0)
-#> 
-#> $warnings
-#> character(0)
-#> 
-#> attr(,"class")
-#> [1] "sn_result_validation" "list"                
 ```

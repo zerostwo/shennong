@@ -11,7 +11,8 @@ sn_plot_communication(
   type = c("bubble", "heatmap", "network", "chord", "river"),
   n = 50L,
   table = "primary",
-  object = NULL
+  object = NULL,
+  style = "classic"
 )
 ```
 
@@ -40,6 +41,13 @@ sn_plot_communication(
 - object:
 
   Alias for `x`; supply only one of `x` and `object`.
+
+- style:
+
+  Presentation preset; see
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md).
+  Bubble size remains absolute score; styles do not substitute p-values
+  or infer modules.
 
 ## Value
 

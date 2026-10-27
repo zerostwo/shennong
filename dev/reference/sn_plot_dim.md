@@ -45,7 +45,7 @@ sn_plot_dim(
   aspect_ratio = 1,
   panel_widths = NULL,
   panel_heights = NULL,
-  style = c("classic", "nebula", "glass"),
+  style = c("classic", "nebula", "glass", "atlas", "atlas_outline", "atlas_module"),
   style_control = list(),
   camera = NULL,
   interactive = FALSE,
@@ -205,6 +205,9 @@ sn_plot_dim(
 
 - style:
 
+  Atlas presets (`atlas`, `atlas_outline`, `atlas_module`) use compact 8
+  pt 2D rendering; see
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md).
   Rendering style: `"classic"` preserves the existing 2D plot;
   `"nebula"` and `"glass"` use planar density contours with the default
   `dims = c(1, 2)`, or real three-dimensional embeddings with

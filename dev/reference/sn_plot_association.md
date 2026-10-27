@@ -33,7 +33,8 @@ sn_plot_association(
   y_label = NULL,
   aspect_ratio = 1,
   panel_widths = NULL,
-  panel_heights = NULL
+  panel_heights = NULL,
+  style = "classic"
 )
 ```
 
@@ -111,6 +112,11 @@ sn_plot_association(
 - aspect_ratio, panel_widths, panel_heights:
 
   Optional panel sizing controls.
+
+- style:
+
+  Presentation preset; see
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md).
 
 ## Value
 

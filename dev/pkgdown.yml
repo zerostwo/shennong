@@ -5,6 +5,7 @@ articles:
   abundance-priority: abundance-priority.html
   analysis-results-and-methods: analysis-results-and-methods.html
   annotation-pathways: annotation-pathways.html
+  atlas-figure-styles: atlas-figure-styles.html
   bulk-deconvolution: bulk-deconvolution.html
   bulk-transcriptomics: bulk-transcriptomics.html
   clustering: clustering.html
@@ -28,7 +29,7 @@ articles:
   trajectory-dynamics: trajectory-dynamics.html
   velocity-fate: velocity-fate.html
   visualization: visualization.html
-last_built: 2026-09-28T08:48Z
+last_built: 2026-10-27T21:23Z
 urls:
   reference: https://zerostwo.github.io/shennong/reference
   article: https://zerostwo.github.io/shennong/articles

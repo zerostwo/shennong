@@ -94,7 +94,9 @@ samples before plotting.</p>
 <span>  y_label <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  aspect_ratio <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  panel_widths <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  panel_heights <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  panel_heights <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  style <span class="op">=</span> <span class="st">"classic"</span>,</span>
+<span>  pair_by <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -159,6 +161,19 @@ the requested features.</p></dd>
 <dt id="arg-aspect-ratio-panel-widths-panel-heights">aspect_ratio, panel_widths, panel_heights<a class="anchor" aria-label="anchor" href="#arg-aspect-ratio-panel-widths-panel-heights"></a></dt>
 <dd><p>Optional panel sizing controls.</p></dd>
 
+
+<dt id="arg-style">style<a class="anchor" aria-label="anchor" href="#arg-style"></a></dt>
+<dd><p>Theme or structural distribution style: <code>violin_box</code>,
+<code>raincloud</code>, <code>paired_box</code>, <code>paired_slope</code>, <code>split_violin</code>, <code>stacked_violin</code>.
+Structural styles select their geometry independently of <code>view</code>.</p></dd>
+
+
+<dt id="arg-pair-by">pair_by<a class="anchor" aria-label="anchor" href="#arg-pair-by"></a></dt>
+<dd><p>Column identifying matched subjects for paired styles.
+After optional sample aggregation, exactly one value per subject, group and
+feature is required, with complete observations across all groups. No
+automatic matching, imputation or statistical test is performed.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -167,14 +182,12 @@ the requested features.</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">values</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  sample <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"S1"</span>, <span class="st">"S2"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"treated"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  score <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">5</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">sn_plot_distribution</span><span class="op">(</span><span class="va">values</span>, <span class="st">"score"</span>, group_by <span class="op">=</span> <span class="st">"condition"</span>, view <span class="op">=</span> <span class="st">"box"</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="sn_plot_distribution-1.png" alt="" width="700" height="433"></span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="va">values</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  sample <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"S1"</span>, <span class="st">"S2"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span>
+<span>  condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"treated"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span>
+<span>  score <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">sn_plot_distribution</span><span class="op">(</span><span class="va">values</span>, <span class="st">"score"</span>, group_by <span class="op">=</span> <span class="st">"condition"</span>, view <span class="op">=</span> <span class="st">"box"</span><span class="op">)</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -37,8 +37,6 @@ vector of file paths that do not exist.
 ``` r
 existing <- tempfile("existing-")
 file.create(existing)
-#> [1] TRUE
 missing <- tempfile("missing-")
 sn_check_file(c(existing, missing), stop = FALSE)
-#> [1] "/tmp/RtmpCvGeXp/missing-1cf5346a2990"
 ```

@@ -648,6 +648,12 @@ for samples or aggregated groups; supply <code>group_by</code> for large
 single-cell objects. The <code>mean</code> backend is dependency-free
 and transparent, but it is more sensitive to assay scale and signature
 size.</p>
+<p>Mean scoring also supports one cell or one aggregated group while
+preserving all program names. Signature tables must include a program
+column (<code>program</code>, <code>signature</code>, <code>set</code>,
+or <code>name</code>) and a gene column (<code>gene</code>,
+<code>feature</code>, or <code>symbol</code>); a named list such as the
+example below is an alternative.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">immune_programs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  B_cell <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"CD37"</span>, <span class="st">"CD74"</span><span class="op">)</span>,</span>

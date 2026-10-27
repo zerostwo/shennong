@@ -21,7 +21,8 @@ sn_plot_violin(
   panel_heights = NULL,
   x_label = NULL,
   y_label = NULL,
-  title = NULL
+  title = NULL,
+  style = "classic"
 )
 ```
 
@@ -79,6 +80,17 @@ sn_plot_violin(
 - x_label, y_label, title:
 
   Optional plot labels.
+
+- style:
+
+  Presentation preset: `classic`, `atlas`, `atlas_outline`, or
+  `atlas_module`. See
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md)
+  and the atlas-figure-styles article. Also accepts `violin_box`,
+  `raincloud`, `split_violin`, `stacked_violin`; these use unmodified
+  data-layer values through
+  [`sn_plot_distribution()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_distribution.md).
+  Use that function directly for sample aggregation and paired plots.
 
 ## Value
 

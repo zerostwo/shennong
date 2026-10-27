@@ -16,6 +16,7 @@ sn_plot_heatmap(
   assay = NULL,
   layer = "scale.data",
   mode = c("cells", "average"),
+  backend = c("ggplot2", "pheatmap", "complexheatmap"),
   scale_data = TRUE,
   max_cells = NULL,
   seed = 717,
@@ -27,6 +28,11 @@ sn_plot_heatmap(
   col_max = 2.5,
   average_fun = c("mean", "median"),
   average_scale = TRUE,
+  cluster_rows = FALSE,
+  cluster_cols = FALSE,
+  clustering_distance_rows = "euclidean",
+  clustering_distance_cols = "euclidean",
+  clustering_method = "complete",
   group_bar = TRUE,
   label = TRUE,
   raster = TRUE,
@@ -42,6 +48,7 @@ sn_plot_heatmap(
   aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL,
+  style = "classic",
   ...
 )
 ```
@@ -73,19 +80,24 @@ sn_plot_heatmap(
 - layer:
 
   Data layer used for expression retrieval. Defaults to `"scale.data"`
-  for cell-level heatmaps. In `mode = "average"`, use `"data"` to
-  average normalized expression before optional feature-wise scaling.
+  in both modes. Use `"data"` in average mode to average normalized
+  expression before optional feature-wise scaling.
 
 - mode:
 
   One of `"cells"` or `"average"`. `"cells"` displays cells; `"average"`
   averages expression by `group_by` and optional `split_by`.
 
+- backend:
+
+  Heatmap renderer. `"ggplot2"` supports both modes; `"pheatmap"` and
+  `"complexheatmap"` are available for `mode = "average"` and return
+  their native plot objects.
+
 - scale_data:
 
   If `TRUE` and `layer = "scale.data"`, scale the requested features
-  when they are missing from the scaled layer. Used only in
-  `mode = "cells"`.
+  when they are missing from the scaled layer.
 
 - max_cells:
 
@@ -120,6 +132,19 @@ sn_plot_heatmap(
 
   Whether to feature-wise z-score average expression in
   `mode = "average"`.
+
+- cluster_rows, cluster_cols:
+
+  Whether to hierarchically cluster displayed rows (groups) or columns
+  (features) in average mode.
+
+- clustering_distance_rows, clustering_distance_cols:
+
+  Distance measures used for row and column clustering.
+
+- clustering_method:
+
+  Linkage method used for hierarchical clustering.
 
 - group_bar, label, raster:
 
@@ -160,14 +185,26 @@ sn_plot_heatmap(
   Optional sizing controls forwarded through the Shennong/catplot theme
   helper.
 
+- style:
+
+  Presentation preset: `classic`, `atlas`, `atlas_outline`, or
+  `atlas_module`. See
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md)
+  and the atlas-figure-styles article. Structural matrix styles are also
+  supported for `mode = "average"`; annotation and summary arguments in
+  `...` are passed to
+  [`sn_plot_matrix()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_matrix.md).
+
 - ...:
 
   Additional arguments passed to
-  [`Seurat::DoHeatmap()`](https://satijalab.org/seurat/reference/DoHeatmap.html).
+  [`Seurat::DoHeatmap()`](https://satijalab.org/seurat/reference/DoHeatmap.html),
+  `pheatmap::pheatmap()`, or `ComplexHeatmap::Heatmap()`, according to
+  the selected backend.
 
 ## Value
 
-A ggplot2 or patchwork object.
+A ggplot2, patchwork, pheatmap, or ComplexHeatmap object.
 
 ## Examples
 

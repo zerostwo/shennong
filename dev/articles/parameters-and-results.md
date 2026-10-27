@@ -96,7 +96,7 @@ sn_list_results(pbmc, type = "program_scoring")
 #> # A tibble: 1 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results program_s… panel     program… mean   2026-09-2…     80 NA
+#> 1 shennong.results program_s… panel     program… mean   2026-10-2…     80 NA
 restored <- sn_get_result(pbmc, type = "program_scoring", result_id = "panel")
 stopifnot(identical(restored$tables$primary, result$tables$primary))
 ```
@@ -126,8 +126,8 @@ sn_list_results(pbmc, type = "program_scoring")
 #> # A tibble: 2 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results program_s… panel     program… mean   2026-09-2…     80 NA    
-#> 2 shennong.results program_s… panel_v2  program… mean   2026-09-2…     80 NA
+#> 1 shennong.results program_s… panel     program… mean   2026-10-2…     80 NA    
+#> 2 shennong.results program_s… panel_v2  program… mean   2026-10-2…     80 NA
 
 # Deliberately replace this exact scoring result and its owned score columns.
 pbmc <- sn_score_programs(
@@ -151,7 +151,7 @@ sn_list_results(pbmc, type = "program_scoring")
 #> # A tibble: 1 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results program_s… panel_v2  program… mean   2026-09-2…     80 NA
+#> 1 shennong.results program_s… panel_v2  program… mean   2026-10-2…     80 NA
 ```
 
 `artifact_id` refers to a runtime or backend artifact, not a stored
@@ -177,24 +177,13 @@ selected <- sn_get_de_result(
   top_n = 3, top_scope = "group"
 )
 head(selected)
-#> # A tibble: 6 × 7
-#>          p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene     
-#>          <dbl>      <dbl> <dbl> <dbl>     <dbl> <fct>   <chr>    
-#> 1 0.0000151          7.60 0.444 0.068 0.00347   0       GNLY     
-#> 2 0.0000201          4.28 0.444 0.068 0.00462   0       LAMP1    
-#> 3 0.00000397         3.88 0.528 0.091 0.000913  0       CD7      
-#> 4 0.0000421         10.9  0.263 0     0.00968   2       LINC00926
-#> 5 0.0000421         10.6  0.263 0     0.00968   2       FCER2    
-#> 6 0.0000000753       7.62 0.526 0.033 0.0000173 2       MS4A1
+#> # A tibble: 0 × 1
+#> # ℹ 1 variable: gene <chr>
 
 # Three genes total across the selected groups.
 head(sn_get_de_result(pbmc, "markers", top_n = 3, top_scope = "all"))
-#> # A tibble: 3 × 7
-#>      p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene 
-#>      <dbl>      <dbl> <dbl> <dbl>     <dbl> <fct>   <chr>
-#> 1 0.00177        13.4 0.158     0    0.408  2       IGLL5
-#> 2 0.000812       11.7 0.25      0    0.187  0       TUBB1
-#> 3 0.000276       11.0 0.211     0    0.0634 2       CD19
+#> # A tibble: 0 × 1
+#> # ℹ 1 variable: gene <chr>
 ```
 
 On

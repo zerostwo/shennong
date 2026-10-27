@@ -106,6 +106,33 @@ groups, and acquisition batches are all retained from the source study.
 The chunks execute in real-data builds and remain safe during ordinary
 package checks when the local fixture is unavailable.</p>
 <div class="section level2">
+<h2 id="atlas-inspired-presentation">Atlas-inspired presentation<a class="anchor" aria-label="anchor" href="#atlas-inspired-presentation"></a>
+</h2>
+<p>Use <code>style = "atlas"</code>, <code>"atlas_outline"</code>, or
+<code>"atlas_module"</code> on the embedding, feature, dot, heatmap,
+violin, composition and association helpers. <code>classic</code>
+preserves their previous defaults. <code><a href="../reference/sn_list_plot_styles.html">sn_list_plot_styles()</a></code>
+lists these presets. The <a href="atlas-figure-styles.html">Zhang atlas
+figure guide</a> includes paper links, a 38-figure classification,
+rendered examples, scientific encoding boundaries and a source-data
+reproduction of Nature CM Fig. 2c. Independent bubble encodings and
+module networks use <code><a href="../reference/sn_plot_matrix.html">sn_plot_matrix()</a></code> and
+<code><a href="../reference/sn_plot_network.html">sn_plot_network()</a></code> with already computed inputs.</p>
+<p>Structural <code>style</code> values select different layouts:
+<code><a href="../reference/sn_plot_matrix.html">sn_plot_matrix()</a></code> supports triangles,
+circular/annotated/clustered matrices and aligned summary tracks;
+<code><a href="../reference/sn_plot_distribution.html">sn_plot_distribution()</a></code> supports paired, raincloud and
+split/stacked violins. The existing
+<code>sn_plot_heatmap(mode="average")</code> and
+<code><a href="../reference/sn_plot_violin.html">sn_plot_violin()</a></code> expose these layouts too.
+<code><a href="../reference/sn_plot_effect.html">sn_plot_effect()</a></code>, <code><a href="../reference/sn_plot_overlap.html">sn_plot_overlap()</a></code> and
+<code><a href="../reference/sn_plot_network.html">sn_plot_network()</a></code> cover forests, signed bars, UpSet,
+supplied clone trees, bipartite networks, weighted ribbons and matched
+rewiring panels. Query
+<code>sn_list_plot_styles("sn_plot_matrix")</code> for exact inputs and
+source panels.</p>
+</div>
+<div class="section level2">
 <h2 id="prepare-one-clustered-object">Prepare one clustered object<a class="anchor" aria-label="anchor" href="#prepare-one-clustered-object"></a>
 </h2>
 <p>The plot wrappers expect the same Seurat object produced by the
@@ -173,7 +200,17 @@ when <code>ggrastr</code> is available the point layer is rasterized
 after the regular ggplot point size is applied, so small values such as
 <code>pt_size = 0.01</code> behave like ordinary
 <code><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point()</a></code> sizes. When <code>ggrastr</code> is
-unavailable, the plot remains usable through the vector point layer.</p>
+unavailable, the plot remains usable through the vector point layer.
+Expression maps default to <code>order = FALSE</code>, preserving cell
+drawing order. Set <code>order = TRUE</code> to draw high-expression
+cells last, for example
+<code>sn_plot_feature(pbmc, features = "IL7R", reduction = "umap", order = TRUE)</code>.
+This control applies to classic and atlas expression maps; density mode
+and nebula/glass styles are unaffected. The default
+<code>stroke_size = NULL</code> uses zero stroke, so outlines cannot
+overwhelm a small <code>pt_size</code>; explicit nonzero strokes remain
+available. For dense embeddings, for example, use
+<code>sn_plot_feature(pbmc, features = "IL7R", reduction = "umap", pt_size = 0.05)</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_feature.html">sn_plot_feature</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
@@ -351,7 +388,9 @@ palette.</p>
 <p>Use <code>mode = "average"</code> when the comparison is about the
 group-level pattern rather than every individual cell. This averages
 expression within each group and then z-scores each gene by default,
-giving a compact marker-panel summary.</p>
+giving a compact marker-panel summary. The selected <code>layer</code>
+is used directly; the default <code>scale.data</code> layer is filled
+for requested features when needed.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_heatmap.html">sn_plot_heatmap</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
@@ -360,9 +399,25 @@ giving a compact marker-panel summary.</p>
 <span>  mode <span class="op">=</span> <span class="st">"average"</span>,</span>
 <span>  palette <span class="op">=</span> <span class="st">"RdBu"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>For native heatmap objects and dendrograms, select
+<code>backend = "pheatmap"</code> or
+<code>backend = "complexheatmap"</code>. The compact average layout
+keeps groups as rows and features as columns, so
+<code>cluster_rows</code> clusters groups and <code>cluster_cols</code>
+clusters features.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_heatmap.html">sn_plot_heatmap</a></span><span class="op">(</span></span>
+<span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"LYZ"</span>, <span class="st">"NKG7"</span><span class="op">)</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>  mode <span class="op">=</span> <span class="st">"average"</span>,</span>
+<span>  backend <span class="op">=</span> <span class="st">"complexheatmap"</span>,</span>
+<span>  cluster_rows <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cluster_cols <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>Use <code>split_by</code> when the same marker panel should be
 inspected separately across samples, conditions, or batches.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_heatmap.html">sn_plot_heatmap</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"LYZ"</span>, <span class="st">"NKG7"</span><span class="op">)</span>,</span>
@@ -376,7 +431,7 @@ inspected separately across samples, conditions, or batches.</p>
 <p>Shennong wraps common summary plots so a report can move from
 cell-level maps to sample-level summaries without switching visual
 grammar.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_violin.html">sn_plot_violin</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nFeature_RNA"</span>, <span class="st">"pctMT"</span><span class="op">)</span>,</span>
@@ -429,7 +484,7 @@ registry. Once stored,
 <code>sn_plot_dot(features = "top_markers")</code> can reuse that result
 directly instead of asking users to manually copy marker lists between
 scripts.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  analysis <span class="op">=</span> <span class="st">"markers"</span>,</span>
@@ -457,7 +512,7 @@ stable contract: <code>object</code>, <code>analysis_type</code>,
 <code>result_id</code>, and <code>view</code>. Direct result objects
 carry their own analysis type. For a Seurat object, omitted identifiers
 are inferred only when the stored choice is unambiguous.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_plot_methods.html">sn_list_plot_methods</a></span><span class="op">(</span><span class="st">"de"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">pbmc</span>, type <span class="op">=</span> <span class="st">"de"</span><span class="op">)</span></span>
 <span></span>
@@ -470,7 +525,7 @@ are inferred only when the stored choice is unambiguous.</p>
 <p>For a curated marker panel, pass a named list. Each list element
 becomes a free-width facet, so marker families remain visually separated
 even when the groups contain different numbers of genes.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">level1_markers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Lymphoid"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3D"</span>, <span class="st">"CD3E"</span>, <span class="st">"MS4A1"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"Myeloid"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"LYZ"</span>, <span class="st">"FCGR3A"</span><span class="op">)</span>,</span>
@@ -491,7 +546,7 @@ composition directly from a Seurat object’s metadata. The explicit
 two-step route through <code><a href="../reference/sn_calculate_composition.html">sn_calculate_composition()</a></code> remains
 useful when you want to inspect or export the denominator table before
 plotting.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">composition</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_calculate_composition.html">sn_calculate_composition</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"real_sample"</span>,</span>
@@ -512,7 +567,7 @@ contribute one proportion. <code>sample_boxplot</code> shows those
 observations directly; <code>sample_bar</code> shows their mean or
 median with SD/SE error bars. Cell types absent from a retained sample
 are represented as zero rather than silently dropped.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_composition.html">sn_plot_composition</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  x <span class="op">=</span> <span class="va">real_response</span>,</span>
@@ -524,7 +579,7 @@ are represented as zero rather than silently dropped.</p>
 <p>Alluvial/Sankey-style plots trace counts through two or more metadata
 levels. They use ggplot2 directly; no optional Sankey backend is
 required.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>, flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"real_response"</span>, <span class="st">"seurat_clusters"</span><span class="op">)</span>, style <span class="op">=</span> <span class="st">"A"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -578,7 +633,7 @@ expressions are needed.</p>
 and figure metadata as <code><a href="../reference/sn_plot_composition.html">sn_plot_composition()</a></code>. The existing
 <code><a href="../reference/sn_plot_barplot.html">sn_plot_barplot()</a></code> and <code><a href="../reference/sn_plot_boxplot.html">sn_plot_boxplot()</a></code> remain
 generic numeric-data plotters.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_bar.html">sn_plot_bar</a></span><span class="op">(</span><span class="va">pbmc</span>, x_by <span class="op">=</span> <span class="st">"real_sample"</span>, fill_by <span class="op">=</span> <span class="st">"seurat_clusters"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_plot_sample_bar.html">sn_plot_sample_bar</a></span><span class="op">(</span><span class="va">pbmc</span>, x_by <span class="op">=</span> <span class="st">"real_response"</span>, fill_by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
 <span>                   sample_by <span class="op">=</span> <span class="st">"real_sample"</span>, errorbar <span class="op">=</span> <span class="st">"se"</span><span class="op">)</span></span>
@@ -628,12 +683,12 @@ count widths. B uses tighter spacing and external brackets. Both accept
 <code>axis_labels = c("Original", "Final")</code>. All styles retain
 independent factor order: top-to-bottom in A/B, left-to-right in C.
 Character columns retain first appearance order.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">pbmc</span>, flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"real_response"</span>, <span class="st">"seurat_clusters"</span><span class="op">)</span>,</span>
 <span>               style <span class="op">=</span> <span class="st">"C"</span>, show_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>For annotation comparisons and hierarchies, substitute your metadata
 columns:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">seurat_obj</span>,</span>
 <span>  flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cell_type_level1"</span>, <span class="st">"cell_type_level2"</span><span class="op">)</span>,</span>
 <span>  fill_by <span class="op">=</span> <span class="st">"cell_type_level1"</span>, style <span class="op">=</span> <span class="st">"A"</span>, sankey_layout <span class="op">=</span> <span class="st">"expanded"</span><span class="op">)</span></span>
@@ -666,7 +721,7 @@ many or long labels need more room.</p>
 use plain ggplot2 and resolve colors through Shennong. If
 <code>catplot</code> is installed, its compact theme is a good final
 layer for manuscript-style figures.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">response_levels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">qc_summary</span><span class="op">$</span><span class="va">real_response</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">response_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_palette.html">sn_get_palette</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Set2"</span>,</span>
@@ -697,7 +752,7 @@ layer for manuscript-style figures.</p>
 <code>panel_heights</code> explicitly, in <strong>points (pt)</strong>.
 These control the drawing panel, excluding outer labels and margins, and
 do not require catplot. For example:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_sankey.html">sn_plot_sankey</a></span><span class="op">(</span><span class="va">seurat_obj</span>,</span>
 <span>  flow_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cell_type_level1"</span>, <span class="st">"cell_type_level2"</span><span class="op">)</span>, style <span class="op">=</span> <span class="st">"B"</span>,</span>
 <span>  panel_widths <span class="op">=</span> <span class="fl">320</span>, panel_heights <span class="op">=</span> <span class="fl">400</span>, show_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
@@ -709,6 +764,23 @@ aspect ratio the other is derived; C also derives a missing size using
 its default coordinate ratio. Export to a canvas large enough to include
 the panel plus labels, title, legend and margins.</p>
 </div>
+</div>
+<div class="section level2">
+<h2 id="spatial-coordinate-maps">Spatial coordinate maps<a class="anchor" aria-label="anchor" href="#spatial-coordinate-maps"></a>
+</h2>
+<p>Use <code><a href="../reference/sn_plot_spatial.html">sn_plot_spatial()</a></code> for metadata groups,
+<code><a href="../reference/sn_plot_spatial_feature.html">sn_plot_spatial_feature()</a></code> for genes or numeric metadata,
+and <code><a href="../reference/sn_plot_spatial_domain.html">sn_plot_spatial_domain()</a></code> for stored domains. They share
+dimension-plot controls (<code>pt_size</code>,
+<code>cols</code>/<code>palette</code>, labels, legend/axis/border
+visibility) while retaining equal spatial coordinate units. Native
+Seurat image/FOV centroids are supported; coordinate maps do not draw
+histology or segmentation outlines. With metadata coordinates, set
+<code>split_by = "section"</code> to keep independent sections apart.
+Features use the exact requested assay/layer and a common continuous
+scale across panels. See the <a href="spatial-workflows.html">spatial
+workflow guide</a> for complete examples, coordinate precedence, missing
+values, raster export, and stored-result retrieval.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

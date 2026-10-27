@@ -552,6 +552,12 @@ intended primarily for samples or aggregated groups; supply `group_by`
 for large single-cell objects. The `mean` backend is dependency-free and
 transparent, but it is more sensitive to assay scale and signature size.
 
+Mean scoring also supports one cell or one aggregated group while
+preserving all program names. Signature tables must include a program
+column (`program`, `signature`, `set`, or `name`) and a gene column
+(`gene`, `feature`, or `symbol`); a named list such as the example below
+is an alternative.
+
 ``` r
 
 immune_programs <- list(

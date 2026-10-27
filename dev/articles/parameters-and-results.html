@@ -266,7 +266,7 @@ the returned result explicitly, or call the workflow with
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   collection       type       result_id analysis method created_at n_rows source</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results program_s… panel     program… mean   2026-09-2…     80 <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results program_s… panel     program… mean   2026-10-2…     80 <span style="color: #BB0000;">NA</span></span></span>
 <span><span class="va">restored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">pbmc</span>, type <span class="op">=</span> <span class="st">"program_scoring"</span>, result_id <span class="op">=</span> <span class="st">"panel"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">restored</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span>, <span class="va">result</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Generic storage saves the result envelope. It does not replay a
@@ -292,8 +292,8 @@ include the source, analysis, and database. DE defaults to
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
 <span><span class="co">#&gt;   collection       type       result_id analysis method created_at n_rows source</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results program_s… panel     program… mean   2026-09-2…     80 <span style="color: #BB0000;">NA</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> shennong.results program_s… panel_v2  program… mean   2026-09-2…     80 <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results program_s… panel     program… mean   2026-10-2…     80 <span style="color: #BB0000;">NA</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> shennong.results program_s… panel_v2  program… mean   2026-10-2…     80 <span style="color: #BB0000;">NA</span></span></span>
 <span></span>
 <span><span class="co"># Deliberately replace this exact scoring result and its owned score columns.</span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_score_programs.html">sn_score_programs</a></span><span class="op">(</span></span>
@@ -312,7 +312,7 @@ explicitly delete a reviewed result before recomputing it:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   collection       type       result_id analysis method created_at n_rows source</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results program_s… panel_v2  program… mean   2026-09-2…     80 <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results program_s… panel_v2  program… mean   2026-10-2…     80 <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
 <p><code>artifact_id</code> refers to a runtime or backend artifact, not
 a stored analysis. For auditing older objects and exporting result
 bundles, see <a href="analysis-results-and-methods.html">advanced result
@@ -336,24 +336,13 @@ management</a>.</p>
 <span>  top_n <span class="op">=</span> <span class="fl">3</span>, top_scope <span class="op">=</span> <span class="st">"group"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">selected</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 7</span></span></span>
-<span><span class="co">#&gt;          p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene     </span></span>
-<span><span class="co">#&gt;          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0.000<span style="text-decoration: underline;">015</span>1          7.60 0.444 0.068 0.003<span style="text-decoration: underline;">47</span>   0       GNLY     </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 0.000<span style="text-decoration: underline;">020</span>1          4.28 0.444 0.068 0.004<span style="text-decoration: underline;">62</span>   0       LAMP1    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 0.000<span style="text-decoration: underline;">003</span>97         3.88 0.528 0.091 0.000<span style="text-decoration: underline;">913</span>  0       CD7      </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 0.000<span style="text-decoration: underline;">042</span>1         10.9  0.263 0     0.009<span style="text-decoration: underline;">68</span>   2       LINC00926</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 0.000<span style="text-decoration: underline;">042</span>1         10.6  0.263 0     0.009<span style="text-decoration: underline;">68</span>   2       FCER2    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 0.000<span style="text-decoration: underline;">000</span>075<span style="text-decoration: underline;">3</span>       7.62 0.526 0.033 0.000<span style="text-decoration: underline;">017</span>3 2       MS4A1</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 0 × 1</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 variable: gene &lt;chr&gt;</span></span></span>
 <span></span>
 <span><span class="co"># Three genes total across the selected groups.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/sn_get_de_result.html">sn_get_de_result</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"markers"</span>, top_n <span class="op">=</span> <span class="fl">3</span>, top_scope <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 7</span></span></span>
-<span><span class="co">#&gt;      p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene </span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0.001<span style="text-decoration: underline;">77</span>        13.4 0.158     0    0.408  2       IGLL5</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 0.000<span style="text-decoration: underline;">812</span>       11.7 0.25      0    0.187  0       TUBB1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 0.000<span style="text-decoration: underline;">276</span>       11.0 0.211     0    0.063<span style="text-decoration: underline;">4</span> 2       CD19</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 0 × 1</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 variable: gene &lt;chr&gt;</span></span></span></code></pre></div>
 <p>On <code><a href="../reference/sn_find_de.html">sn_find_de()</a></code>, <code>min_pct</code> and
 <code>logfc_threshold</code> determine which genes are tested. On
 <code><a href="../reference/sn_get_de_result.html">sn_get_de_result()</a></code>, thresholds select already tested rows.

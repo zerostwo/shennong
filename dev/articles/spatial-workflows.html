@@ -102,13 +102,84 @@ therefore knit the article without downloading data. Optional R or
 external adapter backends have additional, explicit gates and are never
 replaced with synthetic output.</p>
 <div class="section level2">
+<h2 id="spatial-maps-with-the-same-controls-as-dimension-plots">Spatial maps with the same controls as dimension plots<a class="anchor" aria-label="anchor" href="#spatial-maps-with-the-same-controls-as-dimension-plots"></a>
+</h2>
+<p><code><a href="../reference/sn_plot_spatial.html">sn_plot_spatial()</a></code> and
+<code><a href="../reference/sn_plot_spatial_feature.html">sn_plot_spatial_feature()</a></code> use Shennong palettes, 8 pt text,
+compact legends, and an equal spatial aspect. Use <code>pt_size</code>,
+<code>cols</code>/<code>palette</code>, <code>show_legend</code>,
+<code>show_axis</code>, <code>show_border</code>, and <code>title</code>
+as in dimension plots. Existing positional calls and
+<code>point_size</code> remain valid; supply only one size argument.
+These are coordinate maps: native image/FOV coordinates are supported,
+while histology and segmentation outlines are not drawn.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Named colors keep group identities stable across figures.</span></span>
+<span><span class="va">region_colors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>T_zone <span class="op">=</span> <span class="st">"#1F78B4"</span>, B_zone <span class="op">=</span> <span class="st">"#33A02C"</span>, Other <span class="op">=</span> <span class="st">"#BDBDBD"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial.html">sn_plot_spatial</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>, group_by <span class="op">=</span> <span class="st">"region"</span>, split_by <span class="op">=</span> <span class="st">"section"</span>,</span>
+<span>  spatial_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"spatial_x"</span>, <span class="st">"spatial_y"</span><span class="op">)</span>,</span>
+<span>  cols <span class="op">=</span> <span class="va">region_colors</span>, pt_size <span class="op">=</span> <span class="fl">0.8</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, repel <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Native Visium coordinates need no metadata copy. Each selected image is</span></span>
+<span><span class="co"># separated automatically. FOV objects use centroids, never polygon vertices.</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial.html">sn_plot_spatial</a></span><span class="op">(</span><span class="va">object</span>, group_by <span class="op">=</span> <span class="st">"region"</span>, images <span class="op">=</span> <span class="st">"slice1"</span>, label <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Gene panels follow the requested order. All panels share the same color scale.</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_feature.html">sn_plot_spatial_feature</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>, features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3D"</span>, <span class="st">"MS4A1"</span><span class="op">)</span>, assay <span class="op">=</span> <span class="st">"Spatial"</span>, layer <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  split_by <span class="op">=</span> <span class="st">"section"</span>, palette <span class="op">=</span> <span class="st">"viridis"</span>, pt_size <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  limits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">3</span><span class="op">)</span>, raster <span class="op">=</span> <span class="cn">TRUE</span>, raster_dpi <span class="op">=</span> <span class="fl">600</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co"># Numeric metadata (QC, scores, or imported abundances) is also supported.</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_feature.html">sn_plot_spatial_feature</a></span><span class="op">(</span><span class="va">object</span>, features <span class="op">=</span> <span class="st">"nCount_Spatial"</span>, images <span class="op">=</span> <span class="st">"slice1"</span><span class="op">)</span></span></code></pre></div>
+<p>For metadata coordinates, explicitly set <code>split_by</code> to the
+section column; Shennong does not guess the sample from
+<code>orig.ident</code>. Metadata coordinates have priority unless
+<code>images</code> is supplied. Native Visium images use full
+resolution coordinates; FOVs use their native centroid units. Multiple
+native images always remain separate, including when
+<code>split_by</code> adds another grouping. Facet axes share a common
+coordinate extent and never register or rescale sections. Plot sections
+with different coordinate units in separate calls. The y axis is
+reversed by default for image coordinates; use
+<code>flip_y = FALSE</code> for Cartesian coordinates. Labels are
+anchored on observed spots near each group’s median within each panel.
+<code>repel = TRUE</code> can move labels for legibility.</p>
+<p>The requested expression <code>assay</code> and <code>layer</code>
+are now strict: a missing layer raises an error, rather than changing
+the plot to raw counts. Normalize first for a <code>data</code> map, or
+explicitly request <code>layer = "counts"</code>. Numeric metadata needs
+no expression layer and takes priority over a gene with the same name.
+Missing features are reported. Higher values draw last; <code>NA</code>
+is drawn first using <code>na_value</code>. <code>limits</code> clamps
+displayed colors only; the original values remain in plot data and
+figure-bundle exports. Deconvolution plots likewise preserve supplied
+proportions or abundances without normalization.</p>
+<p>Stored domains use their recorded coordinates and section boundaries.
+Discover and retrieve the result before selecting it for plotting:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">object</span>, type <span class="op">=</span> <span class="st">"spatial_domains"</span><span class="op">)</span></span>
+<span><span class="va">domains</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_get_result.html">sn_get_result</a></span><span class="op">(</span><span class="va">object</span>, type <span class="op">=</span> <span class="st">"spatial_domains"</span>, result_id <span class="op">=</span> <span class="st">"banksy_domains"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_domain.html">sn_plot_spatial_domain</a></span><span class="op">(</span><span class="va">object</span>, result_id <span class="op">=</span> <span class="st">"banksy_domains"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>                       palette <span class="op">=</span> <span class="st">"Paired"</span>, pt_size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span></span>
+<span><span class="co"># The retrieved result is accepted directly as well.</span></span>
+<span><span class="fu"><a href="../reference/sn_plot_spatial_domain.html">sn_plot_spatial_domain</a></span><span class="op">(</span><span class="va">domains</span>, label <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>The returned figures are ordinary editable ggplots.
+<code>raster = TRUE</code> requires <code>ggrastr</code> and rasterizes
+points only, retaining vector labels and legends for PDF output.
+<code><a href="../reference/sn_save_figure.html">sn_save_figure()</a></code> and <code><a href="../reference/sn_export_figure_bundle.html">sn_export_figure_bundle()</a></code>
+can use the attached figure specification and source data.</p>
+</div>
+<div class="section level2">
 <h2 id="load-the-real-sections-and-preserve-their-coordinates">Load the real sections and preserve their coordinates<a class="anchor" aria-label="anchor" href="#load-the-real-sections-and-preserve-their-coordinates"></a>
 </h2>
 <p>The fixture retains the original Seurat spatial images. Shennong’s
 statistical workflow consumes two finite metadata columns, so we copy
 the matching tissue coordinates into named metadata fields without
 altering the count matrix or histology image.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://zerostwo.github.io/shennong">Shennong</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span></span>
@@ -186,7 +257,7 @@ real count features, computes one joint PCA, and passes a transparent
 section-centered embedding to the explicit custom integration adapter.
 This is a deterministic real-data adapter demonstration; it is not
 presented as STAligner or another unavailable backend.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spatial_qc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial.html">sn_run_spatial</a></span><span class="op">(</span></span>
 <span>  <span class="va">spatial_object</span>,</span>
 <span>  task <span class="op">=</span> <span class="st">"qc"</span>,</span>
@@ -311,7 +382,7 @@ current object holds one section. KNN edges and label permutations are
 built within that boundary; when sections are combined, no spot can
 acquire a neighbor from another section merely because their coordinate
 ranges overlap.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">717</span><span class="op">)</span></span>
 <span><span class="va">section_pca</span> <span class="op">&lt;-</span> <span class="va">integrated_pca</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">spatial_object</span><span class="op">)</span>,</span>
@@ -364,7 +435,7 @@ explicit so the real site build stays auditable and bounded. Its
 two-sided permutation P value compares the observed statistic with
 deviations around the empirical null mean, rather than assuming that the
 finite-sample permutation null is centered exactly at zero.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spatial_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial.html">sn_run_spatial</a></span><span class="op">(</span></span>
 <span>  <span class="va">spatial_object</span>,</span>
 <span>  task <span class="op">=</span> <span class="st">"svg"</span>,</span>
@@ -407,14 +478,14 @@ finite-sample permutation null is centered exactly at zero.</p>
 BANKSY and SpatialExperiment are already installed; the article does not
 install them and does not manufacture domain labels when they are
 unavailable.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  backend <span class="op">=</span> <span class="st">"BANKSY"</span>,</span>
 <span>  Banksy_installed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"Banksy"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  SpatialExperiment_installed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SpatialExperiment"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  will_run <span class="op">=</span> <span class="va">run_banksy</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spatial_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_spatial_domains.html">sn_find_spatial_domains</a></span><span class="op">(</span></span>
 <span>  <span class="va">spatial_object</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"banksy"</span>,</span>
@@ -442,7 +513,7 @@ unavailable.</p>
 metadata. Its enrichment P values come from label permutations on the
 retained KNN graph; co-occurrence summarizes graph edges by distance
 bin.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spatial_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial_neighborhood.html">sn_run_spatial_neighborhood</a></span><span class="op">(</span></span>
 <span>  <span class="va">spatial_object</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"knn"</span>,</span>
@@ -480,14 +551,14 @@ is created here. An explicit stLearn result may be supplied to its
 adapter, but the package-level <code><a href="../reference/sn_run_scarches.html">sn_run_stlearn()</a></code> object
 wrapper is currently disabled and is not an execution path for this
 article.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  profile <span class="op">=</span> <span class="va">real_profile</span>,</span>
 <span>  nnSVG_installed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"nnSVG"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  SpatialExperiment_installed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"SpatialExperiment"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  will_run_nnSVG <span class="op">=</span> <span class="va">run_nnsvg</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nnsvg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_spatial_features.html">sn_find_spatial_features</a></span><span class="op">(</span></span>
 <span>  <span class="va">spatial_object</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"nnsvg"</span>,</span>
@@ -523,7 +594,7 @@ unsampled rows fails closed. Without row-level samples, it reports a
 transparent across-section aggregate. <code>max_distance</code>, when
 supplied, must be one finite non-negative distance in the coordinate
 system used by <code>spatial_cols</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  result_file <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">communication_result_path</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">communication_result_path</span><span class="op">)</span></span>
@@ -534,7 +605,7 @@ system used by <code>spatial_cols</code>.</p>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">communication_result_path</span><span class="op">)</span>,</span>
 <span>  will_run <span class="op">=</span> <span class="va">run_spatial_communication</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">communication</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">communication_result_path</span><span class="op">)</span></span>
 <span><span class="va">spatial_communication</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial_communication.html">sn_run_spatial_communication</a></span><span class="op">(</span></span>
 <span>  <span class="va">spatial_object</span>,</span>
@@ -567,7 +638,7 @@ Its signature table uses genes as rows and cell states as columns,
 requires unique non-empty identifiers on both axes, and accepts only
 finite non-negative numeric values. Shennong checks these contracts in R
 before export and again in the Python runner.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  workflow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    <span class="st">"cell2location"</span>, <span class="st">"Tangram"</span>, <span class="st">"Squidpy"</span>, <span class="st">"SpatialData"</span></span>
@@ -593,7 +664,7 @@ select <code>direct</code> for <code><a href="../reference/sn_run_scarches.html"
 default uses the unified <code><a href="../reference/sn_run_spatial_deconvolution.html">sn_run_spatial_deconvolution()</a></code>
 name. Only the metadata columns imported from the real posterior are
 reshaped for plotting.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">deconvolution_entrypoint</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span></span>
 <span>  <span class="st">"SHENNONG_SPATIAL_DECONVOLUTION_ENTRYPOINT"</span>,</span>
 <span>  unset <span class="op">=</span> <span class="st">"unified"</span></span>
@@ -643,7 +714,7 @@ substitutes a fixture-derived pseudo-reference. Its retained mapping is
 validated as a reference-cell-by-spatial-cell probability matrix: every
 value is finite and non-negative and each reference-cell row sums to one
 within numerical tolerance.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spatial_reference</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="va">spatial_reference_path</span><span class="op">)</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">spatial_reference</span>, <span class="st">"Seurat"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"SHENNONG_SPATIAL_REFERENCE must contain a Seurat object."</span>, call. <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -681,7 +752,7 @@ they remain behind the same explicit already-prepared-environment gate.
 <code><a href="../reference/sn_run_scarches.html">sn_run_stlearn()</a></code> is not included: its exported
 compatibility signature is intentionally disabled and always fails
 before object export or Python execution.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">squidpy_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_scarches.html">sn_run_squidpy</a></span><span class="op">(</span></span>
 <span>  <span class="va">spatial_object</span>,</span>
 <span>  assay <span class="op">=</span> <span class="st">"Spatial"</span>,</span>

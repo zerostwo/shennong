@@ -232,9 +232,4 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(bundle$files)
 }
-#> INFO [2026-09-28 08:49:55] Initializing Seurat object for project: Shennong.
-#> INFO [2026-09-28 08:49:55] Running QC metrics for human.
-#> INFO [2026-09-28 08:49:55] Seurat object initialization complete.
-#> [1] "single_cell_reference" "mixture"               "signature_matrix"     
-#> [4] "result"               
 ```

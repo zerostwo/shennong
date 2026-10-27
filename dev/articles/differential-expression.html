@@ -152,7 +152,7 @@ extraction.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   collection       type  result_id analysis method created_at      n_rows source</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results de    markers   de       wilcox 2026-09-28 08:…    134 <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results de    markers   de       wilcox 2026-10-27 21:…      0 <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
 <p>Each cluster is compared with the remaining cells. Keep the full
 result for reproducibility, and filter only the table used for
 reporting:</p>
@@ -163,15 +163,8 @@ reporting:</p>
 <span>  logfc_threshold <span class="op">=</span> <span class="fl">0.25</span>, top_n <span class="op">=</span> <span class="fl">5</span>, top_scope <span class="op">=</span> <span class="st">"group"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">markers</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 7</span></span></span>
-<span><span class="co">#&gt;        p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene     </span></span>
-<span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0.000<span style="text-decoration: underline;">015</span>1        7.60 0.444 0.068  0.003<span style="text-decoration: underline;">47</span>  0       GNLY     </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 0.000<span style="text-decoration: underline;">020</span>1        4.28 0.444 0.068  0.004<span style="text-decoration: underline;">62</span>  0       LAMP1    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 0.000<span style="text-decoration: underline;">003</span>97       3.88 0.528 0.091  0.000<span style="text-decoration: underline;">913</span> 0       CD7      </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 0.000<span style="text-decoration: underline;">169</span>         3.19 0.389 0.068  0.038<span style="text-decoration: underline;">8</span>   0       CD247    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 0.000<span style="text-decoration: underline;">099</span>7        2.72 0.5   0.114  0.022<span style="text-decoration: underline;">9</span>   0       LCK      </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 0.000<span style="text-decoration: underline;">042</span>1       10.9  0.263 0      0.009<span style="text-decoration: underline;">68</span>  2       LINC00926</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 0 × 1</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 variable: gene &lt;chr&gt;</span></span></span>
 <span><span class="va">full</span><span class="op">$</span><span class="va">input</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"assay"</span>, <span class="st">"layer"</span>, <span class="st">"tested_features_count"</span>, <span class="st">"tested_features_source"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt; $assay</span></span>
 <span><span class="co">#&gt; [1] "RNA"</span></span>
@@ -180,7 +173,7 @@ reporting:</p>
 <span><span class="co">#&gt; [1] "data"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $tested_features_count</span></span>
-<span><span class="co">#&gt; [1] 222</span></span>
+<span><span class="co">#&gt; [1] 0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $tested_features_source</span></span>
 <span><span class="co">#&gt; [1] "backend_statistics"</span></span></code></pre></div>
@@ -189,6 +182,28 @@ in <code>sn_find_de</code>) affect the set of hypotheses and the
 tested-gene background. Getter filters affect the output view only. For
 enrichment, preserve the tested background rather than using all genes
 in the genome or only the significant genes.</p>
+<p>An empty marker result is valid: one empty subset does not stop other
+subsets, and an entirely empty run remains discoverable with
+<code><a href="../reference/sn_list_results.html">sn_list_results()</a></code> and retrievable with
+<code><a href="../reference/sn_get_result.html">sn_get_result()</a></code> or <code><a href="../reference/sn_get_de_result.html">sn_get_de_result()</a></code>. Table
+selection returns zero rows, including when the backend omitted empty
+statistic columns. No reported genes does not necessarily mean no genes
+were tested; inspect
+<code>full$input$tested_features_by_comparison</code> for the actual
+background.</p>
+<p>For <code>subset_by</code>, supply complete, non-blank labels and a
+column name distinct from the backend output (<code>gene</code>,
+<code>comparison</code>, marker <code>cluster</code>, and statistic
+columns). Copy existing metadata to a descriptive name when it
+conflicts:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">study</span><span class="op">$</span><span class="va">cell_type_subset</span> <span class="op">&lt;-</span> <span class="va">study</span><span class="op">$</span><span class="va">cluster</span></span>
+<span><span class="va">study</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
+<span>  <span class="va">study</span>, analysis <span class="op">=</span> <span class="st">"markers"</span>, group_by <span class="op">=</span> <span class="st">"condition"</span>,</span>
+<span>  subset_by <span class="op">=</span> <span class="st">"cell_type_subset"</span>, result_id <span class="op">=</span> <span class="st">"within_cell_type"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">study</span>, type <span class="op">=</span> <span class="st">"de"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_get_de_result.html">sn_get_de_result</a></span><span class="op">(</span><span class="va">study</span>, <span class="st">"within_cell_type"</span>, p_adjusted_cutoff <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="compare-two-groups-explicitly">Compare two groups explicitly<a class="anchor" aria-label="anchor" href="#compare-two-groups-explicitly"></a>
@@ -196,7 +211,7 @@ in the genome or only the significant genes.</p>
 <p><code>ident_1</code> is the numerator/target group and
 <code>ident_2</code> is the reference group. The example compares two
 existing clusters; it is not a treatment comparison.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">levels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">$</span><span class="va">cluster</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">contrast_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_find_de.html">sn_find_de</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>, analysis <span class="op">=</span> <span class="st">"contrast"</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>,</span>
@@ -227,7 +242,7 @@ counts and metadata columns <code>sample_id</code>,
 <code>sample_id</code> must identify a biological sample with a single
 condition, and each condition needs biological replication. Do not
 invent sample IDs by splitting cells.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># study is your multi-sample Seurat object, with counts in RNA/counts.</span></span>
 <span><span class="va">sample_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">study</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sample_id"</span>, <span class="st">"condition"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/duplicated.html" class="external-link">anyDuplicated</a></span><span class="op">(</span><span class="va">sample_design</span><span class="op">$</span><span class="va">sample_id</span><span class="op">)</span><span class="op">)</span></span>
@@ -292,7 +307,7 @@ require <strong>clusterProfiler</strong> and <strong>msigdbr</strong>,
 and MSigDB may need a first-use download. They are shown but not
 executed during ordinary documentation builds. The small marker example
 may yield no significant pathways.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_enrichment.html">sn_run_enrichment</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>, source_de_result_id <span class="op">=</span> <span class="st">"markers"</span>, analysis <span class="op">=</span> <span class="st">"ora"</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>, database <span class="op">=</span> <span class="st">"H"</span>,</span>
@@ -320,7 +335,7 @@ terms.</p>
 just the top markers selected for a figure. This demonstration uses
 log-fold change; choose and document the ranking statistic for your
 study.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ranking</span> <span class="op">&lt;-</span> <span class="va">contrast_result</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span></span>
 <span><span class="va">ranked</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_enrichment.html">sn_run_enrichment</a></span><span class="op">(</span></span>
 <span>  <span class="va">ranking</span>, mapping <span class="op">=</span> <span class="va">gene</span> <span class="op">~</span> <span class="va">avg_log2FC</span>, analysis <span class="op">=</span> <span class="st">"gsea"</span>,</span>
@@ -330,7 +345,7 @@ study.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/sn_get_enrichment_result.html">sn_get_enrichment_result</a></span><span class="op">(</span><span class="va">ranked</span>, top_n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">ranked</span><span class="op">$</span><span class="va">parameters</span></span></code></pre></div>
 <p>For a marker table with one ranking per cluster:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">grouped</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_enrichment.html">sn_run_enrichment</a></span><span class="op">(</span></span>
 <span>  <span class="va">full</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">primary</span>, mapping <span class="op">=</span> <span class="va">gene</span> <span class="op">~</span> <span class="va">avg_log2FC</span> <span class="op">|</span> <span class="va">cluster</span>,</span>
 <span>  analysis <span class="op">=</span> <span class="st">"gsea"</span>, species <span class="op">=</span> <span class="st">"human"</span>, database <span class="op">=</span> <span class="st">"H"</span>,</span>
@@ -341,7 +356,7 @@ study.</p>
 <div class="section level3">
 <h3 id="several-databases-and-their-return-values">Several databases and their return values<a class="anchor" aria-label="anchor" href="#several-databases-and-their-return-values"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_enrichment.html">sn_run_enrichment</a></span><span class="op">(</span></span>
 <span>  <span class="va">ranking</span>, mapping <span class="op">=</span> <span class="va">gene</span> <span class="op">~</span> <span class="va">avg_log2FC</span>, analysis <span class="op">=</span> <span class="st">"gsea"</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"human"</span>, database <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"H"</span>, <span class="st">"C2:CP:REACTOME"</span><span class="op">)</span>,</span>

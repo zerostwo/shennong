@@ -50,11 +50,12 @@ sn_plot_feature(
   panel_heights = NULL,
   x_label = NULL,
   y_label = NULL,
-  style = c("classic", "nebula", "glass"),
+  style = c("classic", "nebula", "glass", "atlas", "atlas_outline", "atlas_module"),
   style_control = list(),
   camera = NULL,
   interactive = FALSE,
   group_by = NULL,
+  order = FALSE,
   ...
 )
 ```
@@ -113,7 +114,8 @@ sn_plot_feature(
 
 - stroke_size:
 
-  Point stroke size passed to Seurat's `FeaturePlot()`.
+  Point stroke size passed to Seurat's `FeaturePlot()`. In expression
+  mode, `NULL` uses zero so outlines do not enlarge small points.
 
 - layer:
 
@@ -161,8 +163,7 @@ sn_plot_feature(
   A logical value specifying whether to use raster graphics. Defaults to
   TRUE. When `ggrastr` is installed, Shennong rasterizes the regular
   ggplot point layer after plotting so `pt_size` keeps the same behavior
-  as `raster = FALSE`; otherwise it falls back to Seurat's native raster
-  backend.
+  as `raster = FALSE`; otherwise it keeps the vector point layer.
 
 - seed:
 
@@ -235,6 +236,9 @@ sn_plot_feature(
 
 - style:
 
+  Atlas presets (`atlas`, `atlas_outline`, `atlas_module`) use compact 8
+  pt 2D rendering; see
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md).
   Rendering style: `"classic"` preserves the existing 2D plot;
   `"nebula"` and `"glass"` use planar density contours with the default
   `dims = c(1, 2)`, or real three-dimensional embeddings with
@@ -276,6 +280,13 @@ sn_plot_feature(
   For 3D styles, metadata column defining geometry groups and labels;
   defaults to active identities. Expression colors still represent the
   requested feature and assay layer, not the geometry group.
+
+- order:
+
+  Logical; passed to Seurat's `FeaturePlot()` in expression mode with
+  classic or atlas styles. Defaults to `FALSE`, preserving cell drawing
+  order. Set `TRUE` to draw high-expression cells last. Does not affect
+  density mode or nebula/glass styles.
 
 - ...:
 

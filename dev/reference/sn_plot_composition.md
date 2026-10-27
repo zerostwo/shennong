@@ -240,6 +240,9 @@ sn_plot_composition(
 
 - style:
 
+  Atlas presets `atlas`, `atlas_outline`, and `atlas_module` apply to
+  all composition views (using layout A for alluvial plots). See
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md).
   Sankey preset: `"A"` separated annotation hierarchy, `"B"` two-axis
   horizontal annotation comparison with brackets and destination-colored
   flows, or `"C"` two-axis top-to-bottom composition with colored node
@@ -287,12 +290,10 @@ metadata <- data.frame(
   cell_type = rep(c("T", "B"), 40)
 )
 sn_plot_composition(metadata, x = sample, fill = cell_type)
-
 sn_plot_composition(
   metadata, x = condition, fill = cell_type,
   type = "sample_boxplot", sample_by = "sample"
 )
-
 if (FALSE) { # \dontrun{
 sn_plot_composition(
   seu, type = "alluvial",

@@ -33,10 +33,4 @@ label, and the alias that matched.
 
 ``` r
 sn_map_cell_ontology(c("B cells", "T cells", "unknown"))
-#> # A tibble: 3 × 4
-#>   input_label ontology_id ontology_label matched_alias
-#>   <chr>       <chr>       <chr>          <chr>        
-#> 1 B cells     CL:0000236  B cell         B cells      
-#> 2 T cells     CL:0000084  T cell         T cells      
-#> 3 unknown     NA          NA             NA           
 ```

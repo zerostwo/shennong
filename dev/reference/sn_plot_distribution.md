@@ -28,7 +28,9 @@ sn_plot_distribution(
   y_label = NULL,
   aspect_ratio = NULL,
   panel_widths = NULL,
-  panel_heights = NULL
+  panel_heights = NULL,
+  style = "classic",
+  pair_by = NULL
 )
 ```
 
@@ -90,6 +92,19 @@ sn_plot_distribution(
 - aspect_ratio, panel_widths, panel_heights:
 
   Optional panel sizing controls.
+
+- style:
+
+  Theme or structural distribution style: `violin_box`, `raincloud`,
+  `paired_box`, `paired_slope`, `split_violin`, `stacked_violin`.
+  Structural styles select their geometry independently of `view`.
+
+- pair_by:
+
+  Column identifying matched subjects for paired styles. After optional
+  sample aggregation, exactly one value per subject, group and feature
+  is required, with complete observations across all groups. No
+  automatic matching, imputation or statistical test is performed.
 
 ## Value
 

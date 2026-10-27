@@ -16,7 +16,8 @@ sn_plot_boxplot(
   x_label = NULL,
   y_label = NULL,
   title = NULL,
-  angle_x = 0
+  angle_x = 0,
+  style = "classic"
 )
 ```
 
@@ -54,6 +55,11 @@ sn_plot_boxplot(
 
   Rotation angle for x-axis text.
 
+- style:
+
+  Presentation preset; see
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md).
+
 ## Value
 
 A ggplot object.
@@ -62,9 +68,4 @@ A ggplot object.
 
 ``` r
 sn_plot_boxplot(mtcars, x = cyl, y = mpg)
-#> Warning: Orientation is not uniquely specified when both the x and y aesthetics are
-#> continuous. Picking default orientation 'x'.
-#> Warning: Continuous x aesthetic
-#> ℹ did you forget `aes(group = ...)`?
-
 ```

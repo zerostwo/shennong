@@ -2,6 +2,79 @@
 
 ## Shennong (development version)
 
+- [`sn_plot_feature()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_feature.md)
+  now exposes `order = FALSE` for classic/atlas expression maps,
+  preserving cell drawing order by default. Set `order = TRUE` to
+  restore the previous behavior of drawing high-expression cells last.
+
+- Add 23 function-specific structural `style` values: triangular and
+  circular matrices, annotation/dendrogram/summary composites, grouped
+  bubbles, paired and split/stacked/raincloud distributions, forests,
+  signed bars, lollipops, UpSet intersections,
+  bipartite/clone-tree/ribbon/rewiring networks. Extend existing
+  heatmap/violin entry points and add
+  [`sn_plot_effect()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_effect.md)
+  and
+  [`sn_plot_overlap()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_overlap.md).
+  `sn_list_plot_styles(function_name=...)` now distinguishes themes from
+  structures and records input requirements and source panels. Pair IDs,
+  interval scale, supplied topology and original source tables remain
+  explicit; the article and reproducible gallery show actual layout
+  changes.
+
+- Add opt-in `atlas`, `atlas_outline`, and `atlas_module` presentation
+  styles to embedding, expression, composition, association,
+  DE/enrichment, survival, communication, and spatial plotting.
+  `classic` retains existing defaults; style does not alter statistics
+  or infer new biology. Explicit named discrete palettes retain their
+  category-to-color assignments.
+
+- Add
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md),
+  [`sn_plot_matrix()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_matrix.md)
+  for supplied heatmaps/bubbles, and
+  [`sn_plot_network()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_network.md)
+  for supplied weighted networks. Figure bundles retain named numeric
+  matrices and separate network source tables. The new atlas article
+  catalogs 38 main figures from six Zhang laboratory papers, documents
+  fidelity limits, and provides a source-data recipe for Nature CM Fig.
+  2c.
+
+- Spatial coordinate, expression, domain, and deconvolution maps now
+  share Shennong’s compact 8 pt theme, palettes, legends, and fixed
+  coordinate aspect. Add section facets, native Seurat image/FOV
+  centroid coordinates, group labels, `pt_size`, color/visibility
+  controls, point-only rasterization, and figure source-data export.
+  Existing `point_size` and positional calls remain valid. Native images
+  and stored domain sections are separated automatically; metadata
+  coordinates require an explicit `split_by` for multiple sections.
+
+- **Compatibility change:** spatial expression maps now require the
+  requested assay/layer, rather than falling back to counts when a layer
+  is absent. Normalize first or explicitly select `layer = "counts"`.
+  Numeric metadata maps are supported; missing genes warn, feature order
+  is preserved, and optional shared color limits retain original source
+  values.
+
+- Fix subset DE when one or all subsets report no genes. Empty
+  DE/enrichment tables support ordinary threshold and top-N selection
+  without requiring absent statistic columns; invalid selection
+  arguments still fail.
+
+- Reject DE subset names that would overwrite gene IDs, comparison
+  labels, or backend statistics, including pseudobulk results.
+  Missing/blank subset labels now produce an actionable error before
+  computation. Shared internal helpers normalize gene columns and attach
+  subset labels consistently.
+
+- Remove unused internal scMetabolism score extraction and legacy
+  response parsing helpers; current scoring and ellmer provider paths
+  remain intact.
+
+- Fix mean-expression program scoring for a single cell or a single
+  aggregated group with multiple gene sets. Malformed signature tables
+  now report missing program/gene columns instead of a subscript error.
+
 - Verify the latest GitHub Pages build against the expected commit,
   allowing a cancelled build to be replaced without falsely failing
   publication.
@@ -111,6 +184,14 @@
   multi-feature/split plots and exact assay/layer expression colors are
   supported; `style = "classic"` preserves existing behavior.
 
+- [`sn_run_enrichment()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_enrichment.md)
+  now uses the neutral `mapping` argument for single or grouped
+  ORA/GSEA. `gene ~ score | group` runs one ranked GSEA per group, while
+  `gene ~ score` remains a global ranking and `gene ~ group` remains
+  grouped ORA. Stored enrichment IDs default to deterministic
+  `<source>.<analysis>.<database>` names such as `cluster.gsea.H`;
+  `gene_clusters` remains a compatibility alias.
+
 - Fixed
   `sn_normalize_data(method = "scran", clusters = "metadata_column")` so
   a single string resolves to Seurat metadata instead of being passed as
@@ -124,6 +205,17 @@
   [`sn_plot_sankey()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_sankey.md)
   now exposes `show_pies` explicitly; TRUE/FALSE includes or omits
   C-style composition pies.
+
+- Fixed enlarged small points in
+  [`sn_plot_feature()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_feature.md)
+  expression maps by resolving `stroke_size = NULL` to zero. Explicit
+  strokes are preserved, and ordered raster and vector plots retain the
+  same point-size semantics.
+
+- Fixed `sn_plot_heatmap(mode = "average")` dropping all but the first
+  cell when `split_by` was absent. Average heatmaps now honor the
+  requested layer, support `pheatmap` and `ComplexHeatmap` renderers,
+  and expose row/column hierarchical-clustering controls.
 
 - Completed physical panel sizing across all composition entry points
   and Sankey styles A/B/C. Widths and heights use pt and apply without
@@ -994,7 +1086,7 @@
   permissive upstream cutoffs and then retaining terms by raw p-value
   alone. GSEA rejects duplicate or non-finite ranked identifiers unless
   an explicit collapse policy is selected, numeric formula RHS values
-  require an explicit `analysis`, and scientifically relevant
+  automatically select GSEA, and scientifically relevant
   mapping/q-value/invalid-p warnings remain visible.
 
 - [`sn_enrich()`](https://zerostwo.github.io/shennong/dev/reference/sn_enrich.md)

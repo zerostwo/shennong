@@ -10,7 +10,8 @@ sn_plot_survival(
   adjusted_p_value = NULL,
   view = c("forest", "km", "risk_table", "ph", "ph_test", "cumulative_hazard"),
   feature = NULL,
-  object = NULL
+  object = NULL,
+  style = "classic"
 )
 ```
 
@@ -37,6 +38,11 @@ sn_plot_survival(
 - object:
 
   Alias for `x`; supply only one of `x` and `object`.
+
+- style:
+
+  Presentation preset; see
+  [`sn_list_plot_styles()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.md).
 
 ## Value
 

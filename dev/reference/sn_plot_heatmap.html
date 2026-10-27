@@ -82,6 +82,7 @@ metadata groups and displays a group-level heatmap.</p>
 <span>  assay <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  layer <span class="op">=</span> <span class="st">"scale.data"</span>,</span>
 <span>  mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cells"</span>, <span class="st">"average"</span><span class="op">)</span>,</span>
+<span>  backend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ggplot2"</span>, <span class="st">"pheatmap"</span>, <span class="st">"complexheatmap"</span><span class="op">)</span>,</span>
 <span>  scale_data <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  max_cells <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">717</span>,</span>
@@ -93,6 +94,11 @@ metadata groups and displays a group-level heatmap.</p>
 <span>  col_max <span class="op">=</span> <span class="fl">2.5</span>,</span>
 <span>  average_fun <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"median"</span><span class="op">)</span>,</span>
 <span>  average_scale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cluster_rows <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  cluster_cols <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  clustering_distance_rows <span class="op">=</span> <span class="st">"euclidean"</span>,</span>
+<span>  clustering_distance_cols <span class="op">=</span> <span class="st">"euclidean"</span>,</span>
+<span>  clustering_method <span class="op">=</span> <span class="st">"complete"</span>,</span>
 <span>  group_bar <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  label <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  raster <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -108,6 +114,7 @@ metadata groups and displays a group-level heatmap.</p>
 <span>  aspect_ratio <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  panel_widths <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  panel_heights <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  style <span class="op">=</span> <span class="st">"classic"</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -140,9 +147,8 @@ for each split level and combined with patchwork.</p></dd>
 
 <dt id="arg-layer">layer<a class="anchor" aria-label="anchor" href="#arg-layer"></a></dt>
 <dd><p>Data layer used for expression retrieval. Defaults to
-<code>"scale.data"</code> for cell-level heatmaps. In <code>mode = "average"</code>,
-use <code>"data"</code> to average normalized expression before optional
-feature-wise scaling.</p></dd>
+<code>"scale.data"</code> in both modes. Use <code>"data"</code> in average mode to
+average normalized expression before optional feature-wise scaling.</p></dd>
 
 
 <dt id="arg-mode">mode<a class="anchor" aria-label="anchor" href="#arg-mode"></a></dt>
@@ -151,10 +157,15 @@ displays cells; <code>"average"</code> averages expression by <code>group_by</co
 and optional <code>split_by</code>.</p></dd>
 
 
+<dt id="arg-backend">backend<a class="anchor" aria-label="anchor" href="#arg-backend"></a></dt>
+<dd><p>Heatmap renderer. <code>"ggplot2"</code> supports both modes;
+<code>"pheatmap"</code> and <code>"complexheatmap"</code> are available for
+<code>mode = "average"</code> and return their native plot objects.</p></dd>
+
+
 <dt id="arg-scale-data">scale_data<a class="anchor" aria-label="anchor" href="#arg-scale-data"></a></dt>
 <dd><p>If <code>TRUE</code> and <code>layer = "scale.data"</code>, scale the
-requested features when they are missing from the scaled layer. Used only
-in <code>mode = "cells"</code>.</p></dd>
+requested features when they are missing from the scaled layer.</p></dd>
 
 
 <dt id="arg-max-cells">max_cells<a class="anchor" aria-label="anchor" href="#arg-max-cells"></a></dt>
@@ -190,6 +201,20 @@ heatmap panel.</p></dd>
 <dt id="arg-average-scale">average_scale<a class="anchor" aria-label="anchor" href="#arg-average-scale"></a></dt>
 <dd><p>Whether to feature-wise z-score average expression in
 <code>mode = "average"</code>.</p></dd>
+
+
+<dt id="arg-cluster-rows-cluster-cols">cluster_rows, cluster_cols<a class="anchor" aria-label="anchor" href="#arg-cluster-rows-cluster-cols"></a></dt>
+<dd><p>Whether to hierarchically cluster displayed
+rows (groups) or columns (features) in average mode.</p></dd>
+
+
+<dt id="arg-clustering-distance-rows-clustering-distance-cols">clustering_distance_rows, clustering_distance_cols<a class="anchor" aria-label="anchor" href="#arg-clustering-distance-rows-clustering-distance-cols"></a></dt>
+<dd><p>Distance measures
+used for row and column clustering.</p></dd>
+
+
+<dt id="arg-clustering-method">clustering_method<a class="anchor" aria-label="anchor" href="#arg-clustering-method"></a></dt>
+<dd><p>Linkage method used for hierarchical clustering.</p></dd>
 
 
 <dt id="arg-group-bar-label-raster">group_bar, label, raster<a class="anchor" aria-label="anchor" href="#arg-group-bar-label-raster"></a></dt>
@@ -230,25 +255,33 @@ levels are used as panel titles unless <code>title</code> is also supplied.</p><
 forwarded through the Shennong/catplot theme helper.</p></dd>
 
 
+<dt id="arg-style">style<a class="anchor" aria-label="anchor" href="#arg-style"></a></dt>
+<dd><p>Presentation preset: <code>classic</code>, <code>atlas</code>, <code>atlas_outline</code>, or
+<code>atlas_module</code>. See <code><a href="sn_list_plot_styles.html">sn_list_plot_styles()</a></code> and the atlas-figure-styles article.
+Structural matrix styles are also supported for <code>mode = "average"</code>;
+annotation and summary arguments in <code>...</code> are passed to <code><a href="sn_plot_matrix.html">sn_plot_matrix()</a></code>.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to <code><a href="https://satijalab.org/seurat/reference/DoHeatmap.html" class="external-link">Seurat::DoHeatmap()</a></code>.</p></dd>
+<dd><p>Additional arguments passed to <code><a href="https://satijalab.org/seurat/reference/DoHeatmap.html" class="external-link">Seurat::DoHeatmap()</a></code>,
+<code>pheatmap::pheatmap()</code>, or <code>ComplexHeatmap::Heatmap()</code>, according
+to the selected backend.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A ggplot2 or patchwork object.</p>
+    <p>A ggplot2, patchwork, pheatmap, or ComplexHeatmap object.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="fu">sn_plot_heatmap</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  <span class="va">seurat_obj</span>,</span></span>
-<span class="r-in"><span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3D"</span>, <span class="st">"MS4A1"</span>, <span class="st">"LYZ"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
+<span><span class="fu">sn_plot_heatmap</span><span class="op">(</span></span>
+<span>  <span class="va">seurat_obj</span>,</span>
+<span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3D"</span>, <span class="st">"MS4A1"</span>, <span class="st">"LYZ"</span><span class="op">)</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="st">"seurat_clusters"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

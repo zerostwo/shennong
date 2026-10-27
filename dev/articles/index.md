@@ -35,6 +35,8 @@ figures.
   annotation](https://zerostwo.github.io/shennong/dev/articles/annotation-pathways.md):
 - [Visualization with
   Shennong](https://zerostwo.github.io/shennong/dev/articles/visualization.md):
+- [Zhang atlas figures: visual grammar and
+  styles](https://zerostwo.github.io/shennong/dev/articles/atlas-figure-styles.md):
 - [Publication figure specifications and export
   bundles](https://zerostwo.github.io/shennong/dev/articles/publication-figures.md):
 

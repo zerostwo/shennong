@@ -5,6 +5,7 @@
 <url><loc>https://zerostwo.github.io/shennong/dev/articles/abundance-priority.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/articles/analysis-results-and-methods.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/articles/annotation-pathways.html</loc></url>
+<url><loc>https://zerostwo.github.io/shennong/dev/articles/atlas-figure-styles.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/articles/bulk-deconvolution.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/articles/bulk-transcriptomics.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/articles/clustering.html</loc></url>
@@ -135,6 +136,7 @@
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_list_palettes.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_list_pixi_environments.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_methods.html</loc></url>
+<url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_list_plot_styles.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_list_results.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_list_signatures.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_list_usage_runs.html</loc></url>
@@ -171,6 +173,7 @@
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_dot.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_doublets.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_dynamic_heatmap.html</loc></url>
+<url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_effect.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_elbow.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_enrichment.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_fate.html</loc></url>
@@ -183,8 +186,11 @@
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_integration.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_ligand_target.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_lineage_probability.html</loc></url>
+<url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_matrix.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_metabolism.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_milo.html</loc></url>
+<url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_network.html</loc></url>
+<url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_overlap.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_program_activity.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_program_heatmap.html</loc></url>
 <url><loc>https://zerostwo.github.io/shennong/dev/reference/sn_plot_pseudotime.html</loc></url>

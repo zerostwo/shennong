@@ -36,7 +36,7 @@ sn_list_results(pbmc, type = "de")
 #> # A tibble: 1 × 8
 #>   collection       type  result_id analysis method created_at      n_rows source
 #>   <chr>            <chr> <chr>     <chr>    <chr>  <chr>            <int> <chr> 
-#> 1 shennong.results de    markers   de       wilcox 2026-09-28 08:…    134 NA
+#> 1 shennong.results de    markers   de       wilcox 2026-10-27 21:…      0 NA
 ```
 
 Each cluster is compared with the remaining cells. Keep the full result
@@ -50,15 +50,8 @@ markers <- sn_get_de_result(
   logfc_threshold = 0.25, top_n = 5, top_scope = "group"
 )
 head(markers)
-#> # A tibble: 6 × 7
-#>        p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene     
-#>        <dbl>      <dbl> <dbl> <dbl>     <dbl> <fct>   <chr>    
-#> 1 0.0000151        7.60 0.444 0.068  0.00347  0       GNLY     
-#> 2 0.0000201        4.28 0.444 0.068  0.00462  0       LAMP1    
-#> 3 0.00000397       3.88 0.528 0.091  0.000913 0       CD7      
-#> 4 0.000169         3.19 0.389 0.068  0.0388   0       CD247    
-#> 5 0.0000997        2.72 0.5   0.114  0.0229   0       LCK      
-#> 6 0.0000421       10.9  0.263 0      0.00968  2       LINC00926
+#> # A tibble: 0 × 1
+#> # ℹ 1 variable: gene <chr>
 full$input[c("assay", "layer", "tested_features_count", "tested_features_source")]
 #> $assay
 #> [1] "RNA"
@@ -67,7 +60,7 @@ full$input[c("assay", "layer", "tested_features_count", "tested_features_source"
 #> [1] "data"
 #> 
 #> $tested_features_count
-#> [1] 222
+#> [1] 0
 #> 
 #> $tested_features_source
 #> [1] "backend_statistics"
@@ -78,6 +71,34 @@ the set of hypotheses and the tested-gene background. Getter filters
 affect the output view only. For enrichment, preserve the tested
 background rather than using all genes in the genome or only the
 significant genes.
+
+An empty marker result is valid: one empty subset does not stop other
+subsets, and an entirely empty run remains discoverable with
+[`sn_list_results()`](https://zerostwo.github.io/shennong/dev/reference/sn_list_results.md)
+and retrievable with
+[`sn_get_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_result.md)
+or
+[`sn_get_de_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_de_result.md).
+Table selection returns zero rows, including when the backend omitted
+empty statistic columns. No reported genes does not necessarily mean no
+genes were tested; inspect `full$input$tested_features_by_comparison`
+for the actual background.
+
+For `subset_by`, supply complete, non-blank labels and a column name
+distinct from the backend output (`gene`, `comparison`, marker
+`cluster`, and statistic columns). Copy existing metadata to a
+descriptive name when it conflicts:
+
+``` r
+
+study$cell_type_subset <- study$cluster
+study <- sn_find_de(
+  study, analysis = "markers", group_by = "condition",
+  subset_by = "cell_type_subset", result_id = "within_cell_type"
+)
+sn_list_results(study, type = "de")
+sn_get_de_result(study, "within_cell_type", p_adjusted_cutoff = 0.05)
+```
 
 ## Compare two groups explicitly
 

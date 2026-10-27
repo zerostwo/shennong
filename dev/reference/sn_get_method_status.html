@@ -89,84 +89,8 @@ installation action, requirements, outputs, and citation.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">sn_get_method_status</span><span class="op">(</span><span class="st">"slingshot"</span>, task <span class="op">=</span> <span class="st">"trajectory"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $method</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "slingshot"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $task</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "trajectory"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $available</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $runnable</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $implemented</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $conformance_status</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "unassessed"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $reason</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Optional R package 'slingshot' is not installed."</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $runtime</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "r"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $package</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "slingshot"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $environment</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $default</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $install_action</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BiocManager::install('slingshot')"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $input_requirements</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $input_requirements[[1]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "reduced dimensions"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $input_requirements[[2]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "cluster labels"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $input_requirements[[3]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "optional start/end states"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $outputs</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $outputs[[1]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "pseudotime"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $outputs[[2]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "lineage weights"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $outputs[[3]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "principal curves"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $outputs[[4]]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "diagnostics"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $supports</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $supports$branching</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $supports$large_data</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $cpu_gpu</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "CPU"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $citation</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Street et al. BMC Genomics 2018"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-in"><span></span></span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sn_get_method_status</span><span class="op">(</span><span class="st">"slingshot"</span>, task <span class="op">=</span> <span class="st">"trajectory"</span><span class="op">)</span></span>
+<span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
