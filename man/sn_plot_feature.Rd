@@ -53,6 +53,7 @@ sn_plot_feature(
   camera = NULL,
   interactive = FALSE,
   group_by = NULL,
+  order = FALSE,
   ...
 )
 }
@@ -181,6 +182,11 @@ highlight, repel, blend, density-mode and extra \code{...} options are rejected.
 \item{group_by}{For 3D styles, metadata column defining geometry groups and
 labels; defaults to active identities. Expression colors still represent
 the requested feature and assay layer, not the geometry group.}
+
+\item{order}{Logical; passed to Seurat's \code{FeaturePlot()} in expression
+mode with classic or atlas styles. Defaults to \code{FALSE}, preserving
+cell drawing order. Set \code{TRUE} to draw high-expression cells last.
+Does not affect density mode or nebula/glass styles.}
 
 \item{...}{Additional parameters to pass to FeaturePlot.}
 }

@@ -5,7 +5,7 @@ test_that("ordered feature points retain small sizes without a default stroke", 
   plots <- lapply(c(FALSE, TRUE), function(raster) {
     suppressWarnings(sn_plot_feature(
       object, features = "score", reduction = "tsne",
-      pt_size = 0.01, raster = raster, palette = NULL
+      pt_size = 0.01, raster = raster, palette = NULL, order = TRUE
     ))
   })
   for (plot in plots) {

@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 # Shennong (development version)
 
+- `sn_plot_feature()` now exposes `order = FALSE` for classic/atlas expression
+  maps, preserving cell drawing order by default. Set `order = TRUE` to restore
+  the previous behavior of drawing high-expression cells last.
+
 - Add 23 function-specific structural `style` values: triangular and circular
   matrices, annotation/dendrogram/summary composites, grouped bubbles, paired
   and split/stacked/raincloud distributions, forests, signed bars, lollipops,

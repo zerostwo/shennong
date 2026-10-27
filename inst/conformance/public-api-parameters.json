@@ -8107,7 +8107,7 @@
     {
       "function_name": "sn_plot_feature",
       "runtime_classified": true,
-      "formal_digest": "0754912eccffe077cac4d77d6256fe88913cd8b0d7739dda6175cadcfae262bc",
+      "formal_digest": "c932327af16d96ba78ff371f67b2eac89ca44652d45c455b638921036acc55b4",
       "parameters": [
         {
           "name": "object",
@@ -8444,6 +8444,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "order",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
         },
         {
           "name": "...",

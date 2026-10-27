@@ -133,7 +133,11 @@ Rasterization is enabled by default; when `ggrastr` is available the point layer
 is rasterized after the regular ggplot point size is applied, so small values
 such as `pt_size = 0.01` behave like ordinary `geom_point()` sizes. When
 `ggrastr` is unavailable, the plot remains usable through the vector point
-layer. Expression maps draw high values last. The default `stroke_size = NULL`
+layer. Expression maps default to `order = FALSE`, preserving cell drawing
+order. Set `order = TRUE` to draw high-expression cells last, for example
+`sn_plot_feature(pbmc, features = "IL7R", reduction = "umap", order = TRUE)`.
+This control applies to classic and atlas expression maps; density mode and
+nebula/glass styles are unaffected. The default `stroke_size = NULL`
 uses zero stroke, so outlines cannot overwhelm a small `pt_size`; explicit
 nonzero strokes remain available. For dense embeddings, for example, use
 `sn_plot_feature(pbmc, features = "IL7R", reduction = "umap", pt_size = 0.05)`.

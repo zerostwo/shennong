@@ -60,8 +60,10 @@ keep analysis execution in explicit project scripts.
 
 ### Feature plotting: dense embeddings
 
-For dense feature maps, `sn_plot_feature(..., pt_size = 0.05)` keeps high values
-on top and uses zero stroke by default. Explicit `stroke_size` adds an outline;
+For dense feature maps, `sn_plot_feature(..., pt_size = 0.05)` preserves cell
+drawing order (`order = FALSE`) and uses zero stroke by default. Set
+`order = TRUE` to draw high values last in classic/atlas expression maps;
+density mode and nebula/glass styles are unaffected. Explicit `stroke_size` adds an outline;
 point sizes remain consistent between raster and vector output.
 
 For compact group-level heatmaps, use `sn_plot_heatmap(..., mode = "average")`.

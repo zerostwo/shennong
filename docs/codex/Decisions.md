@@ -2089,3 +2089,14 @@ weights. Rewiring uses shared coordinates and scales. Matrix masks and
 annotation reordering preserve original input tables. Dendrogram order is
 explicitly recomputed, not attributed to unpublished source trees. Flat
 patchwork grids and matched axis expansion align annotation/summary tracks.
+
+## Feature-map drawing order (2026-10-27)
+
+Expose `sn_plot_feature(order = FALSE)` and pass it directly to Seurat's
+`FeaturePlot()` for classic/atlas expression maps. The default intentionally
+changes from high-expression-last sorting to preserving cell drawing order;
+`order = TRUE` restores the previous behavior. Append the formal before `...`
+to preserve existing positional arguments. Density and nebula/glass rendering
+are unaffected. Validate default, explicit FALSE, and explicit TRUE ordering
+with both vector and raster requests in `test-feature-order.R`; retain the
+explicit ordered small-point regression in `test-feature-point-size.R`.

@@ -26,7 +26,9 @@ Prefer `sn_plot_result()` for stored/downstream analysis results; inspect
    not count cells as independent donors.
 
 For dense expression maps, use `sn_plot_feature(object, features = "score",
-reduction = "umap", pt_size = 0.05)`. High values are drawn last; NULL
+reduction = "umap", pt_size = 0.05)`. Cell drawing order is preserved by default
+(`order = FALSE`); set `order = TRUE` to draw high values last in classic/atlas
+expression maps. Density mode and nebula/glass styles are unaffected. NULL
 `stroke_size` means zero stroke, preserving small points with or without
 rasterization. Set a nonzero stroke explicitly only when wanted.
 

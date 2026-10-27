@@ -1870,6 +1870,10 @@ sn_plot_dot <- function(x,
 #' @param group_by For 3D styles, metadata column defining geometry groups and
 #'   labels; defaults to active identities. Expression colors still represent
 #'   the requested feature and assay layer, not the geometry group.
+#' @param order Logical; passed to Seurat's \code{FeaturePlot()} in expression
+#'   mode with classic or atlas styles. Defaults to \code{FALSE}, preserving
+#'   cell drawing order. Set \code{TRUE} to draw high-expression cells last.
+#'   Does not affect density mode or nebula/glass styles.
 #' @param ... Additional parameters to pass to FeaturePlot.
 #'
 #' @return A ggplot2/patchwork object, or an htmlwidget when a 3D style
@@ -1933,6 +1937,7 @@ sn_plot_feature <-
            camera = NULL,
            interactive = FALSE,
            group_by = NULL,
+           order = FALSE,
            ...) {
     style <- match.arg(style)
     if (style %in% .sn_atlas_styles()) {
@@ -2074,7 +2079,7 @@ sn_plot_feature <-
         slot = layer,
         raster = featureplot_raster,
         raster.dpi = raster_dpi,
-        order = TRUE,
+        order = order,
         min.cutoff = min_cutoff,
         max.cutoff = max_cutoff,
         shape.by = shape_by,
