@@ -1,11 +1,11 @@
 .sn_normalize_program_signatures <- function(signatures, species = NULL) {
   if (is.data.frame(signatures)) {
-    program_col <- intersect(c("program", "signature", "set", "name"), colnames(signatures))[[1]] %||% NULL
-    gene_col <- intersect(c("gene", "feature", "symbol"), colnames(signatures))[[1]] %||% NULL
-    if (is_null(program_col) || is_null(gene_col)) {
+    program_col <- intersect(c("program", "signature", "set", "name"), colnames(signatures))
+    gene_col <- intersect(c("gene", "feature", "symbol"), colnames(signatures))
+    if (length(program_col) == 0L || length(gene_col) == 0L) {
       stop("Signature data frames require program/signature and gene/feature columns.", call. = FALSE)
     }
-    signatures <- split(as.character(signatures[[gene_col]]), as.character(signatures[[program_col]]))
+    signatures <- split(as.character(signatures[[gene_col[[1L]]]]), as.character(signatures[[program_col[[1L]]]]))
   } else if (is.character(signatures) && !is.null(names(signatures)) && any(nzchar(names(signatures)))) {
     signatures <- split(as.character(signatures), names(signatures))
   } else if (is.character(signatures)) {
@@ -67,7 +67,8 @@
   scores <- vapply(signatures, function(features) {
     Matrix::colMeans(matrix[features, , drop = FALSE])
   }, numeric(ncol(matrix)))
-  scores <- t(scores)
+  # vapply simplifies to a vector for one cell or one aggregate profile.
+  scores <- t(base::matrix(scores, nrow = ncol(matrix), ncol = length(signatures)))
   rownames(scores) <- names(signatures)
   colnames(scores) <- colnames(matrix)
   scores

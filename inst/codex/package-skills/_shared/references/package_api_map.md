@@ -125,7 +125,7 @@ Runtime reference datasets:
 - `sn_prepare_label_transfer_reference()`: create compact transfer-ready references. Coralysis output is a minimal SingleCellExperiment with trained models, PCA model, feature names, and labels; Seurat/scANVI/scArches output is a slim Seurat reference with selected assay layers and labels.
 - `sn_simulate()`: method-based simulation entry point; currently supports `method = "scdesign3"` for Seurat or SingleCellExperiment inputs and returns Seurat, SingleCellExperiment, sparse counts, or the raw scDesign3 result.
 - `sn_simulate(method = "scdesign3", ...)`: direct scDesign3 controls; the bare `sn_simulate_scdesign3()` wrapper is deprecated.
-- `sn_plot_heatmap()`: focused heatmap for user-selected genes, with cell-level and group-averaged modes, optional grouping/splitting, and selected-feature scaling.
+- `sn_plot_heatmap()`: focused heatmap for user-selected genes, with cell-level and group-averaged modes, optional grouping/splitting, selected-feature scaling, ggplot2/pheatmap/ComplexHeatmap rendering, and row/column clustering.
 
 ## Python Runtime Helpers
 
@@ -262,9 +262,10 @@ Runtime reference datasets:
 - `sn_run_enrichment()`: ORA or GSEA from vectors, tables, or stored DE; stored-
   DE ORA preserves multi-level groups and reconstructs `universe` from the
   stored assay, while standalone input should provide its tested universe; a
-  numeric ranking formula selects GSEA automatically; `mapping = gene ~ score |
-  group` ranks each group independently. Use explicit `analysis = "ora"` for
-  numeric group codes. Generated IDs combine source, mode, and database.
+  numeric ranking formula automatically selects GSEA, with explicit
+  `analysis = "ora"` available for numeric group codes; use
+  `mapping = gene ~ score | group` for grouped GSEA. Stored results default to
+  `<source>.<analysis>.<database>` IDs such as `cluster.gsea.H`.
 - `sn_list_signatures()`: list bundled signatures
 - `sn_get_signatures()`: retrieve signatures by path or category
 - `sn_add_signature()`: add a signature to the editable registry
@@ -325,7 +326,12 @@ Runtime reference datasets:
   group distance evidence and optional non-negative distance filtering;
   sample-tagged rows join distance by source/target/sample
 - `sn_plot_spatial*()`: result-aware coordinate, SVG, domain, neighborhood,
-  deconvolution, and communication figures with fixed spatial aspect
+  deconvolution, and communication figures with fixed spatial aspect. Coordinate
+  maps share Shennong palettes, 8 pt themes, section facets, labels, `pt_size`,
+  and point-only rasterization. Native image/FOV centroids are accepted;
+  expression maps select an exact layer or numeric metadata, with no counts
+  fallback. Discover/retrieve stored domains using `sn_list_results()` /
+  `sn_get_result()` before passing `result_id` to `sn_plot_spatial_domain()`
 
 ## Bulk Transcriptomics
 
@@ -481,7 +487,7 @@ Runtime reference datasets:
 
 - `sn_plot_dim()`: embedding plot for categorical labels
 - `sn_plot_feature()`: feature plot or density-style feature map; rasterized points preserve `pt_size`, with a vector fallback when `ggrastr` is unavailable
-- `sn_plot_heatmap()`: selected-gene heatmap in cell-level or group-averaged mode
+- `sn_plot_heatmap()`: selected-gene heatmap in cell-level or group-averaged mode, with native pheatmap/ComplexHeatmap backends and clustering for average heatmaps
 - `sn_plot_violin()`: violin plot
 - `sn_plot_dot()`: dot plot; pass a named feature list for separate free-width
   marker-group panels
@@ -563,3 +569,46 @@ and visualization articles for runnable examples and styling controls.
 - `sn_store_result(overwrite = TRUE)` deliberately replaces an existing key.
   Default scoring/Milo runs receive unique IDs; scoring replacement also
   reconciles owned metadata columns.
+
+
+## Atlas figure styles
+
+- Discover presets with `sn_list_plot_styles()`. Use `style = "atlas"`,
+  `"atlas_outline"`, or `"atlas_module"` on supported ggplot-based embedding,
+  expression, composition, association, DE/enrichment, survival, communication,
+  and spatial views. Keep `classic` for previous defaults.
+- Read the `atlas-figure-styles` article and installed
+  `extdata/zhang-atlas-{papers,figures}.csv` for the six-paper figure inventory.
+  T-cell Science entries are caption-only; supplementary figures are not an
+  exhaustive inventory. Presets are visual adaptations, not pixel replicas.
+- Use `sn_plot_matrix(x, type = "bubble", size = size_matrix)` when color and
+  area describe different quantities. Keep aligned dimnames, missing values,
+  units, statistic names and explicit common limits. `sn_plot_dot()` retains
+  percent-expression area; it must not stand in for a significance bubble.
+- `sn_plot_network(edges, nodes, layout = "supplied")` renders provided scores
+  and fixed coordinates. It does not infer CoVarNet CMs, correlation, or LR
+  communication. Preserve isolates and original weights.
+- Atlas heatmaps require `backend = "ggplot2"`; split-dot color encodings are
+  not supported by atlas styles. Source matrices and node/edge tables can be
+  exported with `sn_export_figure_bundle()` for readback.
+
+### Structural atlas layouts
+
+`sn_list_plot_styles(function_name = "sn_plot_matrix")` lists structural styles
+and the exact paper panels/input requirements. Themes (`atlas`,
+`atlas_outline`, `atlas_module`) are separate from the 23 geometry choices.
+Use matrix `split_triangle`, `circular`, `annotated`, `dendrogram`,
+`grouped_bubble`, `heatmap_bar`, `heatmap_density`; distribution `violin_box`,
+`raincloud`, `paired_box`, `paired_slope`, `split_violin`, `stacked_violin`;
+`sn_plot_effect()` for supplied coefficient/ratio forests, signed bars and
+lollipops; `sn_plot_overlap()` for exclusive UpSet intersections; and
+`sn_plot_network()` for bipartite, supplied clone-tree, weighted chord and
+shared-coordinate rewiring structures. Existing `sn_plot_heatmap(mode="average")`
+and `sn_plot_violin()` expose the matching matrix/distribution layouts.
+
+Require explicit complete subject pairs (`pair_by`, optional specimen
+`sample_by`), an explicit coefficient versus ratio scale, original interval
+bounds, and supplied network/tree topology. No automatic P-values, BCR trees,
+CoVarNet discovery or imputation. Reusable source tables survive PDF/PNG bundle
+export. Consult `extdata/zhang-atlas-layouts.csv` and the rendered atlas article;
+synthetic layout examples must not be described as original cancer results.

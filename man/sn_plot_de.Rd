@@ -11,7 +11,8 @@ sn_plot_de(
   log2_fold_change = 1,
   n = 40L,
   object = NULL,
-  result_id = "default"
+  result_id = "default",
+  style = "classic"
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ sn_plot_de(
 either \code{result} or \code{object}, not both.}
 
 \item{result_id}{Stored DE result name used when \code{object} is supplied.}
+
+\item{style}{Presentation preset; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}.}
 }
 \value{
 A result-aware \code{ggplot} with an attached figure specification.

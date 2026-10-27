@@ -58,6 +58,16 @@ keep analysis execution in explicit project scripts.
 
 
 
+### Feature plotting: dense embeddings
+
+For dense feature maps, `sn_plot_feature(..., pt_size = 0.05)` keeps high values
+on top and uses zero stroke by default. Explicit `stroke_size` adds an outline;
+point sizes remain consistent between raster and vector output.
+
+For compact group-level heatmaps, use `sn_plot_heatmap(..., mode = "average")`.
+The pheatmap and ComplexHeatmap backends support `cluster_rows` for groups and
+`cluster_cols` for features; the default ggplot2 backend preserves input order.
+
 ### Composition plotting: dedicated string interfaces
 
 Use `sn_plot_sankey(data, flow_by = c("level1", "level2"),
@@ -82,6 +92,25 @@ Composition plots default to 8 pt for labels, titles, axes, strips, and legends.
 Use `sn_plot_sankey(..., style = "C", show_pies = FALSE)` to hide bottom pies;
 `show_pies = TRUE` restores them without changing ribbon counts.
 
+## Styled embedding figures
+
+For `sn_plot_dim()` / `sn_plot_feature(style = "nebula" | "glass")`, use an
+existing 2D reduction with default dimensions for planar density contours, or
+an existing three-dimensional reduction with explicit `dims = 1:3`. Preserve
+original reductions. The browser viewer uses `interactive = TRUE`; download its camera
+JSON or copy its R list and pass it as `camera` to a static plot.
+`sn_get_plot_camera(viewer)` retrieves only the initial camera. Export static
+ggplots with `raster_dpi = 600` and `ggsave(..., dpi = 600)`: surfaces and points
+are rasterized together, labels and legends remain vector. Feature colors use
+the specified assay/layer; `group_by` controls envelopes only. Envelopes are
+visual density aids, not tissue boundaries. Never invent a third coordinate.
+
+The 3D renderer uses WebGL with local shaders. Static 600 dpi capture requires
+Chrome/Chromium plus chromote and png, and runs through the same shader as the
+viewer. Do not fall back silently to the old flat polygon renderer. Density
+envelopes use local-neighbor bandwidth estimates; do not duplicate cells to
+imitate the apparent point density of a reference image.
+
 ## Verify statistical units and stored mappings
 
 For program comparisons, use biological `sample_by` IDs. Complete donor pairs
@@ -92,12 +121,24 @@ set the top-level `seed` for reproducibility and retrieve
 instead of guessing sanitized metadata names. Discover IDs with
 `sn_list_results(object, type = "program_scoring")`.
 
+Mean program scoring supports single cells and single aggregated groups.
+Signature tables need both program and gene columns; alternatively supply a
+named list of gene vectors. Single-entity scores are descriptive, not evidence
+of biological replication.
+
 Stored-DE ORA uses the finite backend-test background of each comparison,
 recorded in `input$tested_features_by_comparison`; available
 `input$candidate_features` are not an ORA background. Rerun older candidate-only
 DE records or provide a justified explicit universe. Communication reads
 matching split layers, Milo annotation filters use stored `annotation_by`,
 and native RDS/RData/QS2 serialization preserves matrix classes.
+
+DE subset labels must be complete and non-blank. Choose a `subset_by` name
+that does not collide with backend columns such as `gene`, `comparison`, or
+marker `cluster`; copy metadata to a distinct name if needed. Empty reported
+subsets contribute zero rows without aborting other subsets. Retrieve empty
+results normally, and inspect `input$tested_features_by_comparison` rather
+than treating an empty marker table as proof that no genes were tested.
 
 ## Analysis API contracts
 
@@ -138,3 +179,52 @@ Chrome/Chromium plus chromote and png, and runs through the same shader as the
 viewer. Do not fall back silently to the old flat polygon renderer. Density
 envelopes use local-neighbor bandwidth estimates; do not duplicate cells to
 imitate the apparent point density of a reference image.
+
+
+## Spatial map presentation
+
+Use `sn_plot_spatial()` / `sn_plot_spatial_feature()` with dimension-plot-style
+`pt_size`, `cols`/`palette`, and visibility controls. Metadata coordinates need
+an explicit section `split_by`; native Seurat image/FOV centroids are selected
+with `images` and kept in separate panels. Preserve coordinate units and
+orientation (`flip_y = FALSE` for Cartesian axes). Histology and segmentation
+outlines are outside these coordinate maps. Select the exact expression assay
+and layer; missing layers error and never become raw counts implicitly.
+Numeric metadata maps need no expression layer. Shared `limits` affect colors
+only, not exported source values. Discover stored spatial domains with
+`sn_list_results(object, type = "spatial_domains")`, retrieve with
+`sn_get_result(object, "spatial_domains", result_id)`, and plot with
+`sn_plot_spatial_domain(object, result_id = result_id, label = TRUE)`.
+
+
+### Publication-inspired atlas styles
+
+Discover `sn_list_plot_styles()` and use opt-in `atlas`, `atlas_outline`, or
+`atlas_module` only on supported plotting functions. See the
+`atlas-figure-styles` article for paper provenance and the figure inventory.
+Choose the statistical encoding before its appearance: expression percentage,
+frequency, Ro/e, odds ratio, P value and model coefficients are distinct.
+`sn_plot_matrix()` and `sn_plot_network()` render supplied results and do not
+infer modules or communication. Preserve sample units, pairing, source values
+and common color limits; inspect exported PDF/PNG and source-data readback.
+
+### Structural atlas layouts
+
+`sn_list_plot_styles(function_name = "sn_plot_matrix")` lists structural styles
+and the exact paper panels/input requirements. Themes (`atlas`,
+`atlas_outline`, `atlas_module`) are separate from the 23 geometry choices.
+Use matrix `split_triangle`, `circular`, `annotated`, `dendrogram`,
+`grouped_bubble`, `heatmap_bar`, `heatmap_density`; distribution `violin_box`,
+`raincloud`, `paired_box`, `paired_slope`, `split_violin`, `stacked_violin`;
+`sn_plot_effect()` for supplied coefficient/ratio forests, signed bars and
+lollipops; `sn_plot_overlap()` for exclusive UpSet intersections; and
+`sn_plot_network()` for bipartite, supplied clone-tree, weighted chord and
+shared-coordinate rewiring structures. Existing `sn_plot_heatmap(mode="average")`
+and `sn_plot_violin()` expose the matching matrix/distribution layouts.
+
+Require explicit complete subject pairs (`pair_by`, optional specimen
+`sample_by`), an explicit coefficient versus ratio scale, original interval
+bounds, and supplied network/tree topology. No automatic P-values, BCR trees,
+CoVarNet discovery or imputation. Reusable source tables survive PDF/PNG bundle
+export. Consult `extdata/zhang-atlas-layouts.csv` and the rendered atlas article;
+synthetic layout examples must not be described as original cancer results.

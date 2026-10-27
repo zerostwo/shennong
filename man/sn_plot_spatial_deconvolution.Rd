@@ -2,26 +2,80 @@
 % Please edit documentation in R/plot_spatial.R
 \name{sn_plot_spatial_deconvolution}
 \alias{sn_plot_spatial_deconvolution}
-\title{Plot spatial deconvolution proportions}
+\title{Plot spatial deconvolution proportions or abundances}
 \usage{
 sn_plot_spatial_deconvolution(
   x,
   spatial_cols = c("spatial_x", "spatial_y"),
   location_col = "cell",
   cell_type_col = "cell_type",
-  proportion_col = "proportion"
+  proportion_col = "proportion",
+  split_by = NULL,
+  point_size = 1.5,
+  pt_size = NULL,
+  cols = NULL,
+  palette = "viridis",
+  alpha = 1,
+  na_value = "grey80",
+  limits = NULL,
+  order = TRUE,
+  show_legend = TRUE,
+  show_axis = FALSE,
+  show_border = TRUE,
+  title = NULL,
+  ncol = NULL,
+  flip_y = TRUE,
+  raster = FALSE,
+  raster_dpi = 512,
+  style = "classic"
 )
 }
 \arguments{
-\item{x}{A data frame with location, cell type, and proportion columns.}
+\item{x}{A data frame with location, cell type, and value columns.}
 
-\item{spatial_cols}{Coordinate column names.}
+\item{spatial_cols}{Coordinate column names in x, y order.}
 
 \item{location_col, cell_type_col, proportion_col}{Column names.}
+
+\item{split_by}{Optional table column identifying sections.}
+
+\item{point_size}{Point size in mm; retained for positional compatibility.}
+
+\item{pt_size}{Alias matching \code{\link[=sn_plot_dim]{sn_plot_dim()}}. Supply only one size argument.}
+
+\item{cols}{Explicit colors; named vectors match categorical labels. For
+feature maps these are gradient colors.}
+
+\item{palette}{Shennong palette name or color vector.}
+
+\item{alpha}{Point opacity between zero and one.}
+
+\item{na_value}{Color for missing group or feature values.}
+
+\item{limits}{Optional common color limits. Out-of-range colors are clamped;
+original values remain in the plot data and exported source table.}
+
+\item{order}{Draw higher values last and missing values first.}
+
+\item{show_legend, show_axis, show_border}{Show the legend, coordinate axes or panel border.}
+
+\item{title}{Optional plot title.}
+
+\item{ncol}{Number of facet columns.}
+
+\item{flip_y}{Reverse the y axis for image coordinates. Set FALSE for Cartesian coordinates.}
+
+\item{raster}{Rasterize only point layers with ggrastr; labels stay vector.}
+
+\item{raster_dpi}{Raster resolution (scalar or vector, whose maximum is used).}
+
+\item{style}{Presentation preset; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}. Coordinates,
+shared limits and source values are unchanged.}
 }
 \value{
-A faceted \code{ggplot} object.
+A faceted \code{ggplot} with a common continuous scale.
 }
 \description{
-Plot spatial deconvolution proportions
+Values are displayed as supplied, without normalization or a forced zero-to-one
+range, so abundance estimates remain distinct from proportions.
 }

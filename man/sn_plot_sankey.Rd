@@ -8,7 +8,7 @@ sn_plot_sankey(
   data,
   flow_by,
   fill_by = NULL,
-  style = c("A", "B", "C"),
+  style = c("A", "B", "C", "classic", "atlas", "atlas_outline", "atlas_module"),
   panel_widths = NULL,
   panel_heights = NULL,
   show_pies = NULL,
@@ -23,7 +23,7 @@ sn_plot_sankey(
 \item{fill_by}{Optional color-group column name string. Defaults to the first
 stage for A/C, and the second stage for B. C requires the first stage.}
 
-\item{style}{\code{"A"} hierarchy, \code{"B"} bracketed annotation comparison, or
+\item{style}{Atlas presets use layout A; otherwise \code{"A"} hierarchy, \code{"B"} bracketed annotation comparison, or
 \code{"C"} vertical source/target composition with pies. B/C require two stages.}
 
 \item{panel_widths, panel_heights}{Optional positive numeric panel dimensions

@@ -142,6 +142,7 @@
 #' @examples
 #' sn_plot_boxplot(mtcars, x = cyl, y = mpg)
 #'
+#' @param style Presentation preset; see [sn_list_plot_styles()].
 #' @export
 sn_plot_boxplot <- function(data,
                             x,
@@ -153,7 +154,9 @@ sn_plot_boxplot <- function(data,
                             x_label = NULL,
                             y_label = NULL,
                             title = NULL,
-                            angle_x = 0) {
+                            angle_x = 0, style = "classic") {
+  style <- .sn_match_plot_style(style)
+
   p <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = {{ x }}, y = {{ y }})) +
     ggplot2::geom_boxplot(
       outlier.shape = NA,
@@ -177,7 +180,7 @@ sn_plot_boxplot <- function(data,
 
   x_name <- rlang::as_name(rlang::ensym(x))
   .sn_attach_figure_spec(
-    p, "box",
+    .sn_style_plot(p, style, "distribution"), "box",
     list(n_points = nrow(data), n_categories = length(unique(data[[x_name]])), labels = unique(as.character(data[[x_name]]))),
     source_data = data
   )
@@ -216,6 +219,7 @@ sn_plot_boxplot <- function(data,
 #' plot_data <- data.frame(group = c("A", "B"), value = c(10, 15), type = c("x", "y"))
 #' sn_plot_barplot(plot_data, x = group, y = value, fill = type)
 #'
+#' @param style Presentation preset; see [sn_list_plot_styles()].
 #' @export
 sn_plot_barplot <- function(data,
                             x,
@@ -237,7 +241,10 @@ sn_plot_barplot <- function(data,
                             x_label = NULL,
                             y_label = NULL,
                             title = NULL,
-                            angle_x = 0) {
+                            angle_x = 0, style = "classic") {
+  style <- .sn_match_plot_style(style)
+  if (style != "classic" && missing(palette)) palette <- .sn_atlas_palette(style)
+
   stat <- match.arg(stat)
   summary_fun <- match.arg(summary_fun)
   errorbar <- match.arg(errorbar)
@@ -384,7 +391,7 @@ sn_plot_barplot <- function(data,
 
   if (fill_missing) {
     return(.sn_attach_figure_spec(
-      p, "bar",
+      .sn_style_plot(p, style, "composition"), "bar",
       list(n_points = nrow(data), n_categories = length(unique(data[[discrete_col]])), labels = unique(as.character(data[[discrete_col]]))),
       source_data = plot_data
     ))
@@ -396,7 +403,7 @@ sn_plot_barplot <- function(data,
     p <- .sn_add_discrete_palette(p, palette = palette, n = n_fill, aesthetic = "color")
   }
   .sn_attach_figure_spec(
-    p, "bar",
+    .sn_style_plot(p, style, "composition"), "bar",
     list(n_points = nrow(data), n_categories = length(unique(data[[discrete_col]])), n_groups = n_fill,
          labels = c(unique(as.character(data[[discrete_col]])), unique(as.character(data[[fill_name]])))),
     source_data = plot_data
@@ -553,7 +560,8 @@ sn_plot_milo <- function(x,
 #'   derives the missing panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
-#' @param style Rendering style: `"classic"` preserves the existing 2D plot;
+#' @param style Atlas presets (`atlas`, `atlas_outline`, `atlas_module`) use
+#'   compact 8 pt 2D rendering; see [sn_list_plot_styles()]. Rendering style: `"classic"` preserves the existing 2D plot;
 #'   `"nebula"` and `"glass"` use planar density contours with the default
 #'   `dims = c(1, 2)`, or real three-dimensional embeddings with `dims = 1:3`.
 #'   Static 3D output is a ggplot with the complete point/surface scene rasterized
@@ -632,14 +640,19 @@ sn_plot_dim <- function(
   aspect_ratio = 1,
   panel_widths = NULL,
   panel_heights = NULL,
-  style = c("classic", "nebula", "glass"),
+  style = c("classic", "nebula", "glass", "atlas", "atlas_outline", "atlas_module"),
   style_control = list(),
   camera = NULL,
   interactive = FALSE,
   ...
 ) {
   style <- match.arg(style)
-  if (style != "classic") {
+  if (style %in% .sn_atlas_styles()) {
+    if (missing(palette) && is.null(cols)) palette <- .sn_atlas_palette(style)
+    if (!is.null(cols)) palette <- cols
+    if (missing(show_border)) show_border <- FALSE
+  }
+  if (style %in% c("nebula", "glass")) {
     if (missing(palette)) palette <- c("#65CFC0", "#97ACDC", "#D99A78", "#A7C981", "#D78CAE", "#B79BDC", "#DCC570", "#79BFD5", "#BDADA0")
     .sn_embedding_reject(list(shape_by = !is.null(shape_by), order = !is.null(order),
       shuffle = shuffle, cells_highlight = !is.null(cells_highlight), label_box = label_box,
@@ -681,104 +694,109 @@ sn_plot_dim <- function(
     raster.dpi = raster_dpi,
     ...
   )
-  if (!show_legend) {
-    p <- .sn_apply_plot_component(p, Seurat::NoLegend())
-  }
-  reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
-  object[["ident"]] <- Seurat::Idents(object = object)
-  group_by <- group_by %||% "ident"
-  n <- length(table(object[[group_by]]))
-  x <- ifelse(reduction == "tsne", "tSNE 1",
-    paste0(stringr::str_to_upper(reduction), " 1")
-  )
-  y <- ifelse(reduction == "tsne", "tSNE 2",
-    paste0(stringr::str_to_upper(reduction), " 2")
-  )
-  p <- .sn_add_catplot_theme(
-    p,
-    aspect_ratio = aspect_ratio,
-    panel_widths = panel_widths,
-    panel_heights = panel_heights
-  )
-  p <- .sn_apply_plot_component(p, theme(legend.margin = margin(l = 2, r = 6))) +
-    labs(
-      x = x,
-      y = y,
-      title = title
+  finish_plot <- function(p) {
+    if (!show_legend) {
+      p <- .sn_apply_plot_component(p, Seurat::NoLegend())
+    }
+    reduction <- reduction %||% SeuratObject::DefaultDimReduc(object = object)
+    object[["ident"]] <- Seurat::Idents(object = object)
+    group_by <- group_by %||% "ident"
+    n <- length(table(object[[group_by]]))
+    x <- ifelse(reduction == "tsne", "tSNE 1",
+      paste0(stringr::str_to_upper(reduction), " 1")
     )
+    y <- ifelse(reduction == "tsne", "tSNE 2",
+      paste0(stringr::str_to_upper(reduction), " 2")
+    )
+    p <- .sn_add_catplot_theme(
+      p,
+      aspect_ratio = aspect_ratio,
+      panel_widths = panel_widths,
+      panel_heights = panel_heights
+    )
+    p <- .sn_apply_plot_component(p, theme(legend.margin = margin(l = 2, r = 6))) +
+      labs(
+        x = x,
+        y = y,
+        title = title
+      )
 
-  p <- .sn_add_discrete_palette(p = p, palette = palette, n = n, aesthetic = "color")
+    p <- .sn_add_discrete_palette(p = p, palette = palette, n = n, aesthetic = "color")
 
-  if (isTRUE(label) && isTRUE(label_halo) && !isTRUE(label_box)) {
-    p <- .sn_map_plot_leaves(p, function(plot) {
-      label_layers <- which(vapply(
-        plot$layers,
-        FUN = function(layer) any(grepl("GeomText", class(layer$geom))),
-        FUN.VALUE = logical(1)
-      ))
-      if (length(label_layers) == 0) {
-        return(plot)
-      }
-
-      label_layer <- utils::tail(label_layers, 1)
-      if (isTRUE(repel) && rlang::is_installed("ggrepel")) {
-        return(.sn_add_repel_label_halo(
-          plot = plot,
-          label_layer = label_layer,
-          label_color = label_color,
-          label_size = label_size
+    if (isTRUE(label) && isTRUE(label_halo) && !isTRUE(label_box)) {
+      p <- .sn_map_plot_leaves(p, function(plot) {
+        label_layers <- which(vapply(
+          plot$layers,
+          FUN = function(layer) any(grepl("GeomText", class(layer$geom))),
+          FUN.VALUE = logical(1)
         ))
-      }
+        if (length(label_layers) == 0) {
+          return(plot)
+        }
 
-      original_layer <- plot$layers[[label_layer]]
-      label_data <- original_layer$data
-      base_size <- original_layer$aes_params$size %||% original_layer$geom_params$size %||% label_size
+        label_layer <- utils::tail(label_layers, 1)
+        if (isTRUE(repel) && rlang::is_installed("ggrepel")) {
+          return(.sn_add_repel_label_halo(
+            plot = plot,
+            label_layer = label_layer,
+            label_color = label_color,
+            label_size = label_size
+          ))
+        }
 
-      if (rlang::is_installed("shadowtext")) {
-        plot$layers[[label_layer]] <- shadowtext::geom_shadowtext(
-          data = label_data,
-          mapping = original_layer$mapping,
-          inherit.aes = FALSE,
-          bg.colour = "white",
-          bg.r = 0.12,
-          colour = if (identical(label_color, "group") && "colour" %in% colnames(label_data)) NULL else label_color,
-          size = base_size,
-          show.legend = FALSE
-        )
-      } else {
-        plot$layers[[label_layer]] <- ggplot2::geom_text(
-          data = label_data,
-          mapping = original_layer$mapping,
-          inherit.aes = FALSE,
-          colour = if (identical(label_color, "group") && "colour" %in% colnames(label_data)) NULL else label_color,
-          size = base_size,
-          show.legend = FALSE
-        )
-      }
+        original_layer <- plot$layers[[label_layer]]
+        label_data <- original_layer$data
+        base_size <- original_layer$aes_params$size %||% original_layer$geom_params$size %||% label_size
 
-      if (identical(label_color, "group") && "colour" %in% colnames(label_data)) {
-        plot$layers[[label_layer]]$mapping$colour <- quote(.data$colour)
-      }
-      plot
-    })
-  }
+        if (rlang::is_installed("shadowtext")) {
+          plot$layers[[label_layer]] <- shadowtext::geom_shadowtext(
+            data = label_data,
+            mapping = original_layer$mapping,
+            inherit.aes = FALSE,
+            bg.colour = "white",
+            bg.r = 0.12,
+            colour = if (identical(label_color, "group") && "colour" %in% colnames(label_data)) NULL else label_color,
+            size = base_size,
+            show.legend = FALSE
+          )
+        } else {
+          plot$layers[[label_layer]] <- ggplot2::geom_text(
+            data = label_data,
+            mapping = original_layer$mapping,
+            inherit.aes = FALSE,
+            colour = if (identical(label_color, "group") && "colour" %in% colnames(label_data)) NULL else label_color,
+            size = base_size,
+            show.legend = FALSE
+          )
+        }
 
-  if (!show_axis) {
-    p <- .sn_hide_plot_axes(p)
-  }
-  if (!show_border) {
-    p <- .sn_apply_plot_component(p, theme(
-      panel.border = element_blank(),
-      axis.line = element_blank()
+        if (identical(label_color, "group") && "colour" %in% colnames(label_data)) {
+          plot$layers[[label_layer]]$mapping$colour <- quote(.data$colour)
+        }
+        plot
+      })
+    }
+
+    if (!show_axis) {
+      p <- .sn_hide_plot_axes(p)
+    }
+    if (!show_border) {
+      p <- .sn_apply_plot_component(p, theme(
+        panel.border = element_blank(),
+        axis.line = element_blank()
+      ))
+    }
+    return(.sn_attach_figure_spec(
+      .sn_style_plot(p, style, "embedding"), "embedding",
+      list(n_points = length(cells %||% colnames(object)), n_groups = n,
+           n_panels = if (is_null(split_by)) 1L else length(unique(object[[split_by, drop = TRUE]])),
+           labels = unique(as.character(object[[group_by, drop = TRUE]]))),
+      overrides = list(point_size = pt_size, rasterize = raster, raster_dpi = max(raster_dpi))
     ))
   }
-  return(.sn_attach_figure_spec(
-    p, "embedding",
-    list(n_points = length(cells %||% colnames(object)), n_groups = n,
-         n_panels = if (is_null(split_by)) 1L else length(unique(object[[split_by, drop = TRUE]])),
-         labels = unique(as.character(object[[group_by, drop = TRUE]]))),
-    overrides = list(point_size = pt_size, rasterize = raster, raster_dpi = max(raster_dpi))
-  ))
+  if (is.list(p) && !inherits(p, c("ggplot", "patchwork"))) return(lapply(p, finish_plot))
+  finish_plot(p)
+
 }
 
 #' Plot a violin plot with categorical groups
@@ -812,6 +830,11 @@ sn_plot_dim <- function(
 #' sn_plot_violin(object = mySeuratObject, features = c("CD3D", "CD8A", "CD4"))
 #' }
 #'
+#' @param style Presentation preset: `classic`, `atlas`, `atlas_outline`, or
+#'   `atlas_module`. See [sn_list_plot_styles()] and the atlas-figure-styles article.
+#'   Also accepts `violin_box`, `raincloud`, `split_violin`, `stacked_violin`;
+#'   these use unmodified data-layer values through [sn_plot_distribution()].
+#'   Use that function directly for sample aggregation and paired plots.
 #' @export
 sn_plot_violin <- function(object,
                            features,
@@ -827,7 +850,12 @@ sn_plot_violin <- function(object,
                            panel_heights = NULL,
                            x_label = NULL,
                            y_label = NULL,
-                           title = NULL) {
+                           title = NULL, style = "classic") {
+  style <- .sn_match_plot_style(style, c("violin_box", "raincloud", "split_violin", "stacked_violin"))
+  if (style != "classic" && missing(palette)) palette <- .sn_atlas_palette(style)
+  if (style %in% .sn_distribution_styles()) return(.sn_plot_violin_layout(
+    object, features, group_by, split_by, sort, style, palette, show_legend,
+    angle_x, aspect_ratio, panel_widths, panel_heights, x_label, y_label, title))
   p <- Seurat::VlnPlot(
     object = object,
     features = features,
@@ -862,7 +890,7 @@ sn_plot_violin <- function(object,
     )
   p <- .sn_add_discrete_palette(p, palette = palette, n = n, aesthetic = "fill")
   return(.sn_attach_figure_spec(
-    p, "violin",
+    .sn_style_plot(p, style, "distribution"), "violin",
     list(n_points = ncol(object) * length(features), n_groups = n, n_panels = length(features),
          n_categories = n, n_features = length(features), labels = c(features, unique(as.character(object[[group_by, drop = TRUE]])))),
     source_data = if (inherits(p, "ggplot")) p$data else NULL
@@ -977,7 +1005,7 @@ sn_plot_violin <- function(object,
   }
 
   if (is.null(split_by)) {
-    splits <- factor("All", levels = "All")
+    splits <- factor(rep("All", length(cells)), levels = "All")
   } else {
     splits <- metadata[[split_by]]
     if (is.factor(splits)) {
@@ -1048,6 +1076,112 @@ sn_plot_violin <- function(object,
   plot_data
 }
 
+.sn_heatmap_average_matrix <- function(plot_data, split_by = NULL) {
+  row_id <- if (is.null(split_by)) {
+    as.character(plot_data$group)
+  } else {
+    paste(as.character(plot_data$split), as.character(plot_data$group), sep = ": ")
+  }
+  row_levels <- unique(row_id)
+  feature_levels <- levels(plot_data$feature) %||% unique(as.character(plot_data$feature))
+  out <- matrix(
+    NA_real_,
+    nrow = length(row_levels),
+    ncol = length(feature_levels),
+    dimnames = list(row_levels, feature_levels)
+  )
+  out[cbind(match(row_id, row_levels), match(as.character(plot_data$feature), feature_levels))] <-
+    plot_data$value
+  out
+}
+
+.sn_heatmap_cluster_order <- function(x,
+                                      margin,
+                                      distance = "euclidean",
+                                      method = "complete") {
+  values <- if (identical(margin, "rows")) x else t(x)
+  if (nrow(values) < 2L) {
+    return(seq_len(nrow(values)))
+  }
+  distances <- if (identical(distance, "correlation")) {
+    stats::as.dist(1 - stats::cor(t(values), use = "pairwise.complete.obs"))
+  } else {
+    stats::dist(values, method = distance)
+  }
+  stats::hclust(distances, method = method)$order
+}
+
+.sn_plot_average_heatmap_backend <- function(plot_data,
+                                             backend,
+                                             split_by,
+                                             palette,
+                                             direction,
+                                             col_min,
+                                             col_max,
+                                             cluster_rows,
+                                             cluster_cols,
+                                             clustering_distance_rows,
+                                             clustering_distance_cols,
+                                             clustering_method,
+                                             legend_title,
+                                             show_legend,
+                                             label_size,
+                                             label_angle,
+                                             title,
+                                             dots) {
+  matrix_data <- .sn_heatmap_average_matrix(plot_data, split_by = split_by)
+  colors <- .sn_resolve_continuous_palette(palette, n = 256, direction = direction)
+  breaks <- seq(col_min, col_max, length.out = length(colors) + 1L)
+
+  if (identical(backend, "pheatmap")) {
+    check_installed("pheatmap")
+    args <- c(list(
+      mat = matrix_data,
+      color = colors,
+      breaks = breaks,
+      cluster_rows = cluster_rows,
+      cluster_cols = cluster_cols,
+      clustering_distance_rows = clustering_distance_rows,
+      clustering_distance_cols = clustering_distance_cols,
+      clustering_method = clustering_method,
+      show_rownames = TRUE,
+      show_colnames = TRUE,
+      fontsize = label_size,
+      angle_col = as.character(label_angle),
+      legend = show_legend,
+      main = title %||% NA_character_,
+      silent = TRUE
+    ), dots)
+    return(do.call(pheatmap::pheatmap, args))
+  }
+
+  check_installed("ComplexHeatmap")
+  check_installed("circlize")
+  color_values <- circlize::colorRamp2(
+    seq(col_min, col_max, length.out = length(colors)),
+    colors
+  )
+  args <- c(list(
+    matrix = matrix_data,
+    name = legend_title,
+    col = color_values,
+    cluster_rows = cluster_rows,
+    cluster_columns = cluster_cols,
+    clustering_distance_rows = clustering_distance_rows,
+    clustering_distance_columns = clustering_distance_cols,
+    clustering_method_rows = clustering_method,
+    clustering_method_columns = clustering_method,
+    show_row_names = TRUE,
+    show_column_names = TRUE,
+    row_names_gp = grid::gpar(fontsize = label_size),
+    column_names_gp = grid::gpar(fontsize = label_size, fontface = "italic"),
+    column_names_rot = label_angle,
+    show_heatmap_legend = show_legend,
+    column_title = title
+  ), dots)
+  do.call(ComplexHeatmap::Heatmap, args)
+}
+
 #' Plot a heatmap for selected genes or features
 #'
 #' \code{sn_plot_heatmap()} draws a compact heatmap for user-selected genes. In
@@ -1063,15 +1197,16 @@ sn_plot_violin <- function(object,
 #'   for each split level and combined with patchwork.
 #' @param assay Assay used for expression retrieval.
 #' @param layer Data layer used for expression retrieval. Defaults to
-#'   \code{"scale.data"} for cell-level heatmaps. In \code{mode = "average"},
-#'   use \code{"data"} to average normalized expression before optional
-#'   feature-wise scaling.
+#'   \code{"scale.data"} in both modes. Use \code{"data"} in average mode to
+#'   average normalized expression before optional feature-wise scaling.
 #' @param mode One of \code{"cells"} or \code{"average"}. \code{"cells"}
 #'   displays cells; \code{"average"} averages expression by \code{group_by}
 #'   and optional \code{split_by}.
+#' @param backend Heatmap renderer. \code{"ggplot2"} supports both modes;
+#'   \code{"pheatmap"} and \code{"complexheatmap"} are available for
+#'   \code{mode = "average"} and return their native plot objects.
 #' @param scale_data If \code{TRUE} and \code{layer = "scale.data"}, scale the
-#'   requested features when they are missing from the scaled layer. Used only
-#'   in \code{mode = "cells"}.
+#'   requested features when they are missing from the scaled layer.
 #' @param max_cells Optional maximum number of cells to show per cell-level
 #'   heatmap panel.
 #' @param seed Optional seed used when \code{max_cells} downsamples cells.
@@ -1083,6 +1218,11 @@ sn_plot_violin <- function(object,
 #' @param average_fun Summary used in \code{mode = "average"}.
 #' @param average_scale Whether to feature-wise z-score average expression in
 #'   \code{mode = "average"}.
+#' @param cluster_rows,cluster_cols Whether to hierarchically cluster displayed
+#'   rows (groups) or columns (features) in average mode.
+#' @param clustering_distance_rows,clustering_distance_cols Distance measures
+#'   used for row and column clustering.
+#' @param clustering_method Linkage method used for hierarchical clustering.
 #' @param group_bar,label,raster Passed to \code{Seurat::DoHeatmap()} for
 #'   \code{mode = "cells"}. Rasterization is enabled by default.
 #' @param label_size,label_angle Size in points and rotation angle for the
@@ -1097,9 +1237,11 @@ sn_plot_violin <- function(object,
 #' @param collect_legend Whether to collect patchwork legends for split plots.
 #' @param aspect_ratio,panel_widths,panel_heights Optional sizing controls
 #'   forwarded through the Shennong/catplot theme helper.
-#' @param ... Additional arguments passed to \code{Seurat::DoHeatmap()}.
+#' @param ... Additional arguments passed to \code{Seurat::DoHeatmap()},
+#'   \code{pheatmap::pheatmap()}, or \code{ComplexHeatmap::Heatmap()}, according
+#'   to the selected backend.
 #'
-#' @return A ggplot2 or patchwork object.
+#' @return A ggplot2, patchwork, pheatmap, or ComplexHeatmap object.
 #'
 #' @examples
 #' \dontrun{
@@ -1109,6 +1251,10 @@ sn_plot_violin <- function(object,
 #'   group_by = "seurat_clusters"
 #' )
 #' }
+#' @param style Presentation preset: `classic`, `atlas`, `atlas_outline`, or
+#'   `atlas_module`. See [sn_list_plot_styles()] and the atlas-figure-styles article.
+#'   Structural matrix styles are also supported for `mode = "average"`;
+#'   annotation and summary arguments in `...` are passed to [sn_plot_matrix()].
 #' @export
 sn_plot_heatmap <- function(object,
                             features,
@@ -1117,6 +1263,7 @@ sn_plot_heatmap <- function(object,
                             assay = NULL,
                             layer = "scale.data",
                             mode = c("cells", "average"),
+                            backend = c("ggplot2", "pheatmap", "complexheatmap"),
                             scale_data = TRUE,
                             max_cells = NULL,
                             seed = 717,
@@ -1128,6 +1275,11 @@ sn_plot_heatmap <- function(object,
                             col_max = 2.5,
                             average_fun = c("mean", "median"),
                             average_scale = TRUE,
+                            cluster_rows = FALSE,
+                            cluster_cols = FALSE,
+                            clustering_distance_rows = "euclidean",
+                            clustering_distance_cols = "euclidean",
+                            clustering_method = "complete",
                             group_bar = TRUE,
                             label = TRUE,
                             raster = TRUE,
@@ -1143,16 +1295,34 @@ sn_plot_heatmap <- function(object,
                             aspect_ratio = NULL,
                             panel_widths = NULL,
                             panel_heights = NULL,
+                            style = "classic",
                             ...) {
+  style <- .sn_match_plot_style(style, .sn_matrix_styles())
+  if (style != "classic") {
+    if (missing(palette)) { palette <- .sn_atlas_palette(style, continuous = TRUE); if (missing(direction)) direction <- 1 }
+    if (missing(group_palette)) group_palette <- .sn_atlas_palette(style)
+    if (!identical(tolower(backend[[1L]]), "ggplot2")) stop("Atlas styles require `backend = \"ggplot2\"`.", call. = FALSE)
+  }
   check_installed("Seurat")
   .sn_validate_seurat_object(object)
 
   mode <- match.arg(mode)
+  backend <- match.arg(tolower(backend), c("ggplot2", "pheatmap", "complexheatmap"))
   average_fun <- match.arg(average_fun)
+  if (style %in% .sn_matrix_styles() && (mode != "average" || !is.null(split_by))) stop("Structural heatmaps require mode = 'average' and split_by = NULL; sn_plot_matrix accepts prepared matrices.", call. = FALSE)
+  if (!identical(backend, "ggplot2") && !identical(mode, "average")) {
+    stop("`backend = \"pheatmap\"` and `backend = \"complexheatmap\"` require `mode = \"average\"`.", call. = FALSE)
+  }
+  for (argument in c("cluster_rows", "cluster_cols")) {
+    value <- get(argument, inherits = FALSE)
+    if (!is.logical(value) || length(value) != 1L || is.na(value)) {
+      stop("`", argument, "` must be TRUE or FALSE.", call. = FALSE)
+    }
+  }
 
   features <- .sn_resolve_heatmap_features(object, features)
   assay <- assay %||% SeuratObject::DefaultAssay(object)
-  if (isTRUE(scale_data) && identical(mode, "cells")) {
+  if (isTRUE(scale_data)) {
     object <- .sn_scale_heatmap_features(
       object = object,
       features = features,
@@ -1173,22 +1343,72 @@ sn_plot_heatmap <- function(object,
   }
 
   if (identical(mode, "average")) {
-    average_layer <- if (identical(layer, "scale.data")) "data" else layer
     plot_data <- .sn_heatmap_average_data(
       object = object,
       features = features,
       group_by = group_by,
       split_by = split_by,
       assay = assay,
-      layer = average_layer,
+      layer = layer,
       average_fun = average_fun,
       scale = average_scale,
       col_min = col_min,
       col_max = col_max
     )
+    if (!identical(backend, "ggplot2")) {
+      plot <- .sn_plot_average_heatmap_backend(
+        plot_data = plot_data,
+        backend = backend,
+        split_by = split_by,
+        palette = palette,
+        direction = direction,
+        col_min = col_min,
+        col_max = col_max,
+        cluster_rows = cluster_rows,
+        cluster_cols = cluster_cols,
+        clustering_distance_rows = clustering_distance_rows,
+        clustering_distance_cols = clustering_distance_cols,
+        clustering_method = clustering_method,
+        legend_title = if (isTRUE(average_scale)) "Z score" else "Expression",
+        show_legend = show_legend,
+        label_size = label_size,
+        label_angle = label_angle,
+        title = title,
+        dots = list(...)
+      )
+      return(.sn_attach_figure_spec(
+        .sn_style_plot(plot, style, "heatmap"), "heatmap",
+        list(
+          n_points = nrow(plot_data), n_rows = length(unique(plot_data$group)),
+          n_columns = length(features), n_groups = length(unique(plot_data$group)),
+          n_features = length(features), labels = c(features, as.character(plot_data$group))
+        ),
+        source_data = plot_data
+      ))
+    }
+    matrix_data <- .sn_heatmap_average_matrix(plot_data, split_by = split_by)
+    if (style %in% .sn_matrix_styles()) return(.sn_heatmap_matrix_style(
+      matrix_data, plot_data, style, palette, direction, col_min, col_max,
+      cluster_rows, cluster_cols, clustering_distance_rows, clustering_distance_cols,
+      clustering_method, average_scale, show_legend, title, panel_widths, panel_heights, list(...)))
+    if (isTRUE(cluster_rows)) {
+      if (!is.null(split_by)) {
+        stop("`cluster_rows = TRUE` with `split_by` requires a matrix backend.", call. = FALSE)
+      }
+      row_order <- .sn_heatmap_cluster_order(
+        matrix_data, "rows", clustering_distance_rows, clustering_method
+      )
+      plot_data$group <- factor(plot_data$group, levels = rownames(matrix_data)[row_order])
+    }
+    if (isTRUE(cluster_cols)) {
+      column_order <- .sn_heatmap_cluster_order(
+        matrix_data, "columns", clustering_distance_cols, clustering_method
+      )
+      plot_data$feature <- factor(plot_data$feature, levels = colnames(matrix_data)[column_order])
+    }
     colorbar_info <- .sn_colorbar_breaks_labels(
       limits = c(col_min, col_max),
-      label_mode = "text"
+      label_mode = if (style == "classic") "text" else "numeric"
     )
     p <- ggplot2::ggplot(
       plot_data,
@@ -1232,11 +1452,11 @@ sn_plot_heatmap <- function(object,
       panel_heights = panel_heights,
       x_text_angle = label_angle
     )
-    return(p + ggplot2::theme(
+    return(.sn_style_plot(p + ggplot2::theme(
       axis.text.x = ggplot2::element_text(face = "italic"),
       axis.ticks = if (isTRUE(show_ticks)) ggplot2::element_line() else ggplot2::element_blank(),
       legend.margin = ggplot2::margin(l = 2, r = 6)
-    ))
+    ), style, "heatmap"))
   }
 
   build_one <- function(cells, panel_title = title) {
@@ -1293,7 +1513,7 @@ sn_plot_heatmap <- function(object,
   if (is.null(split_by)) {
     plot <- build_one(colnames(object), panel_title = title)
     return(.sn_attach_figure_spec(
-      plot, "heatmap",
+      .sn_style_plot(plot, style, "heatmap"), "heatmap",
       list(n_points = length(features) * ncol(object), n_rows = length(features),
            n_columns = if (identical(mode, "average")) length(unique(object[[group_by, drop = TRUE]])) else ncol(object),
            n_features = length(features), labels = features),
@@ -1313,7 +1533,7 @@ sn_plot_heatmap <- function(object,
     p <- .sn_collect_patchwork_guides(p)
   }
   .sn_attach_figure_spec(
-    p, "heatmap",
+    .sn_style_plot(p, style, "heatmap"), "heatmap",
     list(n_points = length(features) * ncol(object), n_rows = length(features), n_columns = ncol(object),
          n_panels = length(split_levels), n_features = length(features), labels = features),
     overrides = list(rasterize = isTRUE(raster))
@@ -1423,6 +1643,8 @@ sn_plot_heatmap <- function(object,
 #' sn_plot_dot(x = mySeuratObject, features = c("CD3D", "CD8A", "CD4"))
 #' }
 #'
+#' @param style Presentation preset: `classic`, `atlas`, `atlas_outline`, or
+#'   `atlas_module`. See [sn_list_plot_styles()] and the atlas-figure-styles article.
 #' @export
 sn_plot_dot <- function(x,
                         assay = NULL,
@@ -1452,7 +1674,13 @@ sn_plot_dot <- function(x,
                         title = NULL,
                         x_label = NULL,
                          y_label = NULL,
-                         object = NULL) {
+                         object = NULL, style = "classic") {
+  style <- .sn_match_plot_style(style)
+  if (style != "classic") {
+    if (!is.null(split_by)) stop("Atlas dot styles require `split_by = NULL`; use named feature panels or separate plots.", call. = FALSE)
+    if (missing(palette)) { palette <- .sn_atlas_palette(style, continuous = TRUE); if (missing(direction)) direction <- 1 }
+    if (missing(zscore_legend_labels)) zscore_legend_labels <- "numeric"
+  }
   x <- .sn_resolve_object_alias(x, object, missing(x))
   zscore_legend_labels <- match.arg(zscore_legend_labels)
   feature_info <- .sn_resolve_dotplot_features(
@@ -1544,7 +1772,7 @@ sn_plot_dot <- function(x,
       )
   ))
   return(.sn_attach_figure_spec(
-    p, "dot",
+    .sn_style_plot(p, style, "dot"), "dot",
     list(n_points = nrow(p$data), n_groups = length(unique(p$data$id)),
          n_features = length(unique(p$data$features.plot)), n_rows = length(unique(p$data$features.plot)),
          labels = c(as.character(unique(p$data$id)), as.character(unique(p$data$features.plot)))),
@@ -1571,6 +1799,7 @@ sn_plot_dot <- function(x,
 #'   cells.
 #' @param alpha Point alpha passed to Seurat's \code{FeaturePlot()}.
 #' @param stroke_size Point stroke size passed to Seurat's \code{FeaturePlot()}.
+#'   In expression mode, \code{NULL} uses zero so outlines do not enlarge small points.
 #' @param layer A character string specifying which layer in the Seurat object
 #'   to use (for example, \code{"data"} or \code{"scale.data"}). Defaults to
 #'   \code{"data"}.
@@ -1592,8 +1821,7 @@ sn_plot_dot <- function(x,
 #' @param raster A logical value specifying whether to use raster graphics.
 #'   Defaults to TRUE. When \code{ggrastr} is installed, Shennong rasterizes the
 #'   regular ggplot point layer after plotting so \code{pt_size} keeps the same
-#'   behavior as \code{raster = FALSE}; otherwise it falls back to Seurat's
-#'   native raster backend.
+#'   behavior as \code{raster = FALSE}; otherwise it keeps the vector point layer.
 #' @param seed An integer value specifying the random seed. Defaults to 717.
 #' @param title A character string specifying the plot title. Defaults to NULL.
 #' @param legend_title A character string specifying the legend title. Defaults to NULL.
@@ -1616,7 +1844,8 @@ sn_plot_dot <- function(x,
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
 #' @param x_label,y_label Optional axis labels.
-#' @param style Rendering style: `"classic"` preserves the existing 2D plot;
+#' @param style Atlas presets (`atlas`, `atlas_outline`, `atlas_module`) use
+#'   compact 8 pt 2D rendering; see [sn_list_plot_styles()]. Rendering style: `"classic"` preserves the existing 2D plot;
 #'   `"nebula"` and `"glass"` use planar density contours with the default
 #'   `dims = c(1, 2)`, or real three-dimensional embeddings with `dims = 1:3`.
 #'   Static 3D output is a ggplot with the complete point/surface scene rasterized
@@ -1699,19 +1928,25 @@ sn_plot_feature <-
            panel_heights = NULL,
            x_label = NULL,
            y_label = NULL,
-           style = c("classic", "nebula", "glass"),
+           style = c("classic", "nebula", "glass", "atlas", "atlas_outline", "atlas_module"),
            style_control = list(),
            camera = NULL,
            interactive = FALSE,
            group_by = NULL,
            ...) {
     style <- match.arg(style)
+    if (style %in% .sn_atlas_styles()) {
+      if (missing(palette)) palette <- .sn_atlas_palette(style, continuous = TRUE, sequential = TRUE)
+      if (missing(show_border)) show_border <- FALSE
+      if (missing(density_style)) density_style <- "plain"
+      if (missing(legend_labels)) legend_labels <- "numeric"
+    }
     mode <- match.arg(mode)
     density_method <- match.arg(density_method)
     density_style <- match.arg(density_style)
     legend_labels <- match.arg(legend_labels)
     keep_scale <- match.arg(keep_scale)
-    if (style != "classic") {
+    if (style %in% c("nebula", "glass")) {
       .sn_embedding_reject(list(mode = mode != "expression", blend = blend,
         shape_by = !is.null(shape_by), show_axis = show_axis,
         panel_widths = !is.null(panel_widths), panel_heights = !is.null(panel_heights),
@@ -1808,7 +2043,7 @@ sn_plot_feature <-
         p <- .sn_collect_patchwork_guides(p)
       }
       return(.sn_attach_figure_spec(
-        p, "feature",
+        .sn_style_plot(p, style, "embedding"), "feature",
         list(n_points = length(cells) * length(features), n_panels = length(features), n_features = length(features), labels = features),
         overrides = list(point_size = pt_size, rasterize = isTRUE(raster), raster_dpi = max(raster_dpi))
       ))
@@ -1835,7 +2070,7 @@ sn_plot_feature <-
         label.size = label_size,
         pt.size = pt_size,
         alpha = alpha,
-        stroke.size = stroke_size,
+        stroke.size = stroke_size %||% 0,
         slot = layer,
         raster = featureplot_raster,
         raster.dpi = raster_dpi,
@@ -1925,7 +2160,7 @@ sn_plot_feature <-
       ))
     }
     return(.sn_attach_figure_spec(
-      p, "feature",
+      .sn_style_plot(p, style, "embedding"), "feature",
       list(n_points = length(cells) * length(features), n_panels = length(features), n_features = length(features), labels = features),
       overrides = list(point_size = pt_size, alpha = alpha, rasterize = isTRUE(raster), raster_dpi = max(raster_dpi))
     ))

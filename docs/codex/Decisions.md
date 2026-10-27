@@ -2,6 +2,46 @@
 
 Last updated: 2026-09-23
 
+## 2026-10-02: Atlas figure styles and supplied-value renderers
+
+- Admit `sn_list_plot_styles`, `sn_plot_matrix`, and `sn_plot_network`. Shared
+  `atlas`, `atlas_outline`, and `atlas_module` presets change presentation only;
+  native scores, sample units, thresholds and input coordinates remain intact.
+  Named discrete palettes retain their category names instead of discarding
+  them and depending on factor order.
+  Existing classic/3D/Sankey defaults are retained. The supplied-value renderers
+  are visualization utilities, not implemented analysis methods or CoVarNet
+  backends, and are classified accordingly in runtime coverage.
+- Keep shared styling in `visualization_theme.R` and generic quantitative
+  geometries in `plot_association.R`; no dependency or source-size baseline
+  growth is needed. Matrix sizes require aligned dimnames; missing entries
+  remain missing. Network duplicates require explicit upstream resolution.
+- Preserve matrix and network source tables in figure bundles. Atlas dot
+  styles reject Seurat split-color semantics and atlas heatmaps require the
+  ggplot2 backend. `sn_plot_dim(combine = FALSE)` now styles each returned
+  plot separately instead of applying ggplot operators to a plain list.
+- The installed six-paper/38-main-figure catalog records verification limits.
+  Science T-cell figures are caption-only, specialized modalities/composites
+  remain explicit external routes, and presets do not claim pixel identity.
+  The reproducible smoke script reads Nature Fig 2c's public workbook, parses
+  scientific-notation text, and verifies all 408 values after CSV export.
+
+## 2026-10-02: Spatial map presentation
+
+- Keep spatial presentation in `R/plot_spatial.R`, with one shared map builder
+  for coordinates, features, stored domains, and deconvolution. Reuse palette,
+  theme, rasterization, and figure-spec helpers without changing analysis
+  backends or result schemas. No exports or dependencies are added; source
+  growth remains below the existing admission limit.
+- Preserve positional arguments and `point_size`; `pt_size` is an exclusive
+  alias. Native Seurat centroids supplement metadata coordinates; image names
+  and stored sample boundaries define separate panels. No histology, polygon
+  rendering, registration, invented spatial depth, or unit conversion occurs.
+- Intentional compatibility break: spatial feature plots must honor the exact
+  assay/layer and cannot use the annotation helper's counts fallback. Missing
+  genes warn, numeric metadata is supported, and color limits never overwrite
+  values in source-data exports. This is also documented in NEWS and user guides.
+
 ## 2026-09-23
 
 - The development-stage API cleanup (#17–#27) intentionally breaks unsuitable
@@ -41,6 +81,13 @@ Last updated: 2026-09-23
   metadata. Native serialization bypasses rio's unconditional matrix coercion.
 
 ## 2026-09-20
+
+- Group-averaged `sn_plot_heatmap()` preserves its compact group-by-feature
+  layout while adding optional native pheatmap and ComplexHeatmap renderers.
+  The pheatmap package is admitted as an optional Suggests dependency because
+  it is loaded only when that backend is requested; `circlize` is also declared
+  for ComplexHeatmap's continuous color mapping. ggplot2 remains the default.
+  Row clustering means groups and column clustering means features.
 
 - BPCells-backed scran normalization uses supplied cluster assignments as the
   streaming boundary. A scalar character `clusters` value names Seurat
@@ -1572,7 +1619,8 @@ Last updated: 2026-09-23
   wrappers, deprecated aliases, and "backwards-compatible" transitional
   arguments should be removed rather than carried forward.
 - `sn_enrich()` should prefer one primary input contract over parallel
-  `x`/`object`/`gene_clusters` entry points. `x` is now the only primary input;
+  `x`/`object`/formula entry points. `x` is the primary data input and
+  `mapping` is the neutral formula contract for ORA and GSEA;
   stored-result enrichment on Seurat objects should flow through `x` plus
   `source_de_result_id`, while direct enrichment of vectors/data frames returns raw
   results and can be stored later with `sn_store_enrichment()`.
@@ -1580,6 +1628,11 @@ Last updated: 2026-09-23
   categorical/grouping RHS values mean grouped ORA, while numeric RHS values
   mean ranked GSEA. This keeps `sn_enrich()` aligned with the user's table
   shape instead of forcing separate argument vocabularies.
+- Grouped ranked enrichment uses `mapping = gene ~ score | group`; Shennong
+  constructs and validates one named ranking per group before calling the
+  upstream grouped GSEA backend. Stored IDs default to
+  `<source>.<analysis>.<database>` so lineage is readable without replacing
+  structured provenance.
 - Multi-database enrichment is part of the public workflow, not a caller-side
   loop. `sn_enrich()` should therefore accept a vectorized `database` argument
   spanning GO, KEGG, and MSigDB collection strings in one call, with
@@ -1979,3 +2032,60 @@ both sets of guidance, and regenerate API parameter metadata from the merged
 namespace. Clean up merged development branches after their commits are
 reachable from main; retain gh-pages as the publication branch. Uncommitted
 work in the original checkout is outside this merge.
+
+## 2026-10-02: Preserve DE identity and empty-result semantics
+
+Normalize backend gene columns through one internal helper and attach subset
+labels through a second helper shared by cell-level and pseudobulk DE. A
+subset column must never overwrite a gene ID, comparison, or backend statistic.
+Conflicting metadata names fail with instructions to create an explicit alias;
+no automatic renaming changes the user's selected metadata meaning. Missing
+and blank subset labels fail before dispatch, including when subset_levels is
+supplied. Callers must select their intended cells or supply explicit labels.
+
+Zero reported rows are valid analytical output. Combine non-empty subset
+tables in backend column order and retain each subset's tested background
+independently of reporting thresholds. Empty result selection validates its
+arguments and returns zero rows even when no ranking/statistic column exists;
+it never fabricates p-values or effect sizes. The shared selection helpers
+apply this rule to DE and enrichment. No exports, dependencies, schemas, or
+architecture baseline limits change. Compatibility forwarding aliases remain
+in place; they are not duplicate algorithm implementations.
+
+Remove the unexported `.sn_extract_scmetabolism_scores()` and
+`.sn_extract_openai_response_text()` helpers after confirming no calls or
+registrations in sources, tests, shipped assets, or scripts. Metabolism uses
+the shared signature scorer and ellmer owns response transport/parsing. These
+obsolete extraction paths no longer describe executable workflows.
+
+Keep the mean scorer's entity-by-program shape explicit before transposition:
+base vapply otherwise drops the entity dimension for one cell or one group.
+Validate signature-table columns before indexing the first match. Qualify the
+Sankey helper's `utils::head()` call to eliminate the existing namespace NOTE
+without changing its geometry.
+
+
+## 2026-10-02: Separate atlas structure from shared themes
+
+The initial three atlas presets only described shared appearance. Paper-panel
+replication also requires explicit geometry contracts. Admit 23 structural
+styles scoped to their owning functions and distinguish them from themes in
+`sn_list_plot_styles()`. Preserve original defaults and append optional
+parameters. Add only two exports, `sn_plot_effect()` and `sn_plot_overlap()`,
+for previously absent supplied-interval and set-intersection data contracts;
+admit both as visualization utilities, without analysis-backend claims.
+
+Extract the existing matrix and network renderers from plot_association.R into
+plot_matrix.R and plot_network.R before expanding their layouts. Numeric
+association/distribution/effect/set geometries remain in the existing owner.
+No dependencies or source-size thresholds increase. Existing Seurat average
+heatmap and violin APIs delegate to those owners. The installed layout CSV
+records panel provenance, exact inputs and the raincloud adaptation boundary.
+
+Paired styles reject incomplete/duplicate subject/group observations; ratios
+use a one reference on a log axis; coefficient forests use zero. Tree layout
+uses supplied root/edges/optional lengths. Ribbon widths use non-negative
+weights. Rewiring uses shared coordinates and scales. Matrix masks and
+annotation reordering preserve original input tables. Dendrogram order is
+explicitly recomputed, not attributed to unpublished source trees. Flat
+patchwork grids and matched axis expansion align annotation/summary tracks.

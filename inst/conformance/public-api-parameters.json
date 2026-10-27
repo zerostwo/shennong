@@ -1,7 +1,7 @@
 {
   "schema_version": "shennong.public-api-parameters/v1",
   "package_version": "0.3.0.9000",
-  "function_count": 272,
+  "function_count": 277,
   "generation_rule": "Every exported sn_* formal is inventoried. Selector values require one case each; other minimum_cases are planning requirements, not evidence that those cases have already passed.",
   "functions": [
     {
@@ -5424,6 +5424,20 @@
       ]
     },
     {
+      "function_name": "sn_list_plot_styles",
+      "runtime_classified": true,
+      "formal_digest": "371e22ece80dd690494e1793556105cbd0202d74ab2da9a3399a85c422074ce8",
+      "parameters": [
+        {
+          "name": "function_name",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
       "function_name": "sn_list_results",
       "runtime_classified": true,
       "formal_digest": "cd3d91e69545ec5b95dabdb7853727574f22fc81bbd4a3a83d73441db3502377",
@@ -5923,7 +5937,7 @@
     {
       "function_name": "sn_plot_association",
       "runtime_classified": true,
-      "formal_digest": "36f216cb97b4ff43a89fd21a5c1dba1a6781c7d53a2591eb4ba8aba52cf00208",
+      "formal_digest": "6438c97384a79075150f6ae0fcceea3508bc2fdea516d06131dec4b498aae254",
       "parameters": [
         {
           "name": "object",
@@ -6092,6 +6106,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
@@ -6154,7 +6175,7 @@
     {
       "function_name": "sn_plot_barplot",
       "runtime_classified": true,
-      "formal_digest": "570c54583bc7fb920f1b5f198238ec9b1a985d6fa9d2de5fe5f2870f93af65e3",
+      "formal_digest": "d95ae5e14f149f2ea95fb7a3a79f6cc69626f3c6405c9751dc35074a3c423fc2",
       "parameters": [
         {
           "name": "data",
@@ -6302,13 +6323,20 @@
           "default": "0",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
     {
       "function_name": "sn_plot_boxplot",
       "runtime_classified": true,
-      "formal_digest": "ffdb9a66ca93f339b32144e2eeca6521468bcdea5a24fcb06cfa4c3a035cd68e",
+      "formal_digest": "b5195b7a85cdf68edf072d9445cc808ae4e0237014e5f8e08c8ee8b5559492a0",
       "parameters": [
         {
           "name": "data",
@@ -6386,6 +6414,13 @@
           "default": "0",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
@@ -6616,7 +6651,7 @@
     {
       "function_name": "sn_plot_communication",
       "runtime_classified": true,
-      "formal_digest": "9b3b83df4906cefbb32fe3ae8684ed087666da3c70f32ec452fec99a5667a679",
+      "formal_digest": "a02dfdfb76e75c87c9a776f51731d995b15549f935147b2c321d34f2312a7715",
       "parameters": [
         {
           "name": "x",
@@ -6659,6 +6694,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
@@ -7029,7 +7071,7 @@
     {
       "function_name": "sn_plot_de",
       "runtime_classified": true,
-      "formal_digest": "0cd3dbef22aad11d48b340f27f665fec4634dea297ae7770deaa30bfa0e0acfd",
+      "formal_digest": "a47c890754971b03eb44f2b2023491d3ec10b0069152d77f5caca8a00fe661e1",
       "parameters": [
         {
           "name": "result",
@@ -7079,13 +7121,20 @@
           "default": "\"default\"",
           "selector_values": null,
           "minimum_cases": 1
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
     {
       "function_name": "sn_plot_dim",
       "runtime_classified": true,
-      "formal_digest": "d6269ea0979cdca90208598504187de895217446e7f56031cd59c0ee26e76ba8",
+      "formal_digest": "3c0078c7212adfef9792d618c6e586d76f8e7614cfe90cff8912b3cb62ad7b16",
       "parameters": [
         {
           "name": "object",
@@ -7328,9 +7377,9 @@
         {
           "name": "style",
           "class": "selector",
-          "default": "c(\"classic\", \"nebula\", \"glass\")",
-          "selector_values": ["classic", "nebula", "glass"],
-          "minimum_cases": 3
+          "default": "c(\"classic\", \"nebula\", \"glass\", \"atlas\", \"atlas_outline\", \"atlas_module\")",
+          "selector_values": ["classic", "nebula", "glass", "atlas", "atlas_outline", "atlas_module"],
+          "minimum_cases": 6
         },
         {
           "name": "style_control",
@@ -7414,7 +7463,7 @@
     {
       "function_name": "sn_plot_distribution",
       "runtime_classified": true,
-      "formal_digest": "0a51ef89ebd757ac34111b1302f8cec7e713f797bfe35cf173e4c36e719676f1",
+      "formal_digest": "f1fa3581d7e98359000b83ae437a544663828da4175e8e54d986d044bb0d7d67",
       "parameters": [
         {
           "name": "object",
@@ -7555,13 +7604,27 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "pair_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
         }
       ]
     },
     {
       "function_name": "sn_plot_dot",
       "runtime_classified": true,
-      "formal_digest": "7c151981ecde0b5faaa74412a6d76b3e80638ac693fe40852c55a9d7ca5b01bb",
+      "formal_digest": "c7d8cdcdbefbb78123770db965063392e54176885c32ff245496f14df7626270",
       "parameters": [
         {
           "name": "x",
@@ -7765,6 +7828,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
@@ -7853,6 +7923,62 @@
       ]
     },
     {
+      "function_name": "sn_plot_effect",
+      "runtime_classified": true,
+      "formal_digest": "0299e9a870cb45515fd902229c75fc9951f3f3686aa8bbde38a2518e5cf05b01",
+      "parameters": [
+        {
+          "name": "data",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "style",
+          "class": "selector",
+          "default": "c(\"forest\", \"diverging_bar\", \"lollipop\")",
+          "selector_values": ["forest", "diverging_bar", "lollipop"],
+          "minimum_cases": 3
+        },
+        {
+          "name": "scale",
+          "class": "selector",
+          "default": "c(\"identity\", \"ratio\")",
+          "selector_values": ["identity", "ratio"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "group_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "palette",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "value_label",
+          "class": "character",
+          "default": "\"Effect\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "title",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
       "function_name": "sn_plot_elbow",
       "runtime_classified": true,
       "formal_digest": "4a3b0d1a73729533535c9f4552a0193692f6958cb3c6e61cf473960949646a90",
@@ -7883,7 +8009,7 @@
     {
       "function_name": "sn_plot_enrichment",
       "runtime_classified": true,
-      "formal_digest": "206fd3d9ca4e494bb84d4c0e8810e0d2a030063a96546bc0eb4270817f35eae1",
+      "formal_digest": "5355f6e3239f20b7ca7e6538dde2c658d38374b578056e9410dac93b9f8e2169",
       "parameters": [
         {
           "name": "result",
@@ -7924,6 +8050,13 @@
           "name": "result_id",
           "class": "character",
           "default": "\"default\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
           "selector_values": null,
           "minimum_cases": 1
         }
@@ -7974,7 +8107,7 @@
     {
       "function_name": "sn_plot_feature",
       "runtime_classified": true,
-      "formal_digest": "dd1fe33524ac87f1e96b8e513c08233f49ab83588723b8570e09565470a39dac",
+      "formal_digest": "0754912eccffe077cac4d77d6256fe88913cd8b0d7739dda6175cadcfae262bc",
       "parameters": [
         {
           "name": "object",
@@ -8280,9 +8413,9 @@
         {
           "name": "style",
           "class": "selector",
-          "default": "c(\"classic\", \"nebula\", \"glass\")",
-          "selector_values": ["classic", "nebula", "glass"],
-          "minimum_cases": 3
+          "default": "c(\"classic\", \"nebula\", \"glass\", \"atlas\", \"atlas_outline\", \"atlas_module\")",
+          "selector_values": ["classic", "nebula", "glass", "atlas", "atlas_outline", "atlas_module"],
+          "minimum_cases": 6
         },
         {
           "name": "style_control",
@@ -8380,7 +8513,7 @@
     {
       "function_name": "sn_plot_heatmap",
       "runtime_classified": true,
-      "formal_digest": "c61ceaaaddfc0ce2e37c2a9f1df31c90523516c1f4e18f2b1d11a09f07358a86",
+      "formal_digest": "52ca41dee0db69c9ea08b08a57daccff99e46e2a9e873dcf71ea461bc75b4fcf",
       "parameters": [
         {
           "name": "object",
@@ -8430,6 +8563,13 @@
           "default": "c(\"cells\", \"average\")",
           "selector_values": ["cells", "average"],
           "minimum_cases": 2
+        },
+        {
+          "name": "backend",
+          "class": "selector",
+          "default": "c(\"ggplot2\", \"pheatmap\", \"complexheatmap\")",
+          "selector_values": ["ggplot2", "pheatmap", "complexheatmap"],
+          "minimum_cases": 3
         },
         {
           "name": "scale_data",
@@ -8507,6 +8647,41 @@
           "default": "TRUE",
           "selector_values": null,
           "minimum_cases": 2
+        },
+        {
+          "name": "cluster_rows",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "cluster_cols",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "clustering_distance_rows",
+          "class": "character",
+          "default": "\"euclidean\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "clustering_distance_cols",
+          "class": "character",
+          "default": "\"euclidean\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "clustering_method",
+          "class": "character",
+          "default": "\"complete\"",
+          "selector_values": null,
+          "minimum_cases": 1
         },
         {
           "name": "group_bar",
@@ -8612,6 +8787,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         },
         {
           "name": "...",
@@ -8805,6 +8987,195 @@
       ]
     },
     {
+      "function_name": "sn_plot_matrix",
+      "runtime_classified": true,
+      "formal_digest": "01e9b18b61f7170d56b67b3424e24400b77f2254b12a62b59462b9d9d3e8922d",
+      "parameters": [
+        {
+          "name": "x",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "type",
+          "class": "selector",
+          "default": "c(\"heatmap\", \"bubble\")",
+          "selector_values": ["heatmap", "bubble"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "size",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "palette",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "midpoint",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "limits",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cluster_rows",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "cluster_cols",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "row_split",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "column_split",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "show_values",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "digits",
+          "class": "numeric",
+          "default": "2L",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "max_size",
+          "class": "numeric",
+          "default": "4",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "value_label",
+          "class": "character",
+          "default": "\"Value\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "size_label",
+          "class": "character",
+          "default": "\"Size\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "na_color",
+          "class": "character",
+          "default": "\"grey90\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "title",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_widths",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "panel_heights",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "compare",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "row_annotation",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "column_annotation",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "row_summary",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "column_summary",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "summary_label",
+          "class": "character",
+          "default": "\"Supplied summary\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        }
+      ]
+    },
+    {
       "function_name": "sn_plot_metabolism",
       "runtime_classified": true,
       "formal_digest": "2a40663934bc9d610c9d447f716ea31622e98da7b8454305b9d948bbde23b35b",
@@ -8944,6 +9315,160 @@
         },
         {
           "name": "panel_heights",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
+      "function_name": "sn_plot_network",
+      "runtime_classified": true,
+      "formal_digest": "71ef7467a0550b9fc04982e4b86b10696816cd6dd72f429bf17b65c5f039c374",
+      "parameters": [
+        {
+          "name": "edges",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "nodes",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "group_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "label_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "layout",
+          "class": "selector",
+          "default": "c(\"circle\", \"supplied\")",
+          "selector_values": ["circle", "supplied"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "directed",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "palette",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "edge_palette",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "weight_label",
+          "class": "character",
+          "default": "\"Weight\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "node_size",
+          "class": "numeric",
+          "default": "5",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "label_size",
+          "class": "numeric",
+          "default": "8",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "title",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "compare_edges",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "branch_length",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        }
+      ]
+    },
+    {
+      "function_name": "sn_plot_overlap",
+      "runtime_classified": true,
+      "formal_digest": "bfaadd4d3a181140b5fc9b670e3a8fe3586483393d030eed3d77bb9ab1f5fd7e",
+      "parameters": [
+        {
+          "name": "sets",
+          "class": "required",
+          "default": "<required>",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"upset\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "sort_by",
+          "class": "selector",
+          "default": "c(\"size\", \"degree\")",
+          "selector_values": ["size", "degree"],
+          "minimum_cases": 2
+        },
+        {
+          "name": "color",
+          "class": "character",
+          "default": "\"#BD5050\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "title",
           "class": "nullable",
           "default": "NULL",
           "selector_values": null,
@@ -9507,7 +10032,7 @@
     {
       "function_name": "sn_plot_sankey",
       "runtime_classified": true,
-      "formal_digest": "be765dcae2b0b8b93e6051ee2e19e0f55b3c5fdaf7b5c7e7d53f5b79a6f5a069",
+      "formal_digest": "844a3e7913610bda970c59a9ed591d33e12905dfaceef81ec6aed4c901f15efd",
       "parameters": [
         {
           "name": "data",
@@ -9533,9 +10058,9 @@
         {
           "name": "style",
           "class": "selector",
-          "default": "c(\"A\", \"B\", \"C\")",
-          "selector_values": ["A", "B", "C"],
-          "minimum_cases": 3
+          "default": "c(\"A\", \"B\", \"C\", \"classic\", \"atlas\", \"atlas_outline\", \"atlas_module\")",
+          "selector_values": ["A", "B", "C", "classic", "atlas", "atlas_outline", "atlas_module"],
+          "minimum_cases": 7
         },
         {
           "name": "panel_widths",
@@ -9612,7 +10137,7 @@
     {
       "function_name": "sn_plot_spatial",
       "runtime_classified": true,
-      "formal_digest": "59c8068247f9a10d399eb1d22591b2a86db3428bf27edf7226482c6c7d57e5ca",
+      "formal_digest": "844727f370a1df92ecc8ad9af40262faba5f3b538b842bc3cca442e04179b061",
       "parameters": [
         {
           "name": "object",
@@ -9641,6 +10166,167 @@
           "default": "1.5",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "cells",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "split_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "images",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cols",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "palette",
+          "class": "character",
+          "default": "\"Paired\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "pt_size",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "alpha",
+          "class": "numeric",
+          "default": "1",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "na_value",
+          "class": "character",
+          "default": "\"grey80\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "label",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "label_size",
+          "class": "expression",
+          "default": "8 * 0.36",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "label_color",
+          "class": "character",
+          "default": "\"black\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "label_box",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "label_halo",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "repel",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_legend",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_axis",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_border",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "title",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "ncol",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "flip_y",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "raster",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "raster_dpi",
+          "class": "numeric",
+          "default": "512",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
@@ -9682,7 +10368,7 @@
     {
       "function_name": "sn_plot_spatial_deconvolution",
       "runtime_classified": true,
-      "formal_digest": "c9c6e4613563cdc76a21e309d59e28d2a855d1a2fd54325e3ec97ad59111143c",
+      "formal_digest": "c795bdcfdd6ad89a93049dd074acbb50a0dd46bc54a2c08d39738540a5ee49a4",
       "parameters": [
         {
           "name": "x",
@@ -9718,13 +10404,139 @@
           "default": "\"proportion\"",
           "selector_values": null,
           "minimum_cases": 1
+        },
+        {
+          "name": "split_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "point_size",
+          "class": "numeric",
+          "default": "1.5",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "pt_size",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cols",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "palette",
+          "class": "character",
+          "default": "\"viridis\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "alpha",
+          "class": "numeric",
+          "default": "1",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "na_value",
+          "class": "character",
+          "default": "\"grey80\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "limits",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "order",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_legend",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_axis",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_border",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "title",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "ncol",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "flip_y",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "raster",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "raster_dpi",
+          "class": "numeric",
+          "default": "512",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
     {
       "function_name": "sn_plot_spatial_domain",
       "runtime_classified": true,
-      "formal_digest": "d09145189daaa2c4abeebe26767cd016afc894213493ead752902da7d7753690",
+      "formal_digest": "8cb869c6462191b8f8938afb3b2be6c703e80e16434fdeac1d7a19fd133a5298",
       "parameters": [
         {
           "name": "x",
@@ -9753,13 +10565,160 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "cells",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cols",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "palette",
+          "class": "character",
+          "default": "\"Paired\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "pt_size",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "alpha",
+          "class": "numeric",
+          "default": "1",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "na_value",
+          "class": "character",
+          "default": "\"grey80\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "label",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "label_size",
+          "class": "expression",
+          "default": "8 * 0.36",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "label_color",
+          "class": "character",
+          "default": "\"black\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "label_box",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "label_halo",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "repel",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_legend",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_axis",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_border",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "title",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "ncol",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "flip_y",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "raster",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "raster_dpi",
+          "class": "numeric",
+          "default": "512",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
     {
       "function_name": "sn_plot_spatial_feature",
       "runtime_classified": true,
-      "formal_digest": "cf2869bec0d9727ff1d85216d10aa337893724971d94871ebde9ff26937e6eba",
+      "formal_digest": "38593cd0424d90612c6c0f3ef1a97476d54070e794068ff0e2439dd0d683d9c0",
       "parameters": [
         {
           "name": "object",
@@ -9802,6 +10761,139 @@
           "default": "1.5",
           "selector_values": null,
           "minimum_cases": 4
+        },
+        {
+          "name": "cells",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "split_by",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "images",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "cols",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "palette",
+          "class": "character",
+          "default": "\"viridis\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "pt_size",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "alpha",
+          "class": "numeric",
+          "default": "1",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "na_value",
+          "class": "character",
+          "default": "\"grey80\"",
+          "selector_values": null,
+          "minimum_cases": 1
+        },
+        {
+          "name": "limits",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "order",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_legend",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_axis",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "show_border",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "title",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "ncol",
+          "class": "nullable",
+          "default": "NULL",
+          "selector_values": null,
+          "minimum_cases": 3
+        },
+        {
+          "name": "flip_y",
+          "class": "boolean",
+          "default": "TRUE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "raster",
+          "class": "boolean",
+          "default": "FALSE",
+          "selector_values": null,
+          "minimum_cases": 2
+        },
+        {
+          "name": "raster_dpi",
+          "class": "numeric",
+          "default": "512",
+          "selector_values": null,
+          "minimum_cases": 4
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
@@ -9913,7 +11005,7 @@
     {
       "function_name": "sn_plot_survival",
       "runtime_classified": true,
-      "formal_digest": "92b061509820e60f9e93eb0b3381bfa4426df69cfd34b10c4e0ded79b910a0b0",
+      "formal_digest": "183223d841d4d4696667c004ba66cc09aa39531826f87ec46cb2d2442af8672d",
       "parameters": [
         {
           "name": "x",
@@ -9949,6 +11041,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },
@@ -10046,7 +11145,7 @@
     {
       "function_name": "sn_plot_violin",
       "runtime_classified": true,
-      "formal_digest": "43f6b6e6f68299599be676b2b1ad7b1b97cd3227899f7a059a0ab618c1a1c448",
+      "formal_digest": "a622c463a9a7874ad02d64e86eb6a58f2316177cdd8daab4a495cf4600200b68",
       "parameters": [
         {
           "name": "object",
@@ -10152,6 +11251,13 @@
           "default": "NULL",
           "selector_values": null,
           "minimum_cases": 3
+        },
+        {
+          "name": "style",
+          "class": "character",
+          "default": "\"classic\"",
+          "selector_values": null,
+          "minimum_cases": 1
         }
       ]
     },

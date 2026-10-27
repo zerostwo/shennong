@@ -24,7 +24,9 @@ sn_plot_distribution(
   y_label = NULL,
   aspect_ratio = NULL,
   panel_widths = NULL,
-  panel_heights = NULL
+  panel_heights = NULL,
+  style = "classic",
+  pair_by = NULL
 )
 }
 \arguments{
@@ -57,6 +59,15 @@ the requested features.}
 \item{title, x_label, y_label}{Optional plot labels.}
 
 \item{aspect_ratio, panel_widths, panel_heights}{Optional panel sizing controls.}
+
+\item{style}{Theme or structural distribution style: \code{violin_box},
+\code{raincloud}, \code{paired_box}, \code{paired_slope}, \code{split_violin}, \code{stacked_violin}.
+Structural styles select their geometry independently of \code{view}.}
+
+\item{pair_by}{Column identifying matched subjects for paired styles.
+After optional sample aggregation, exactly one value per subject, group and
+feature is required, with complete observations across all groups. No
+automatic matching, imputation or statistical test is performed.}
 }
 \value{
 A faceted \code{ggplot} object with source data and figure metadata.

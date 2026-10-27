@@ -79,41 +79,45 @@
 #' @return A `ggplot` object.
 #' @examples
 #' \dontrun{sn_plot_communication(object, "communication", type = "bubble")}
+#' @param style Presentation preset; see [sn_list_plot_styles()]. Bubble size
+#'   remains absolute score; styles do not substitute p-values or infer modules.
 #' @export
 sn_plot_communication <- function(x,
                                   result_id = NULL,
                                   type = c("bubble", "heatmap", "network", "chord", "river"),
                                   n = 50L,
                                   table = "primary",
-                                  object = NULL) {
+                                  object = NULL, style = "classic") {
+  style <- .sn_match_plot_style(style)
+  finish <- function(plot, kind = "generic") .sn_style_plot(plot, style, kind)
   x <- .sn_resolve_object_alias(x, object, missing(x))
   type <- match.arg(type)
   result <- .sn_resolve_communication_result(x, result_id)
   data <- .sn_communication_plot_table(result, table = table, n = n)
   if (identical(type, "bubble")) {
     data$interaction <- factor(data$interaction, levels = rev(unique(data$interaction)))
-    return(ggplot2::ggplot(data, ggplot2::aes(x = .data$target, y = .data$interaction, size = abs(.data$score), colour = .data$score)) +
+    return(finish(ggplot2::ggplot(data, ggplot2::aes(x = .data$target, y = .data$interaction, size = abs(.data$score), colour = .data$score)) +
       ggplot2::geom_point(alpha = 0.85) +
       ggplot2::facet_grid(rows = ggplot2::vars(.data$source), scales = "free_y", space = "free_y") +
       ggplot2::scale_colour_viridis_c() +
       ggplot2::labs(x = "Receiver", y = "Ligand - receptor", size = "|Score|", colour = "Score") +
-      ggplot2::theme_bw())
+      ggplot2::theme_bw(), "dot"))
   }
   if (identical(type, "heatmap")) {
     heatmap <- data |>
       dplyr::group_by(.data$source, .data$target) |>
       dplyr::summarise(score = mean(.data$score, na.rm = TRUE), .groups = "drop")
-    return(ggplot2::ggplot(heatmap, ggplot2::aes(x = .data$target, y = .data$source, fill = .data$score)) +
+    return(finish(ggplot2::ggplot(heatmap, ggplot2::aes(x = .data$target, y = .data$source, fill = .data$score)) +
       ggplot2::geom_tile(colour = "white") +
       ggplot2::scale_fill_viridis_c() +
       ggplot2::labs(x = "Receiver", y = "Sender", fill = "Mean score") +
-      ggplot2::theme_bw())
+      ggplot2::theme_bw(), "heatmap"))
   }
-  if (type %in% c("network", "chord")) return(.sn_plot_communication_links(data, curved = identical(type, "chord")))
+  if (type %in% c("network", "chord")) return(finish(.sn_plot_communication_links(data, curved = identical(type, "chord")), "network"))
 
   flows <- data |>
     dplyr::mutate(source_y = match(.data$source, unique(.data$source)), target_y = match(.data$target, unique(.data$target)))
-  ggplot2::ggplot(flows) +
+  finish(ggplot2::ggplot(flows) +
     ggplot2::geom_segment(ggplot2::aes(x = 1, y = .data$source_y, xend = 2, yend = .data$target_y, linewidth = abs(.data$score), colour = .data$score), alpha = 0.7) +
     ggplot2::geom_text(ggplot2::aes(x = 0.96, y = .data$source_y, label = .data$source), hjust = 1) +
     ggplot2::geom_text(ggplot2::aes(x = 2.04, y = .data$target_y, label = .data$target), hjust = 0) +
@@ -121,7 +125,7 @@ sn_plot_communication <- function(x,
     ggplot2::scale_linewidth_continuous(range = c(0.25, 3)) +
     ggplot2::coord_cartesian(xlim = c(0.6, 2.4), clip = "off") +
     ggplot2::labs(colour = "Score", linewidth = "|Score|") +
-    ggplot2::theme_void()
+    ggplot2::theme_void(), "network")
 }
 
 #' Plot NicheNet or MultiNicheNet ligand-target evidence

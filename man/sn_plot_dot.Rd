@@ -33,7 +33,8 @@ sn_plot_dot(
   title = NULL,
   x_label = NULL,
   y_label = NULL,
-  object = NULL
+  object = NULL,
+  style = "classic"
 )
 }
 \arguments{
@@ -106,6 +107,9 @@ panel dimension automatically.}
 \item{x_label, y_label}{Optional axis labels.}
 
 \item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
+
+\item{style}{Presentation preset: \code{classic}, \code{atlas}, \code{atlas_outline}, or
+\code{atlas_module}. See \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}} and the atlas-figure-styles article.}
 }
 \value{
 A ggplot2 object.

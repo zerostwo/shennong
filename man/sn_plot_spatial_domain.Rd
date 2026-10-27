@@ -4,20 +4,80 @@
 \alias{sn_plot_spatial_domain}
 \title{Plot spatial-domain assignments}
 \usage{
-sn_plot_spatial_domain(x, result_id = NULL, point_size = 1.5, object = NULL)
+sn_plot_spatial_domain(
+  x,
+  result_id = NULL,
+  point_size = 1.5,
+  object = NULL,
+  cells = NULL,
+  cols = NULL,
+  palette = "Paired",
+  pt_size = NULL,
+  alpha = 1,
+  na_value = "grey80",
+  label = FALSE,
+  label_size = 8 * 0.36,
+  label_color = "black",
+  label_box = FALSE,
+  label_halo = TRUE,
+  repel = FALSE,
+  show_legend = TRUE,
+  show_axis = FALSE,
+  show_border = TRUE,
+  title = NULL,
+  ncol = NULL,
+  flip_y = TRUE,
+  raster = FALSE,
+  raster_dpi = 512,
+  style = "classic"
+)
 }
 \arguments{
 \item{x}{A Seurat object or spatial-domain result.}
 
-\item{result_id}{Stored result result_id.}
+\item{result_id}{Stored result ID.}
 
-\item{point_size}{Point size.}
+\item{point_size}{Point size in mm; retained for positional compatibility.}
 
 \item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
+
+\item{cells}{Optional cell names to plot, in the requested order.}
+
+\item{cols}{Explicit colors; named vectors match categorical labels. For
+feature maps these are gradient colors.}
+
+\item{palette}{Shennong palette name or color vector.}
+
+\item{pt_size}{Alias matching \code{\link[=sn_plot_dim]{sn_plot_dim()}}. Supply only one size argument.}
+
+\item{alpha}{Point opacity between zero and one.}
+
+\item{na_value}{Color for missing group or feature values.}
+
+\item{label}{Show group labels anchored at observed locations near medians.}
+
+\item{label_size, label_color, label_box, label_halo, repel}{Label controls as in
+\code{\link[=sn_plot_dim]{sn_plot_dim()}}. Repulsion requires ggrepel; halos use shadowtext when available.}
+
+\item{show_legend, show_axis, show_border}{Show the legend, coordinate axes or panel border.}
+
+\item{title}{Optional plot title.}
+
+\item{ncol}{Number of facet columns.}
+
+\item{flip_y}{Reverse the y axis for image coordinates. Set FALSE for Cartesian coordinates.}
+
+\item{raster}{Rasterize only point layers with ggrastr; labels stay vector.}
+
+\item{raster_dpi}{Raster resolution (scalar or vector, whose maximum is used).}
+
+\item{style}{Presentation preset; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}. Coordinates,
+shared limits and source values are unchanged.}
 }
 \value{
-A \code{ggplot} object.
+An editable \code{ggplot} with separate panels for stored sections.
 }
 \description{
-Plot spatial-domain assignments
+Stored coordinates and sample boundaries are used directly. No domain
+assignments or input metadata are changed by plotting.
 }

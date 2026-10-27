@@ -63,12 +63,15 @@ Move to downstream biological interpretation:
    `sn_get_result(object, "scissor", result_id)` and review all-cell, state,
    sample, correlation, model, and optional reliability tables before calling
    `sn_plot_scissor()`.
-   For stored-DE ORA, omit `gene_clusters`/`universe` to preserve multi-level
+   For stored-DE ORA, omit `mapping`/`universe` to preserve multi-level
    grouping and reconstruct the background from the stored assay; otherwise use
-   `gene_clusters = gene ~ cluster`, `analysis = "ora"`, and the actually
-   tested gene `universe`. Use `gene ~ log2fc` together with
-   explicit `analysis = "gsea"` for ranked GSEA; set the RNG immediately before
-   stochastic GSEA and resolve duplicate gene IDs explicitly. Use
+   `mapping = gene ~ cluster`, `analysis = "ora"`, and the actually
+   tested gene `universe`. Use `mapping = gene ~ log2fc` for one ranked GSEA or
+   `mapping = gene ~ log2fc | cell_type` for one GSEA per group. A numeric RHS
+   selects GSEA automatically. Set the RNG immediately before stochastic GSEA,
+   resolve duplicate gene IDs explicitly within each ranking, and use
+   `analysis = "ora"` when a numeric RHS contains group codes. Omitted stored
+   result IDs become `<source>.<analysis>.<database>`. Use
    `database = c(...)` when the same input should be tested against multiple
    databases in one call.
 
@@ -108,6 +111,12 @@ Use `sn_run_cnv()` only with explicit normal references; include
 
 ## Statistical and storage contracts
 
+- `subset_by` needs non-missing, non-blank labels and a name distinct from DE
+  output columns (`gene`, `comparison`, marker `cluster`, and statistics).
+  Copy conflicting metadata to a descriptive name before running DE. Empty
+  subsets do not interrupt other subsets; entirely empty results remain
+  discoverable with `sn_list_results(object, type = "de")` and retrievable
+  with `sn_get_de_result(object, id, p_adjusted_cutoff = 0.05)`.
 - Use `sn_get_result(object, "de", id)$input$tested_features_by_comparison`
   to inspect backend-test backgrounds, and `candidate_features` for available
   inputs. Stored-DE ORA uses each comparison's own background. Rerun known
@@ -115,6 +124,9 @@ Use `sn_run_cnv()` only with explicit normal references; include
 - `sn_test_programs(sample_by = "donor")` detects complete donor pairs and
   reports `paired`; mixed paired/unpaired profiles are rejected.
 - Use `seed = 777` to seed program scoring locally.
+- Mean program scoring preserves multiple programs for one cell or one
+  aggregated group. Signature tables require program and gene columns; named
+  gene-set lists are also supported. One entity does not establish replication.
   Discover scores with `sn_list_results(object, type = "program_scoring")`,
   then retrieve `sn_get_result(object, "program_scoring", id)$tables$metadata_columns`
   for the program-to-metadata mapping. Do not reconstruct sanitized names.

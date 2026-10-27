@@ -59,6 +59,35 @@ test_that("signature data frames and feature coverage are validated", {
     sn_score_programs(object, signatures = list(x = "not_present"), method = "mean"),
     "No signature retained"
   )
+  for (invalid in list(data.frame(gene = "G1"), data.frame(program = "a"))) {
+    expect_error(sn_score_programs(object, signatures = invalid, method = "mean"),
+      "Signature data frames require")
+  }
+})
+
+test_that("mean scoring preserves multiple programs for one cell or one aggregate", {
+  object <- make_program_test_object()
+  signatures <- list(a = c("G1", "G2"), b = c("G4", "G5"))
+  counts <- SeuratObject::LayerData(object, assay = "RNA", layer = "counts")
+  single <- sn_score_programs(object[, 1], signatures, method = "mean",
+    layer = "counts", result_id = "one")
+  scores <- sn_get_result(single, "program_scoring", "one")$tables$scores
+  expect_identical(scores$program, names(signatures))
+  expect_equal(scores$score,
+    unname(vapply(signatures, function(genes) mean(counts[genes, 1]), numeric(1))))
+  expect_equal(unname(single$one_a), scores$score[[1]])
+  expect_equal(unname(single$one_b), scores$score[[2]])
+
+  object$one_group <- "all"
+  expected <- unname(vapply(signatures,
+    function(genes) mean(as.matrix(counts[genes, , drop = FALSE])), numeric(1)))
+  for (aggregate in c("expression", "scores")) {
+    result <- sn_score_programs(object, signatures, method = "mean", layer = "counts",
+      group_by = "one_group", aggregate = aggregate, return_object = FALSE)
+    expect_identical(result$tables$scores$program, names(signatures))
+    expect_equal(result$tables$scores$score, expected)
+    expect_true(all(result$tables$scores$entity == "all"))
+  }
 })
 
 test_that("exact signature features win over normalized duplicate keys", {

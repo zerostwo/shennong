@@ -99,6 +99,7 @@ articles:
       - metrics-diagnostics
       - annotation-pathways
       - visualization
+      - atlas-figure-styles
       - publication-figures
   - title: Compare cell states and samples
     desc: Analyse composition, abundance, communication, and gene programs with explicit sampling units.
@@ -370,6 +371,11 @@ reference:
       - sn_plot_result
       - sn_plot_distribution
       - sn_plot_association
+      - sn_list_plot_styles
+      - sn_plot_matrix
+      - sn_plot_effect
+      - sn_plot_overlap
+      - sn_plot_network
       - sn_list_figure_profiles
       - sn_get_figure_spec
       - sn_figure_spec

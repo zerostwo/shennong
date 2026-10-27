@@ -1,0 +1,7 @@
+paper,authors,year,journal,title,doi,main_figures,verification,url
+NK,Tang et al.,2023,Cell,A pan-cancer single-cell panorama of human natural killer cells,10.1016/j.cell.2023.07.034,7,figures_and_captions,https://www.cell.com/cell/fulltext/S0092-8674(23)00849-8
+T,Zheng et al.,2021,Science,Pan-cancer single-cell landscape of tumor-infiltrating T cells,10.1126/science.abe6474,5,captions_only,https://www.science.org/doi/10.1126/science.abe6474
+B,Yang et al.,2024,Cell,Pan-cancer single-cell dissection reveals phenotypically distinct B cell subtypes,10.1016/j.cell.2024.06.038,7,figures_and_captions,https://www.cell.com/cell/fulltext/S0092-8674(24)00712-8
+Myeloid,Cheng et al.,2021,Cell,A pan-cancer single-cell transcriptional atlas of tumor infiltrating myeloid cells,10.1016/j.cell.2021.01.010,7,figures_and_captions,https://www.cell.com/cell/fulltext/S0092-8674(21)00010-6
+Fibroblast,Gao et al.,2024,Cancer Cell,Cross-tissue human fibroblast atlas reveals myofibroblast subtypes with distinct roles in immune modulation,10.1016/j.ccell.2024.08.020,7,figures_and_captions,https://www.cell.com/cancer-cell/fulltext/S1535-6108(24)00319-2
+CM,Shi et al.,2025,Nature,Cross-tissue multicellular coordination and its rewiring in cancer,10.1038/s41586-025-09053-4,5,figures_and_captions_plus_Fig2c_source_data,https://www.nature.com/articles/s41586-025-09053-4

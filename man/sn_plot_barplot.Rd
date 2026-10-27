@@ -25,7 +25,8 @@ sn_plot_barplot(
   x_label = NULL,
   y_label = NULL,
   title = NULL,
-  angle_x = 0
+  angle_x = 0,
+  style = "classic"
 )
 }
 \arguments{
@@ -68,6 +69,8 @@ panel dimension automatically.}
 \item{x_label, y_label, title}{Optional plot labels.}
 
 \item{angle_x}{Rotation angle for x-axis text.}
+
+\item{style}{Presentation preset; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}.}
 }
 \value{
 A ggplot object.

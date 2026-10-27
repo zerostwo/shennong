@@ -4,20 +4,92 @@
 \alias{sn_plot_spatial}
 \title{Plot spatial coordinates colored by metadata}
 \usage{
-sn_plot_spatial(object, group_by = NULL, spatial_cols = NULL, point_size = 1.5)
+sn_plot_spatial(
+  object,
+  group_by = NULL,
+  spatial_cols = NULL,
+  point_size = 1.5,
+  cells = NULL,
+  split_by = NULL,
+  images = NULL,
+  cols = NULL,
+  palette = "Paired",
+  pt_size = NULL,
+  alpha = 1,
+  na_value = "grey80",
+  label = FALSE,
+  label_size = 8 * 0.36,
+  label_color = "black",
+  label_box = FALSE,
+  label_halo = TRUE,
+  repel = FALSE,
+  show_legend = TRUE,
+  show_axis = FALSE,
+  show_border = TRUE,
+  title = NULL,
+  ncol = NULL,
+  flip_y = TRUE,
+  raster = FALSE,
+  raster_dpi = 512,
+  style = "classic"
+)
 }
 \arguments{
 \item{object}{A Seurat object.}
 
-\item{group_by}{Optional metadata column.}
+\item{group_by}{Optional categorical metadata column. NULL shows all locations.}
 
-\item{spatial_cols}{Coordinate metadata columns.}
+\item{spatial_cols}{Two numeric metadata columns in x, y order. Recognized
+metadata coordinates take precedence over native images unless \code{images}
+is supplied. Coordinates are never rescaled or registered across sections.}
 
-\item{point_size}{Point size.}
+\item{point_size}{Point size in mm; retained for positional compatibility.}
+
+\item{cells}{Optional cell names to plot, in the requested order.}
+
+\item{split_by}{Metadata column identifying sections or panels. Required to
+separate sections when using metadata coordinates; no sample column is guessed.}
+
+\item{images}{Optional Seurat image/FOV names. Native images are used when
+metadata coordinates are absent. Each image is plotted separately using
+full-resolution Visium coordinates or FOV centroids; histology and cell
+segmentation outlines are not drawn. Overlapping image cell sets are rejected.}
+
+\item{cols}{Explicit colors; named vectors match categorical labels. For
+feature maps these are gradient colors.}
+
+\item{palette}{Shennong palette name or color vector.}
+
+\item{pt_size}{Alias matching \code{\link[=sn_plot_dim]{sn_plot_dim()}}. Supply only one size argument.}
+
+\item{alpha}{Point opacity between zero and one.}
+
+\item{na_value}{Color for missing group or feature values.}
+
+\item{label}{Show group labels anchored at observed locations near medians.}
+
+\item{label_size, label_color, label_box, label_halo, repel}{Label controls as in
+\code{\link[=sn_plot_dim]{sn_plot_dim()}}. Repulsion requires ggrepel; halos use shadowtext when available.}
+
+\item{show_legend, show_axis, show_border}{Show the legend, coordinate axes or panel border.}
+
+\item{title}{Optional plot title.}
+
+\item{ncol}{Number of facet columns.}
+
+\item{flip_y}{Reverse the y axis for image coordinates. Set FALSE for Cartesian coordinates.}
+
+\item{raster}{Rasterize only point layers with ggrastr; labels stay vector.}
+
+\item{raster_dpi}{Raster resolution (scalar or vector, whose maximum is used).}
+
+\item{style}{Presentation preset; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}. Coordinates,
+shared limits and source values are unchanged.}
 }
 \value{
-A \code{ggplot} object preserving coordinate aspect ratio.
+An editable \code{ggplot} with fixed coordinate aspect and figure export metadata.
 }
 \description{
-Plot spatial coordinates colored by metadata
+Spatial maps use the same palette, compact typography and label conventions
+as \code{\link[=sn_plot_dim]{sn_plot_dim()}}, while retaining equal coordinate units on both axes.
 }

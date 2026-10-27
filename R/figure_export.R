@@ -146,7 +146,22 @@ sn_export_figure <- function(plot, filename, profile = NULL, width = "auto", hei
 .sn_figure_source_data <- function(plot) {
   attached <- attr(plot, "shennong_figure_data", exact = TRUE)
   if (is.data.frame(attached)) return(list(data = attached))
-  if (is.list(attached) && all(vapply(attached, is.data.frame, logical(1)))) return(attached)
+  if (is.list(attached)) {
+    tables <- lapply(attached, function(value) {
+      if (is.data.frame(value)) return(value)
+      if (is.matrix(value)) {
+        out <- as.data.frame(value, stringsAsFactors = FALSE, check.names = FALSE)
+        if (!is.null(rownames(value))) {
+          key <- make.unique(c(colnames(out), ".shennong_row"))[ncol(out) + 1L]
+          out <- cbind(stats::setNames(data.frame(rownames(value)), key), out)
+        }
+        return(out)
+      }
+      NULL
+    })
+    tables <- Filter(Negate(is.null), tables)
+    if (length(tables)) return(tables)
+  }
   if (inherits(plot, "ggplot") && is.data.frame(plot$data)) return(list(data = plot$data))
   list()
 }

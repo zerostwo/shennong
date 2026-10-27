@@ -46,7 +46,10 @@ for \code{"contrast"} and \code{"pseudobulk"} analyses.}
 When omitted, Seurat identities are used.}
 
 \item{subset_by}{Optional metadata column used to repeat a contrast within
-each subset, for example per cell type.}
+each subset, for example per cell type. Labels must be non-missing and
+non-empty. Its name must not conflict with a DE output column such as
+\code{gene} or \code{comparison}; copy labels to a distinct metadata
+column when necessary. Subsets with no reported genes contribute zero rows.}
 
 \item{subset_levels}{Optional character vector of subset values to analyze.
 Defaults to all observed values in \code{subset_by}.}

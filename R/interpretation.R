@@ -90,6 +90,12 @@
   top_scope <- match.arg(top_scope)
   table <- tibble::as_tibble(table)
 
+  if (!is_null(top_n) && (!is.numeric(top_n) || length(top_n) != 1L ||
+      is.na(top_n) || !is.finite(top_n) || top_n < 0 || top_n != floor(top_n))) {
+    stop("`top_n` must be one non-negative integer or NULL.", call. = FALSE)
+  }
+  if (nrow(table) == 0L) return(table)
+
   if (!is_null(groups)) {
     if (is_null(group_col) || !group_col %in% colnames(table)) {
       stop("Group filtering requires a grouping column in the result table.", call. = FALSE)
@@ -99,10 +105,6 @@
 
   if (is_null(top_n) && identical(direction, "all")) {
     return(table)
-  }
-  if (!is_null(top_n) && (!is.numeric(top_n) || length(top_n) != 1L ||
-      is.na(top_n) || !is.finite(top_n) || top_n < 0 || top_n != floor(top_n))) {
-    stop("`top_n` must be one non-negative integer or NULL.", call. = FALSE)
   }
   if (is_null(rank_col) || !rank_col %in% colnames(table) || !is.numeric(table[[rank_col]])) {
     stop("Direction filtering and top-N selection require a numeric ranking column.", call. = FALSE)

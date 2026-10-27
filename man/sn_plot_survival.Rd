@@ -9,7 +9,8 @@ sn_plot_survival(
   adjusted_p_value = NULL,
   view = c("forest", "km", "risk_table", "ph", "ph_test", "cumulative_hazard"),
   feature = NULL,
-  object = NULL
+  object = NULL,
+  style = "classic"
 )
 }
 \arguments{
@@ -24,6 +25,8 @@ p-values, or cumulative hazard.}
 \item{feature}{Optional feature subset for the selected view.}
 
 \item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
+
+\item{style}{Presentation preset; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}.}
 }
 \value{
 A survival \code{ggplot} object.

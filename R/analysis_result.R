@@ -1209,6 +1209,7 @@ sn_get_enrichment_result <- function(object,
   if (!is.numeric(cutoff) || length(cutoff) != 1L || !is.finite(cutoff) || cutoff < 0 || cutoff > upper) {
     stop("`", name, "` must be one finite number between 0 and ", upper, ".", call. = FALSE)
   }
+  if (nrow(table) == 0L) return(table)
   column <- .sn_result_first_column(table, candidates)
   if (is.null(column) || !is.numeric(table[[column]])) {
     stop("`", name, "` requires a numeric ", paste(candidates, collapse = "/"), " column.", call. = FALSE)

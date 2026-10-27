@@ -1,6 +1,40 @@
 # Backend Conformance Audit
 
-Audit date: 2026-08-20
+Original audit date: 2026-08-20
+
+## Current source follow-up: 2026-10-02
+
+The historical findings below are not a current unresolved-defect list.
+Source inspection and existing regression cases now show that the Milo
+annotation mismatch, repeated DE gene column, native matrix serialization,
+spatial registry package/runtime labels, and misleading scArches/stLearn
+default runners have been addressed. scArches/stLearn intentionally reject
+the unimplemented default workflows; that is not upstream conformance.
+
+This follow-up reproduced additional DE boundary defects: an empty marker
+subset aborted aggregation; subset names such as `gene` and `cluster` silently
+overwrote result identity; empty-result selection required absent statistics;
+and missing subset labels reached an opaque Seurat subsetting failure.
+Regressions in `tests/testthat/test-de-boundaries.R` exercise the public APIs,
+compare reported markers and retained backgrounds with direct Seurat calls,
+and cover pseudobulk identity collisions. The shared gene/subset helpers and
+empty-table selectors repair those paths without fabricating statistics.
+
+Program-scoring probes also exposed dimension dropping with multiple mean
+signatures on one cell/group and out-of-bounds indexing for signature tables
+missing required columns. Focused regressions compare the scores with direct
+matrix means and verify diagnostic errors for malformed tables. Two obsolete,
+unexported extraction helpers were removed after repository-wide call and
+registration searches found no consumers.
+
+An AST inventory of the starting source found 86 R files, 1,279 top-level
+functions, no duplicate function definitions, and no identical complete
+function bodies. Deprecated forwarding aliases are deliberate compatibility
+code. Registry/discovery coverage is still distinct from optional-backend
+equivalence; the eight machine-readable backend contracts do not establish
+package-wide upstream parity. Current validation is recorded in `Status.md`.
+
+## Historical audit record
 
 ## Scope and verdict
 
@@ -47,15 +81,16 @@ Confirmed and repaired in that focused change:
 - `sn_enrich()` formerly forced permissive upstream cutoffs and kept rows by raw
   p-value alone. It now delegates the effective p/adjusted-p/q rules to the
   versioned upstream, supports an explicit ORA universe and common size/
-  adjustment controls, rejects silent duplicate-rank collapse, and requires an
-  explicit mode for a numeric formula RHS.
+  adjustment controls, rejects silent duplicate-rank collapse, and infers GSEA
+  from a numeric formula RHS while allowing explicit ORA for numeric group codes.
 - clusterProfiler 4.20 GSEA executes enrichit, not the fgsea namespace. The
   workflow therefore no longer activates or advertises the unrelated fgsea
   patch, while retaining the clusterProfiler cache scope through result
   storage provenance.
 
 These remain pilot, not release-conformant, claims. Grouped GSEA
-(`gene | score ~ group`), GO/KEGG resource and ID-mapping parity, actual msigdbr
+(`gene ~ score | group`) now has a direct `compareCluster()` synthetic
+comparator, while GO/KEGG resource and ID-mapping parity, actual msigdbr
 resource fixtures, batch/Harmony/CCA/RPCA stage comparators, fresh-process
 evidence, and real/OOD inputs remain open C2--C4 work. The earlier Milo,
 spatial-registry, Python-runner, importer, and generic provenance findings below

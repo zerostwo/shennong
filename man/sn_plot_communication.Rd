@@ -10,7 +10,8 @@ sn_plot_communication(
   type = c("bubble", "heatmap", "network", "chord", "river"),
   n = 50L,
   table = "primary",
-  object = NULL
+  object = NULL,
+  style = "classic"
 )
 }
 \arguments{
@@ -25,6 +26,9 @@ sn_plot_communication(
 \item{table}{Stored table to plot.}
 
 \item{object}{Alias for \code{x}; supply only one of \code{x} and \code{object}.}
+
+\item{style}{Presentation preset; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}. Bubble size
+remains absolute score; styles do not substitute p-values or infer modules.}
 }
 \value{
 A \code{ggplot} object.

@@ -299,11 +299,14 @@ canonical envelope with `sn_get_result()`.
    `universe`. For stored DE, omit both to preserve a multi-level stored group
    and reconstruct the universe from the stored assay; standalone input cannot
    reconstruct that background.
-3. For ranked GSEA, use `mapping = gene ~ log2fc`, or
-   `mapping = gene ~ log2fc | cluster` for separate group rankings. A numeric
-   ranking selects GSEA automatically. Call `set.seed()` immediately beforehand when the
-   validated upstream engine is stochastic. Duplicate gene IDs fail unless an
-   explicit `duplicate_gene_method` is selected.
+3. For ranked GSEA, use `mapping = gene ~ log2fc`; a numeric formula RHS
+   selects one global GSEA automatically, while
+   `mapping = gene ~ log2fc | group` runs one ranking per group. Call
+   `set.seed()` immediately beforehand when the validated upstream engine is
+   stochastic. Duplicate gene IDs fail within each ranking unless an explicit
+   `duplicate_gene_method` is selected. If numeric RHS values are group codes,
+   override the inference with `analysis = "ora"`. Omitted enrichment result
+   IDs become `<source>.<analysis>.<database>`.
 4. Use `pvalue_cutoff`, `p_adjust_method`, `qvalue_cutoff`, and
    `min_gs_size`/`max_gs_size` deliberately; Shennong delegates their reporting
    semantics to the versioned clusterProfiler/enrichit backend.

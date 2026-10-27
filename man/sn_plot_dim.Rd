@@ -39,7 +39,7 @@ sn_plot_dim(
   aspect_ratio = 1,
   panel_widths = NULL,
   panel_heights = NULL,
-  style = c("classic", "nebula", "glass"),
+  style = c("classic", "nebula", "glass", "atlas", "atlas_outline", "atlas_module"),
   style_control = list(),
   camera = NULL,
   interactive = FALSE,
@@ -119,7 +119,8 @@ derives the missing panel dimension automatically.}
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}
 
-\item{style}{Rendering style: \code{"classic"} preserves the existing 2D plot;
+\item{style}{Atlas presets (\code{atlas}, \code{atlas_outline}, \code{atlas_module}) use
+compact 8 pt 2D rendering; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}. Rendering style: \code{"classic"} preserves the existing 2D plot;
 \code{"nebula"} and \code{"glass"} use planar density contours with the default
 \code{dims = c(1, 2)}, or real three-dimensional embeddings with \code{dims = 1:3}.
 Static 3D output is a ggplot with the complete point/surface scene rasterized

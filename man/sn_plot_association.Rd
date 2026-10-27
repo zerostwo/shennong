@@ -28,7 +28,8 @@ sn_plot_association(
   y_label = NULL,
   aspect_ratio = 1,
   panel_widths = NULL,
-  panel_heights = NULL
+  panel_heights = NULL,
+  style = "classic"
 )
 }
 \arguments{
@@ -70,6 +71,8 @@ aggregate cell/observation values to biological samples.}
 \item{title, x_label, y_label}{Optional plot labels.}
 
 \item{aspect_ratio, panel_widths, panel_heights}{Optional panel sizing controls.}
+
+\item{style}{Presentation preset; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}.}
 }
 \value{
 A \code{ggplot} object with source data and figure metadata.

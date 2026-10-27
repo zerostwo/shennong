@@ -104,6 +104,26 @@
   table
 }
 
+.sn_as_de_table <- function(result) {
+  result <- as.data.frame(result)
+  if (!"gene" %in% colnames(result)) {
+    result <- tibble::rownames_to_column(result, var = "gene")
+  }
+  tibble::as_tibble(result)
+}
+
+.sn_add_de_subset <- function(table, subset_by, subset_value) {
+  if (subset_by %in% c(colnames(table), "gene", "comparison")) {
+    stop(
+      "`subset_by = '", subset_by, "'` conflicts with a DE result column. ",
+      "Copy the subset labels to a distinct metadata column and use that name.",
+      call. = FALSE
+    )
+  }
+  table[[subset_by]] <- rep(subset_value, nrow(table))
+  table
+}
+
 .sn_run_seurat_de <- function(object,
                               analysis = c("markers", "contrast"),
                               ident_1 = NULL,
@@ -274,6 +294,10 @@
   if (!subset_by %in% colnames(metadata)) {
     stop(glue("Column '{subset_by}' was not found in metadata."), call. = FALSE)
   }
+  observed <- as.character(metadata[[subset_by]])
+  if (anyNA(observed) || any(!nzchar(trimws(observed)))) {
+    stop("`subset_by` labels must be non-missing and non-empty; subset the object or supply complete labels before DE.", call. = FALSE)
+  }
   if (is_null(subset_levels)) {
     return(invisible(NULL))
   }
@@ -282,7 +306,6 @@
       anyDuplicated(subset_levels)) {
     stop("`subset_levels` must be a non-empty character vector of distinct, non-missing subset values.", call. = FALSE)
   }
-  observed <- unique(as.character(metadata[[subset_by]]))
   missing_levels <- setdiff(subset_levels, observed)
   if (length(missing_levels) > 0L) {
     stop(
@@ -581,7 +604,7 @@
     result$gene <- rownames(result)
     result$comparison <- paste(ident_1, "vs", ident_2)
     if (!is_null(subset_by)) {
-      result[[subset_by]] <- current_subset
+      result <- .sn_add_de_subset(result, subset_by, current_subset)
     }
     results[[current_subset]] <- tibble::as_tibble(result)
   }
@@ -618,7 +641,10 @@
 #' @param group_by Optional metadata column that defines the groups to compare.
 #'   When omitted, Seurat identities are used.
 #' @param subset_by Optional metadata column used to repeat a contrast within
-#'   each subset, for example per cell type.
+#'   each subset, for example per cell type. Labels must be non-missing and
+#'   non-empty. Its name must not conflict with a DE output column such as
+#'   \code{gene} or \code{comparison}; copy labels to a distinct metadata
+#'   column when necessary. Subsets with no reported genes contribute zero rows.
 #' @param subset_levels Optional character vector of subset values to analyze.
 #'   Defaults to all observed values in \code{subset_by}.
 #' @param sample_by Metadata column containing sample IDs. Required for
@@ -924,23 +950,25 @@ sn_find_de <- function(
           ...
         )
         tested <- attr(current_result, "shennong_tested_features", exact = TRUE) %||% .sn_de_tested_table(current_result)
-        tested[[subset_by]] <- rep(current_subset, nrow(tested))
+        tested <- .sn_add_de_subset(tested, subset_by, current_subset)
         tested_tables[[current_subset]] <- tested
 
-        current_result <- as.data.frame(current_result)
-        if (!"gene" %in% colnames(current_result)) {
-          current_result <- tibble::rownames_to_column(current_result, var = "gene")
-        }
-        current_result[[subset_by]] <- current_subset
-        current_result$comparison <- if (analysis == "contrast") {
+        current_result <- .sn_add_de_subset(
+          .sn_as_de_table(current_result), subset_by, current_subset
+        )
+        comparison <- if (analysis == "contrast") {
           paste(ident_1, "vs", ident_2)
         } else {
           NA_character_
         }
-        subset_results[[current_subset]] <- tibble::as_tibble(current_result)
+        current_result$comparison <- rep(comparison, nrow(current_result))
+        subset_results[[current_subset]] <- current_result
       }
 
-      result <- dplyr::bind_rows(subset_results)
+      # Empty backend tables may omit statistic columns. Let reported rows
+      # define their column order while retaining all tested backgrounds above.
+      reported_results <- Filter(function(x) nrow(x) > 0L, subset_results)
+      result <- dplyr::bind_rows(if (length(reported_results)) reported_results else subset_results)
     }
 
     object <- .sn_restore_seurat_layer_alias(object = analysis_object, context = restore_context)
@@ -953,11 +981,7 @@ sn_find_de <- function(
   tested_group_columns <- setdiff(colnames(tested_table), "gene")
   attr(result, "shennong_tested_features") <- NULL
 
-  if (!is.data.frame(result)) {
-    result <- tibble::rownames_to_column(as.data.frame(result), var = "gene")
-  } else if (!"gene" %in% colnames(result)) {
-    result <- tibble::rownames_to_column(as.data.frame(result), var = "gene")
-  }
+  result <- .sn_as_de_table(result)
 
   group_col <- NULL
   if ("cluster" %in% colnames(result)) {

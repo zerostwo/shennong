@@ -111,7 +111,9 @@
 #'   string variables are supported. Do not combine with the corresponding
 #'   legacy `x`, `y`, or `fill` argument.
 #' @param facet_row_by,facet_col_by Character scalar column names for facets.
-#' @param style Sankey preset: `"A"` separated annotation hierarchy,
+#' @param style Atlas presets `atlas`, `atlas_outline`, and `atlas_module`
+#'   apply to all composition views (using layout A for alluvial plots).
+#'   See [sn_list_plot_styles()]. Sankey preset: `"A"` separated annotation hierarchy,
 #'   `"B"` two-axis horizontal annotation comparison with brackets and
 #'   destination-colored flows, or `"C"` two-axis top-to-bottom composition
 #'   with colored node bars and source-composition pies. B/C require two axes.
@@ -258,6 +260,13 @@ sn_plot_composition <- function(data,
                                 style = c("A", "B", "C"),
                                 show_pies = NULL, node_palette = "Set3",
                                 axis_labels = NULL) {
+  paper_style <- if (missing(style) || identical(style, "A")) "classic" else
+    .sn_match_plot_style(style, extra = c("A", "B", "C"))
+  if (paper_style %in% .sn_atlas_styles()) {
+    if (missing(palette)) palette <- .sn_atlas_palette(paper_style)
+    style <- "A"
+  }
+  if (identical(style, "classic")) style <- "A"
   aliases <- c(stacked_bar = "bar", errorbar = "sample_bar", sankey = "alluvial")
   if (type %in% names(aliases)) type <- unname(aliases[[type]])
   type <- match.arg(type, c("bar", "sample_bar", "sample_boxplot", "histogram", "alluvial"))
@@ -285,7 +294,7 @@ sn_plot_composition <- function(data,
   effective_unit <- unit_by
 
   if (identical(type, "alluvial")) {
-    style <- match.arg(style)
+    style <- match.arg(style, c("A", "B", "C"))
     if (missing(stratum_gap) && style == "B") stratum_gap <- 0.008
     if (missing(alluvium_alpha) && style == "C") alluvium_alpha <- 0.35
     if (is.null(show_pies)) show_pies <- identical(style, "C")
@@ -376,7 +385,7 @@ sn_plot_composition <- function(data,
       .sn_composition_font_theme(plot)
     if (style == "C") plot <- plot + ggplot2::theme(axis.text.x = ggplot2::element_blank())
     return(.sn_attach_figure_spec(
-      plot, "composition",
+      .sn_style_plot(plot, paper_style, "composition"), "composition",
       list(n_points = nrow(plot_data), n_categories = length(flow_by), n_groups = n_fill,
            labels = unique(long_data$.sn_stratum), sankey_style = style),
       source_data = plot_data
@@ -406,7 +415,7 @@ sn_plot_composition <- function(data,
     if (n_fill) plot <- .sn_add_discrete_palette(plot, palette, n_fill, aesthetic = "fill")
     plot <- .sn_composition_theme(plot, show_legend, angle_x, aspect_ratio, panel_widths, panel_heights)
     return(.sn_attach_figure_spec(
-      plot, "composition",
+      .sn_style_plot(plot, paper_style, "composition"), "composition",
       list(n_points = nrow(plot_data), n_categories = bins, n_groups = n_fill,
            labels = if (is.null(fill_name)) character() else unique(as.character(plot_data[[fill_name]]))),
       source_data = plot_data
@@ -557,7 +566,7 @@ sn_plot_composition <- function(data,
   }
   plot <- .sn_composition_theme(plot, show_legend, angle_x, aspect_ratio, panel_widths, panel_heights)
   .sn_attach_figure_spec(
-    plot, "composition",
+    .sn_style_plot(plot, paper_style, "composition"), "composition",
     list(n_points = nrow(source_data), n_categories = length(unique(plot_data[[x_name]])), n_groups = n_fill,
          labels = c(unique(as.character(plot_data[[x_name]])), if (is.null(fill_name)) character() else unique(as.character(plot_data[[fill_name]])))),
     source_data = source_data
@@ -761,7 +770,7 @@ sn_plot_composition <- function(data,
       if (sum(weights) <= 0) next
       proportions <- weights / sum(weights)
       end <- cumsum(proportions) * 2 * pi
-      start <- c(0, head(end, -1L))
+      start <- c(0, utils::head(end, -1L))
       # Equal physical radius: coord_fixed guarantees circles on any device.
       for (m in which(proportions > 0)) {
         theta <- seq(start[m], end[m], length.out = max(8L, ceiling(proportions[m] * 100)))
@@ -818,7 +827,7 @@ sn_plot_composition <- function(data,
 #' @inheritParams sn_plot_composition
 #' @param fill_by Optional color-group column name string. Defaults to the first
 #'   stage for A/C, and the second stage for B. C requires the first stage.
-#' @param style `"A"` hierarchy, `"B"` bracketed annotation comparison, or
+#' @param style Atlas presets use layout A; otherwise `"A"` hierarchy, `"B"` bracketed annotation comparison, or
 #'   `"C"` vertical source/target composition with pies. B/C require two stages.
 #' @param ... Additional named arguments to [sn_plot_composition()], including
 #'   `sankey_layout`, `stratum_gap`, `show_stratum_boxes`, `stratum_label_size`,
@@ -829,7 +838,7 @@ sn_plot_composition <- function(data,
 #' d <- data.frame(original = c("T", "T", "NK"), final = c("T", "NK", "NK"))
 #' sn_plot_sankey(d, flow_by = c("original", "final"), style = "B")
 #' @export
-sn_plot_sankey <- function(data, flow_by, fill_by = NULL, style = c("A", "B", "C"),
+sn_plot_sankey <- function(data, flow_by, fill_by = NULL, style = c("A", "B", "C", "classic", "atlas", "atlas_outline", "atlas_module"),
                            panel_widths = NULL, panel_heights = NULL, show_pies = NULL, ...) {
   .sn_composition_entry(data, "sankey", list(flow_by = flow_by, fill_by = fill_by,
                                            style = match.arg(style), panel_widths = panel_widths,

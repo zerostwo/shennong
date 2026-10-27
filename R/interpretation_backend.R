@@ -1,7 +1,7 @@
 # LLM client plumbing for interpretation workflows.
 #
 # Extracted from interpretation.R: provider defaults and guessing, retryable-error
-# hardening, structured-output schemas and message building, response-text extraction,
+# hardening, structured-output schemas and message building,
 # and ellmer provider construction plus provider health checks.
 
 .sn_default_llm_api_key <- function() {
@@ -245,59 +245,6 @@ sn_run_llm <- function(messages, provider, model = NULL, structured_type = NULL,
     return(paste0(base_url, "/v1"))
   }
   base_url
-}
-
-.sn_extract_openai_response_text <- function(parsed,
-                                             wire_api = c("responses", "chat_completions")) {
-  wire_api <- match.arg(wire_api)
-
-  if (identical(wire_api, "chat_completions")) {
-    choices <- parsed$choices %||% NULL
-    choice <- if (is.data.frame(choices)) {
-      as.list(choices[1, , drop = FALSE])
-    } else if (is.list(choices) && length(choices) > 0) {
-      choices[[1]]
-    } else {
-      NULL
-    }
-    message <- choice$message %||% NULL
-    text <- if (is.list(message)) {
-      message$content %||% NULL
-    } else if (is.data.frame(message) && "content" %in% colnames(message)) {
-      message$content[[1]]
-    } else {
-      choice$content %||% choice$text %||% NULL
-    }
-    return(text)
-  }
-
-  output_items <- parsed$output %||% list()
-  output_text <- NULL
-  if (is.list(output_items) && length(output_items) > 0L) {
-    for (item in output_items) {
-      contents <- item$content %||% list()
-      if (is.list(contents) && length(contents) > 0L) {
-        for (content_item in contents) {
-          if (identical(content_item$type %||% NULL, "output_text") && !is.null(content_item$text)) {
-            output_text <- content_item$text
-            break
-          }
-        }
-      }
-      if (!is.null(output_text)) {
-        break
-      }
-      if (!is.null(item$text)) {
-        output_text <- item$text
-        break
-      }
-    }
-  }
-
-  parsed$output_text %||%
-    output_text %||%
-    parsed$text %||%
-    NULL
 }
 
 #' Create an \pkg{ellmer}-backed provider for Shennong interpretation helpers

@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_spatial.R
 \name{sn_plot_spatial_feature}
 \alias{sn_plot_spatial_feature}
-\title{Plot expression in spatial coordinates}
+\title{Plot expression or numeric metadata in spatial coordinates}
 \usage{
 sn_plot_spatial_feature(
   object,
@@ -10,23 +10,89 @@ sn_plot_spatial_feature(
   spatial_cols = NULL,
   assay = NULL,
   layer = "data",
-  point_size = 1.5
+  point_size = 1.5,
+  cells = NULL,
+  split_by = NULL,
+  images = NULL,
+  cols = NULL,
+  palette = "viridis",
+  pt_size = NULL,
+  alpha = 1,
+  na_value = "grey80",
+  limits = NULL,
+  order = TRUE,
+  show_legend = TRUE,
+  show_axis = FALSE,
+  show_border = TRUE,
+  title = NULL,
+  ncol = NULL,
+  flip_y = TRUE,
+  raster = FALSE,
+  raster_dpi = 512,
+  style = "classic"
 )
 }
 \arguments{
 \item{object}{A Seurat object.}
 
-\item{features}{Features to plot.}
+\item{features}{Gene names or numeric metadata columns, in panel order.}
 
-\item{spatial_cols}{Coordinate metadata columns.}
+\item{spatial_cols}{Two numeric metadata columns in x, y order. Recognized
+metadata coordinates take precedence over native images unless \code{images}
+is supplied. Coordinates are never rescaled or registered across sections.}
 
-\item{assay, layer}{Expression assay and layer.}
+\item{assay, layer}{Expression assay and exact layer. Metadata-only maps do
+not require an expression layer.}
 
-\item{point_size}{Point size.}
+\item{point_size}{Point size in mm; retained for positional compatibility.}
+
+\item{cells}{Optional cell names to plot, in the requested order.}
+
+\item{split_by}{Metadata column identifying sections or panels. Required to
+separate sections when using metadata coordinates; no sample column is guessed.}
+
+\item{images}{Optional Seurat image/FOV names. Native images are used when
+metadata coordinates are absent. Each image is plotted separately using
+full-resolution Visium coordinates or FOV centroids; histology and cell
+segmentation outlines are not drawn. Overlapping image cell sets are rejected.}
+
+\item{cols}{Explicit colors; named vectors match categorical labels. For
+feature maps these are gradient colors.}
+
+\item{palette}{Shennong palette name or color vector.}
+
+\item{pt_size}{Alias matching \code{\link[=sn_plot_dim]{sn_plot_dim()}}. Supply only one size argument.}
+
+\item{alpha}{Point opacity between zero and one.}
+
+\item{na_value}{Color for missing group or feature values.}
+
+\item{limits}{Optional common color limits. Out-of-range colors are clamped;
+original values remain in the plot data and exported source table.}
+
+\item{order}{Draw higher values last and missing values first.}
+
+\item{show_legend, show_axis, show_border}{Show the legend, coordinate axes or panel border.}
+
+\item{title}{Optional plot title.}
+
+\item{ncol}{Number of facet columns.}
+
+\item{flip_y}{Reverse the y axis for image coordinates. Set FALSE for Cartesian coordinates.}
+
+\item{raster}{Rasterize only point layers with ggrastr; labels stay vector.}
+
+\item{raster_dpi}{Raster resolution (scalar or vector, whose maximum is used).}
+
+\item{style}{Presentation preset; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}. Coordinates,
+shared limits and source values are unchanged.}
 }
 \value{
-A faceted \code{ggplot} object.
+A faceted \code{ggplot} with fixed spatial aspect and one common color scale.
 }
 \description{
-Plot expression in spatial coordinates
+Features share one continuous scale across all panels. Assay/layer selection
+is exact: a missing layer errors instead of falling back to counts. Missing
+requested features warn; no available features is an error. Numeric metadata
+takes precedence over a gene with the same name.
 }

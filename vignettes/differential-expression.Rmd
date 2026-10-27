@@ -61,6 +61,27 @@ of hypotheses and the tested-gene background. Getter filters affect the output
 view only. For enrichment, preserve the tested background rather than using
 all genes in the genome or only the significant genes.
 
+An empty marker result is valid: one empty subset does not stop other subsets,
+and an entirely empty run remains discoverable with `sn_list_results()` and
+retrievable with `sn_get_result()` or `sn_get_de_result()`. Table selection
+returns zero rows, including when the backend omitted empty statistic columns.
+No reported genes does not necessarily mean no genes were tested; inspect
+`full$input$tested_features_by_comparison` for the actual background.
+
+For `subset_by`, supply complete, non-blank labels and a column name distinct
+from the backend output (`gene`, `comparison`, marker `cluster`, and statistic
+columns). Copy existing metadata to a descriptive name when it conflicts:
+
+```{r subset-labels, eval=FALSE}
+study$cell_type_subset <- study$cluster
+study <- sn_find_de(
+  study, analysis = "markers", group_by = "condition",
+  subset_by = "cell_type_subset", result_id = "within_cell_type"
+)
+sn_list_results(study, type = "de")
+sn_get_de_result(study, "within_cell_type", p_adjusted_cutoff = 0.05)
+```
+
 ## Compare two groups explicitly
 
 `ident_1` is the numerator/target group and `ident_2` is the reference group.

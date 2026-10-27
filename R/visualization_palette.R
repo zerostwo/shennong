@@ -179,7 +179,9 @@
 
 .sn_add_discrete_palette <- function(p, palette = "Paired", n, aesthetic = c("fill", "color")) {
   aesthetic <- match.arg(aesthetic)
-  values <- .sn_resolve_discrete_palette(palette = palette, n = n)
+  named_colors <- !is.null(names(palette)) && length(palette) > 0L &&
+    all(!is.na(names(palette)) & nzchar(names(palette)))
+  values <- if (named_colors) palette else .sn_resolve_discrete_palette(palette = palette, n = n)
 
   if (identical(aesthetic, "fill")) {
     return(p + ggplot2::scale_fill_manual(values = values))

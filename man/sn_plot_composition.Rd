@@ -161,7 +161,9 @@ legacy \code{x}, \code{y}, or \code{fill} argument.}
 
 \item{facet_row_by, facet_col_by}{Character scalar column names for facets.}
 
-\item{style}{Sankey preset: \code{"A"} separated annotation hierarchy,
+\item{style}{Atlas presets \code{atlas}, \code{atlas_outline}, and \code{atlas_module}
+apply to all composition views (using layout A for alluvial plots).
+See \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}. Sankey preset: \code{"A"} separated annotation hierarchy,
 \code{"B"} two-axis horizontal annotation comparison with brackets and
 destination-colored flows, or \code{"C"} two-axis top-to-bottom composition
 with colored node bars and source-composition pies. B/C require two axes.}

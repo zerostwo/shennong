@@ -114,3 +114,8 @@ sn_pixi_paths,deprecated_alias,Deprecated forwarding shim over sn_get_pixi_paths
 sn_delete_artifact,runtime_admin,Stored-artifact deletion rather than analysis execution
 sn_simulate_scdesign3,deprecated_alias,Deprecated forwarding shim over sn_simulate(method = 'scdesign3')
 sn_get_plot_camera,visualization_utility,Camera serialization utility validated by embedding style tests and browser round-trip smoke checks
+sn_list_plot_styles,visualization_utility,Presentation preset enumeration rather than analysis execution
+sn_plot_matrix,visualization_utility,Supplied-value renderer checked by atlas tests and original Nature Fig 2c numerical readback
+sn_plot_network,visualization_utility,Supplied-edge renderer checked by atlas topology and source export tests; no network inference
+sn_plot_effect,visualization_utility,Supplied effects and intervals only; identity versus ratio checked in atlas layout tests
+sn_plot_overlap,visualization_utility,Exact set membership renderer; exclusive intersection counts checked in atlas layout tests

@@ -1,10 +1,87 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-09-23
+Last updated: 2026-10-27
 
 This file describes what is true now. Git history and `docs/codex/archive/`
 hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 `NEWS.md` records user-visible changes.
+
+## Package audit validation
+
+- The DE/program audit fixes are included in the consolidated source delivery. A fixed
+  snapshot of starting `main` (`7b5602b`) plus the original uncommitted work
+  and these fixes passes 5,988 assertions with zero failures/errors, 17
+  warnings, and one missing local-public-data fixture skip (776 cases across
+  64 test files). Later concurrent spatial/atlas development is outside this
+  full-suite claim.
+- Empty DE subsets and table selection work without fabricating statistics;
+  subset metadata cannot overwrite genes, comparisons, or backend columns.
+  Missing/blank subset labels fail before dispatch. Mean program scoring
+  preserves multiple programs for one cell/group, and malformed signature
+  tables report missing columns explicitly. Two unused extraction helpers
+  are removed; compatibility aliases remain.
+- Source build and structural `R CMD check` return `Status: OK`, including
+  the repaired Sankey `utils::head()` namespace lookup. The check skips
+  examples/tests; the complete `testthat::test_local()` pass runs separately.
+  Pkgdown was rebuilt in the fixed snapshot and the changed guide text was
+  independently read back. The consolidated source delivery includes these
+  fixes; validation uses an isolated library without modifying the user's
+  installed package. Website publication is verified separately.
+- One environment warning requires separate attention: installed glmmTMB was
+  built with TMB 1.9.21, while the host has TMB 1.9.23. The audit preserves
+  shared libraries. The remaining warnings concern small fixtures, missing
+  scale data, or method-specific controls; passing tests do not establish
+  equivalence for every optional backend.
+
+## Atlas figure styles
+
+- Three shared atlas themes coexist with 23 function-specific structural styles:
+  matrix triangles/rings/annotations/dendrograms/tracks, paired and half/split/
+  stacked distributions, supplied effect forests/bars/lollipops, UpSet, and
+  bipartite/tree/ribbon/rewiring networks. The existing Seurat heatmap and
+  violin APIs dispatch matching structures. Two new exports cover effect
+  intervals and set membership. No dependencies were added.
+- Three installed catalogs cover six papers, 38 main figures and structural
+  layouts with panel-level sources and input requirements. T-cell Science
+  image verification and supplementary-figure coverage remain incomplete;
+  ATAC, FACS, histology, Venn and circular phylogenetic trees remain external.
+- `scripts/smoke/atlas-figure-layouts.R` exports all 23 structural examples to
+  `data-local/atlas-layout-review/`; demonstrations are labeled synthetic.
+  A separate Nature Fig. 2c render uses all 408 original values with exact CSV
+  readback and independently recomputed clustering. Source tables, pairing
+  IDs, supplied intervals and topology remain inspectable in figure bundles.
+- Focused atlas/heatmap/figure/architecture checks passed 198 assertions (one
+  existing boxplot deprecation warning and one absent local-fixture skip).
+  Structural/plot-registry/backend-admission checks passed 568 assertions
+  without warnings or failures; these runs overlap and are not summed.
+  Source build and structural R CMD check report OK; examples/full tests are
+  not part of that check. A complete local pkgdown rebuild passed and its
+  rendered atlas article/API pages were independently read back under
+  `site/atlas-layout-review/dev/`. All 23 PDFs have 8 pt text and no text beyond
+  page bounds. Logs and source checksums accompany the review gallery.
+- The older 6,138-assertion full-suite run predates the structural extension
+  and is not evidence for its new geometry. The structural extension is now
+  included in the consolidated source delivery.
+
+## Spatial map validation
+
+- Spatial coordinate, feature, domain, and deconvolution maps use shared
+  palette/theme/raster helpers and retain equal coordinate units. Native
+  Visium/FOV centroids and stored section boundaries are supported; histology
+  and segmentation outlines are outside this coordinate-map implementation.
+- Focused spatial/figure/architecture/API-registry validation passes (684
+  assertions), followed by a final 60-assertion spatial-style pass with no
+  failures, warnings or skips. Both real Visium fixture sections (400 spots
+  each) render to PNG/PDF with exact native-coordinate readback. Reproduce with
+  `Rscript scripts/smoke/spatial-plots.R`; review artifacts are local under
+  `data-local/spatial-plot-review/`.
+- Local pkgdown rebuild succeeds from an isolated source snapshot; shared-tree
+  concurrent builds had collided on `vignettes/--find-assets.html`. Verified
+  rendered pages are under `site/spatial-review/`; nothing was deployed.
+- Source build and structural R CMD check pass, with the existing Sankey
+  unqualified `head` NOTE. This is focused validation, not a new full-suite
+  or external-backend run. The spatial changes are now included in the
+  consolidated source delivery.
 
 ## Current validation
 
@@ -21,15 +98,28 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   backend records to edgeR 4.10.5 and enrichit 0.2.4. The updated remote
   conformance job passes numerical parity and exact-version checks; all four
   R-CMD-check platforms pass on the workflow-fix branch.
-- The full local pkgdown build executes the new bundled-data examples and
-  renders the complete site. All 9,301 internal links across 326 HTML pages
-  resolve; 45 public calls in the introductory recipes pass argument checks.
-  The full source suite passed 5,835 assertions; its sole failure was an
-  obsolete deployment-entry assertion, now updated and covered by a passing
-  104-assertion CI-workflow rerun (17 fixture warnings, one missing local-data
-  skip in the full run). Source build and structural R CMD check pass with zero errors and warnings
-  and the existing Sankey `head` NOTE. Full-suite and remote CI evidence is
-  recorded with the PRs rather than inferred from a structural check.
+- The consolidated source passes `R CMD build` and
+  `R CMD check --no-manual --no-tests` with `Status: OK`, including examples
+  and vignette rebuilding. `_R_CHECK_FORCE_SUGGESTS_=false` permits unavailable
+  optional packages; the source test suite runs separately.
+- The complete source suite is not claimed green: the marker-DE regression
+  records an empty tested-feature background (expected 90 genes). The same
+  two assertions fail on unchanged baseline `7b5602b` in a fresh process under
+  the current installed dependencies. This predates the consolidated changes;
+  retain this limitation rather than silently substituting all input genes.
+  The extended full-suite run was stopped after reproducing that baseline
+  failure; it is not a completed full-suite pass. The separate DE suite has
+  two failed background assertions and three dependent enrichment errors;
+  the DE-boundary suite has one failed background assertion and one NULL
+  background error. Atlas layouts/styles, spatial plotting, heatmaps, program
+  scoring and architecture gates complete without failures in the focused run.
+  The existing ggplot2 boxplot deprecation warning remains.
+- The complete local pkgdown site is rebuilt from an isolated installation of
+  the current source. Atlas resources are available in that installation;
+  the atlas/spatial/visualization guides, feature reference and NEWS pages are
+  independently read back. Rendered output is synchronized to `site/dev`.
+  The user's installed library is unchanged; source and website publication
+  remain separate checks.
 - Pkgdown deployment now sets an explicit bot author/committer identity; the
   previous main workflow built successfully but failed before publishing (#30).
   Deployment publishes the checked `site/dev` output directly and routes the
@@ -40,9 +130,24 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   instead of the previous host without address records.
 - No dependencies or exports are added by the documentation refresh. The
   homepage, guide navigation, four introductory/reference articles, related
-  workflow examples, and installed usage assets are synchronized. Uncommitted
-  working-tree changes remain outside this delivery. Publication is
-  verified separately against the merged main commit and pkgdown workflow.
+  workflow examples, and installed usage assets are synchronized. The broader
+  plotting and analysis updates are included in the consolidated source delivery.
+  Publication is verified separately against the main commit and pkgdown workflow.
+
+## Embedding validation
+
+- Two- and three-dimensional embedding styles now use a shared local WebGL shader for
+  browser and PDF output. Focused tests cover actual headless captures, exact
+  output pixel dimensions, locally shipped dependencies, camera round-trip,
+  assay/layer values and disconnected density islands. Visual checks include
+  the same 2,000-cell PBMC before/after view and a 6,288-cell Blood2 fixture;
+  no cells are duplicated to increase apparent density. This revision passes
+  807 focused assertions (including 64 embedding-style assertions; zero failures/warnings/skips), source build, and
+  structural package check (one existing Sankey `head` NOTE). The local
+  pkgdown site was rebuilt. Browser-downloaded angles were reapplied to a
+  PDF whose raster resolution and vector text were independently read back.
+  Two-dimensional PBMC dim/feature exports also pass 600 dpi/vector-text
+  readback, with all cells and contours constrained to zero depth.
 
 ## Current architecture state
 
@@ -55,7 +160,16 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   Table selection has explicit scope, result IDs resolve only unambiguously,
   and program aggregation names the order of operations. Fate reruns require
   explicit overwrite while retaining metadata ownership checks.
-- `R/` contains 85 domain-oriented source files. Large mixed modules have been
+- `sn_plot_dim()` and `sn_plot_feature()` retain classic rendering and add
+  nebula/glass scenes. Default two-dimensional inputs use planar KDE contours
+  and a front-facing camera; explicit `dims = 1:3` uses real 3D coordinates. Local WebGL supplies smooth normals, per-pixel
+  rim lighting, soft points and bloom. ggsave captures that same renderer via
+  chromote/Chrome at draw-time physical size times 600 dpi, with vector labels
+  and legends. Local-neighbor bandwidth replaces global-SD KDE smoothing to
+  avoid inflated empty shells. Export needs Chrome/Chromium; missing WebGL is
+  an explicit error. Interactive mode remains single-panel and returns camera
+  changes through downloaded JSON/copied R, not a live R-session binding.
+- `R/` contains 88 domain-oriented source files. Large mixed modules have been
   split along stable responsibilities, including bulk design, BBKNN,
   result semantics, gene-symbol preparation, Python artifact validation, and
   infercnvpy integration. Public functions remain in the strict

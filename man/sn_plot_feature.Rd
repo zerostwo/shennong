@@ -48,7 +48,7 @@ sn_plot_feature(
   panel_heights = NULL,
   x_label = NULL,
   y_label = NULL,
-  style = c("classic", "nebula", "glass"),
+  style = c("classic", "nebula", "glass", "atlas", "atlas_outline", "atlas_module"),
   style_control = list(),
   camera = NULL,
   interactive = FALSE,
@@ -82,7 +82,8 @@ cells.}
 
 \item{alpha}{Point alpha passed to Seurat's \code{FeaturePlot()}.}
 
-\item{stroke_size}{Point stroke size passed to Seurat's \code{FeaturePlot()}.}
+\item{stroke_size}{Point stroke size passed to Seurat's \code{FeaturePlot()}.
+In expression mode, \code{NULL} uses zero so outlines do not enlarge small points.}
 
 \item{layer}{A character string specifying which layer in the Seurat object
 to use (for example, \code{"data"} or \code{"scale.data"}). Defaults to
@@ -112,8 +113,7 @@ estimator when \code{mode = "density"}. Larger values smooth more.}
 \item{raster}{A logical value specifying whether to use raster graphics.
 Defaults to TRUE. When \code{ggrastr} is installed, Shennong rasterizes the
 regular ggplot point layer after plotting so \code{pt_size} keeps the same
-behavior as \code{raster = FALSE}; otherwise it falls back to Seurat's
-native raster backend.}
+behavior as \code{raster = FALSE}; otherwise it keeps the vector point layer.}
 
 \item{seed}{An integer value specifying the random seed. Defaults to 717.}
 
@@ -151,7 +151,8 @@ derives the missing panel dimension automatically.}
 
 \item{x_label, y_label}{Optional axis labels.}
 
-\item{style}{Rendering style: \code{"classic"} preserves the existing 2D plot;
+\item{style}{Atlas presets (\code{atlas}, \code{atlas_outline}, \code{atlas_module}) use
+compact 8 pt 2D rendering; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}. Rendering style: \code{"classic"} preserves the existing 2D plot;
 \code{"nebula"} and \code{"glass"} use planar density contours with the default
 \code{dims = c(1, 2)}, or real three-dimensional embeddings with \code{dims = 1:3}.
 Static 3D output is a ggplot with the complete point/surface scene rasterized

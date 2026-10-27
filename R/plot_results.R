@@ -66,10 +66,12 @@
 #'   either \code{result} or \code{object}, not both.
 #' @param result_id Stored DE result name used when \code{object} is supplied.
 #' @return A result-aware `ggplot` with an attached figure specification.
+#' @param style Presentation preset; see [sn_list_plot_styles()].
 #' @export
 sn_plot_de <- function(result, type = c("volcano", "ma", "effect", "heatmap"),
                        adjusted_p_value = 0.05, log2_fold_change = 1, n = 40L,
-                       object = NULL, result_id = "default") {
+                       object = NULL, result_id = "default", style = "classic") {
+  style <- .sn_match_plot_style(style)
   type <- match.arg(type)
   result <- .sn_resolve_stored_plot_result(result, object, missing(result), "de", result_id)
   data <- .sn_standardize_plot_de(result)
@@ -105,6 +107,7 @@ sn_plot_de <- function(result, type = c("volcano", "ma", "effect", "heatmap"),
       ggplot2::labs(x = NULL, y = NULL, fill = "Effect") + ggplot2::theme_bw()
     data <- shown
   }
+  plot <- .sn_style_plot(plot, style, "effect")
   .sn_attach_figure_spec(plot, if (type == "heatmap") "heatmap" else "effect",
     list(n_points = nrow(data), n_features = length(unique(data$gene)), n_groups = length(unique(data$comparison)),
          n_rows = length(unique(data$gene)), n_columns = length(unique(data$comparison)), labels = data$gene), source_data = data)
@@ -160,10 +163,12 @@ sn_plot_de <- function(result, type = c("volcano", "ma", "effect", "heatmap"),
 #' @param result_id Stored enrichment result name used when \code{object}
 #'   is supplied.
 #' @return A result-aware `ggplot` with source data and figure specification.
+#' @param style Presentation preset; see [sn_list_plot_styles()].
 #' @export
 sn_plot_enrichment <- function(result, type = c("dot", "bar", "ridge", "network", "emap"),
                                n = 20L, minimum_overlap = 0.1,
-                               object = NULL, result_id = "default") {
+                               object = NULL, result_id = "default", style = "classic") {
+  style <- .sn_match_plot_style(style)
   type <- match.arg(type)
   result <- .sn_resolve_stored_plot_result(result, object, missing(result), "enrichment", result_id)
   data <- .sn_standardize_enrichment(result)
@@ -197,6 +202,7 @@ sn_plot_enrichment <- function(result, type = c("dot", "bar", "ridge", "network"
   }
   network_view <- type %in% c("network", "emap")
   summary_data <- if (network_view) data$nodes else data
+  plot <- .sn_style_plot(plot, style, "effect")
   .sn_attach_figure_spec(plot, if (type %in% c("network", "emap")) "network" else "bar",
     list(n_points = nrow(summary_data), n_features = nrow(summary_data), labels = as.character(summary_data$term),
          n_nodes = if (network_view) nrow(summary_data) else 0, n_edges = if (network_view) nrow(data$edges) else 0), source_data = data)

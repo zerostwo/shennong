@@ -14,6 +14,9 @@ Prefer `sn_plot_result()` for stored/downstream analysis results; inspect
    `sn_plot_barplot()`, `sn_plot_composition()`, and `sn_plot_milo()` for
    package-style plots; resolve reusable colors with `sn_list_palettes()` and
    `sn_get_palette()`.
+   Group-averaged `sn_plot_heatmap()` can return ggplot2, pheatmap, or
+   ComplexHeatmap output. In its compact group-by-feature layout,
+   `cluster_rows` clusters groups and `cluster_cols` clusters features.
    `sn_plot_composition()` accepts a Seurat object directly. Use ordinary
    `type = "bar"` for descriptive cell counts/proportions; use
    `type = "sample_bar"` or `"sample_boxplot"` with an explicit `sample_by`
@@ -21,6 +24,11 @@ Prefer `sn_plot_result()` for stored/downstream analysis results; inspect
    two or more `flow_by` metadata columns for source/annotation flows. Use
    `unit_by` for donor metadata repeated across cells so donor distributions do
    not count cells as independent donors.
+
+For dense expression maps, use `sn_plot_feature(object, features = "score",
+reduction = "umap", pt_size = 0.05)`. High values are drawn last; NULL
+`stroke_size` means zero stroke, preserving small points with or without
+rasterization. Set a nonzero stroke explicitly only when wanted.
 
 ## 9
 
@@ -125,3 +133,68 @@ The default styled categorical palette uses muted luminous colors; an explicit
 expression blending, `mode = "density"`, and extra Seurat arguments in `...`.
 These remain available through `style = "classic"`. `group_by` in feature plots
 is only for the new styles; `keep_scale` controls shared expression limits.
+
+
+## Spatial coordinate maps
+
+Use `sn_plot_spatial(obj, group_by = "region", split_by = "section",
+pt_size = 0.8, label = TRUE)` for categorical maps. Named `cols` keep labels
+matched to colors; palette, legend, axis, border, alpha, and title controls
+follow dimension plots. Keep `point_size` compatibility but never pass both
+size arguments. Metadata coordinates are preferred; supply `images` to select
+native Seurat image/FOV centroids. Native images always occupy separate panels.
+These maps do not draw histology or segmentation outlines. Preserve coordinate
+units and use `flip_y = FALSE` for Cartesian coordinates.
+
+`sn_plot_spatial_feature(obj, c("CD3D", "MS4A1"), assay = "Spatial",
+layer = "data", split_by = "section")` uses the exact layer, with no counts
+fallback. Numeric metadata is accepted and has name precedence over genes.
+Panels share a common color scale; `limits` clamps colors without changing
+source values. `raster = TRUE` requires ggrastr and leaves labels vector.
+For domains, discover `sn_list_results(obj, type = "spatial_domains")`, retrieve
+`sn_get_result(obj, "spatial_domains", result_id)`, and use
+`sn_plot_spatial_domain(obj, result_id = result_id, label = TRUE)`; the retrieved
+result is also accepted. Stored section boundaries are retained.
+
+
+## Atlas figure styles
+
+- Discover presets with `sn_list_plot_styles()`. Use `style = "atlas"`,
+  `"atlas_outline"`, or `"atlas_module"` on supported ggplot-based embedding,
+  expression, composition, association, DE/enrichment, survival, communication,
+  and spatial views. Keep `classic` for previous defaults.
+- Read the `atlas-figure-styles` article and installed
+  `extdata/zhang-atlas-{papers,figures}.csv` for the six-paper figure inventory.
+  T-cell Science entries are caption-only; supplementary figures are not an
+  exhaustive inventory. Presets are visual adaptations, not pixel replicas.
+- Use `sn_plot_matrix(x, type = "bubble", size = size_matrix)` when color and
+  area describe different quantities. Keep aligned dimnames, missing values,
+  units, statistic names and explicit common limits. `sn_plot_dot()` retains
+  percent-expression area; it must not stand in for a significance bubble.
+- `sn_plot_network(edges, nodes, layout = "supplied")` renders provided scores
+  and fixed coordinates. It does not infer CoVarNet CMs, correlation, or LR
+  communication. Preserve isolates and original weights.
+- Atlas heatmaps require `backend = "ggplot2"`; split-dot color encodings are
+  not supported by atlas styles. Source matrices and node/edge tables can be
+  exported with `sn_export_figure_bundle()` for readback.
+
+### Structural atlas layouts
+
+`sn_list_plot_styles(function_name = "sn_plot_matrix")` lists structural styles
+and the exact paper panels/input requirements. Themes (`atlas`,
+`atlas_outline`, `atlas_module`) are separate from the 23 geometry choices.
+Use matrix `split_triangle`, `circular`, `annotated`, `dendrogram`,
+`grouped_bubble`, `heatmap_bar`, `heatmap_density`; distribution `violin_box`,
+`raincloud`, `paired_box`, `paired_slope`, `split_violin`, `stacked_violin`;
+`sn_plot_effect()` for supplied coefficient/ratio forests, signed bars and
+lollipops; `sn_plot_overlap()` for exclusive UpSet intersections; and
+`sn_plot_network()` for bipartite, supplied clone-tree, weighted chord and
+shared-coordinate rewiring structures. Existing `sn_plot_heatmap(mode="average")`
+and `sn_plot_violin()` expose the matching matrix/distribution layouts.
+
+Require explicit complete subject pairs (`pair_by`, optional specimen
+`sample_by`), an explicit coefficient versus ratio scale, original interval
+bounds, and supplied network/tree topology. No automatic P-values, BCR trees,
+CoVarNet discovery or imputation. Reusable source tables survive PDF/PNG bundle
+export. Consult `extdata/zhang-atlas-layouts.csv` and the rendered atlas article;
+synthetic layout examples must not be described as original cancer results.

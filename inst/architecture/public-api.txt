@@ -122,6 +122,7 @@ sn_list_methods
 sn_list_palettes
 sn_list_pixi_environments
 sn_list_plot_methods
+sn_list_plot_styles
 sn_list_results
 sn_list_signatures
 sn_list_usage_runs
@@ -158,6 +159,7 @@ sn_plot_distribution
 sn_plot_dot
 sn_plot_doublets
 sn_plot_dynamic_heatmap
+sn_plot_effect
 sn_plot_elbow
 sn_plot_enrichment
 sn_plot_fate
@@ -170,8 +172,11 @@ sn_plot_hvg
 sn_plot_integration
 sn_plot_ligand_target
 sn_plot_lineage_probability
+sn_plot_matrix
 sn_plot_metabolism
 sn_plot_milo
+sn_plot_network
+sn_plot_overlap
 sn_plot_program_activity
 sn_plot_program_heatmap
 sn_plot_pseudotime

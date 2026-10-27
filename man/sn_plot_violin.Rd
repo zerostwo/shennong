@@ -19,7 +19,8 @@ sn_plot_violin(
   panel_heights = NULL,
   x_label = NULL,
   y_label = NULL,
-  title = NULL
+  title = NULL,
+  style = "classic"
 )
 }
 \arguments{
@@ -49,6 +50,12 @@ derives the missing panel dimension automatically.}
 \code{catplot::theme_cat()} when available.}
 
 \item{x_label, y_label, title}{Optional plot labels.}
+
+\item{style}{Presentation preset: \code{classic}, \code{atlas}, \code{atlas_outline}, or
+\code{atlas_module}. See \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}} and the atlas-figure-styles article.
+Also accepts \code{violin_box}, \code{raincloud}, \code{split_violin}, \code{stacked_violin};
+these use unmodified data-layer values through \code{\link[=sn_plot_distribution]{sn_plot_distribution()}}.
+Use that function directly for sample aggregation and paired plots.}
 }
 \value{
 A ggplot2 object.

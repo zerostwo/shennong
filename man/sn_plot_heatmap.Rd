@@ -12,6 +12,7 @@ sn_plot_heatmap(
   assay = NULL,
   layer = "scale.data",
   mode = c("cells", "average"),
+  backend = c("ggplot2", "pheatmap", "complexheatmap"),
   scale_data = TRUE,
   max_cells = NULL,
   seed = 717,
@@ -23,6 +24,11 @@ sn_plot_heatmap(
   col_max = 2.5,
   average_fun = c("mean", "median"),
   average_scale = TRUE,
+  cluster_rows = FALSE,
+  cluster_cols = FALSE,
+  clustering_distance_rows = "euclidean",
+  clustering_distance_cols = "euclidean",
+  clustering_method = "complete",
   group_bar = TRUE,
   label = TRUE,
   raster = TRUE,
@@ -38,6 +44,7 @@ sn_plot_heatmap(
   aspect_ratio = NULL,
   panel_widths = NULL,
   panel_heights = NULL,
+  style = "classic",
   ...
 )
 }
@@ -55,17 +62,19 @@ for each split level and combined with patchwork.}
 \item{assay}{Assay used for expression retrieval.}
 
 \item{layer}{Data layer used for expression retrieval. Defaults to
-\code{"scale.data"} for cell-level heatmaps. In \code{mode = "average"},
-use \code{"data"} to average normalized expression before optional
-feature-wise scaling.}
+\code{"scale.data"} in both modes. Use \code{"data"} in average mode to
+average normalized expression before optional feature-wise scaling.}
 
 \item{mode}{One of \code{"cells"} or \code{"average"}. \code{"cells"}
 displays cells; \code{"average"} averages expression by \code{group_by}
 and optional \code{split_by}.}
 
+\item{backend}{Heatmap renderer. \code{"ggplot2"} supports both modes;
+\code{"pheatmap"} and \code{"complexheatmap"} are available for
+\code{mode = "average"} and return their native plot objects.}
+
 \item{scale_data}{If \code{TRUE} and \code{layer = "scale.data"}, scale the
-requested features when they are missing from the scaled layer. Used only
-in \code{mode = "cells"}.}
+requested features when they are missing from the scaled layer.}
 
 \item{max_cells}{Optional maximum number of cells to show per cell-level
 heatmap panel.}
@@ -85,6 +94,14 @@ heatmap panel.}
 
 \item{average_scale}{Whether to feature-wise z-score average expression in
 \code{mode = "average"}.}
+
+\item{cluster_rows, cluster_cols}{Whether to hierarchically cluster displayed
+rows (groups) or columns (features) in average mode.}
+
+\item{clustering_distance_rows, clustering_distance_cols}{Distance measures
+used for row and column clustering.}
+
+\item{clustering_method}{Linkage method used for hierarchical clustering.}
 
 \item{group_bar, label, raster}{Passed to \code{Seurat::DoHeatmap()} for
 \code{mode = "cells"}. Rasterization is enabled by default.}
@@ -108,10 +125,17 @@ levels are used as panel titles unless \code{title} is also supplied.}
 \item{aspect_ratio, panel_widths, panel_heights}{Optional sizing controls
 forwarded through the Shennong/catplot theme helper.}
 
-\item{...}{Additional arguments passed to \code{Seurat::DoHeatmap()}.}
+\item{style}{Presentation preset: \code{classic}, \code{atlas}, \code{atlas_outline}, or
+\code{atlas_module}. See \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}} and the atlas-figure-styles article.
+Structural matrix styles are also supported for \code{mode = "average"};
+annotation and summary arguments in \code{...} are passed to \code{\link[=sn_plot_matrix]{sn_plot_matrix()}}.}
+
+\item{...}{Additional arguments passed to \code{Seurat::DoHeatmap()},
+\code{pheatmap::pheatmap()}, or \code{ComplexHeatmap::Heatmap()}, according
+to the selected backend.}
 }
 \value{
-A ggplot2 or patchwork object.
+A ggplot2, patchwork, pheatmap, or ComplexHeatmap object.
 }
 \description{
 \code{sn_plot_heatmap()} draws a compact heatmap for user-selected genes. In

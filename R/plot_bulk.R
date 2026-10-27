@@ -232,13 +232,15 @@ sn_plot_wgcna <- function(x, type = c("traits", "modules"), object = NULL) {
 #' @param feature Optional feature subset for the selected view.
 #' @param object Alias for \code{x}; supply only one of \code{x} and \code{object}.
 #' @return A survival `ggplot` object.
+#' @param style Presentation preset; see [sn_list_plot_styles()].
 #' @export
 sn_plot_survival <- function(x, adjusted_p_value = NULL,
                              view = c(
                                "forest", "km", "risk_table", "ph", "ph_test",
                                "cumulative_hazard"
                              ),
-                             feature = NULL, object = NULL) {
+                             feature = NULL, object = NULL, style = "classic") {
+  style <- .sn_match_plot_style(style)
   x <- .sn_resolve_object_alias(x, object, missing(x))
   result <- .sn_resolve_bulk_result(x, "bulk_survival")
   view <- match.arg(view)
@@ -386,6 +388,11 @@ sn_plot_survival <- function(x, adjusted_p_value = NULL,
       ggplot2::labs(x = "Time", y = "Cumulative hazard", color = "Group") +
       ggplot2::theme_bw()
   }
+  if (style != "classic" && view %in% c("km", "risk_table", "cumulative_hazard")) {
+    colours <- .sn_atlas_palette(style)
+    plot <- plot + ggplot2::scale_colour_manual(values = colours) + ggplot2::scale_fill_manual(values = colours)
+  }
+  plot <- .sn_style_plot(plot, style, "survival")
   .sn_attach_figure_spec(
     plot,
     "survival",

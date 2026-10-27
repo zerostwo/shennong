@@ -10,7 +10,8 @@ sn_plot_enrichment(
   n = 20L,
   minimum_overlap = 0.1,
   object = NULL,
-  result_id = "default"
+  result_id = "default",
+  style = "classic"
 )
 }
 \arguments{
@@ -27,6 +28,8 @@ supply either \code{result} or \code{object}, not both.}
 
 \item{result_id}{Stored enrichment result name used when \code{object}
 is supplied.}
+
+\item{style}{Presentation preset; see \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}}.}
 }
 \value{
 A result-aware \code{ggplot} with source data and figure specification.

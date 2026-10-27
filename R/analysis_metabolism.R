@@ -50,19 +50,6 @@ sn_get_metabolic_signatures <- function(species = c("human", "mouse")) {
   list(scores = scores, coverage = matched$coverage, expression = expression)
 }
 
-.sn_extract_scmetabolism_scores <- function(object) {
-  assay <- object[["METABOLISM"]]
-  candidates <- list(
-    tryCatch(methods::slot(assay, "score"), error = function(e) NULL),
-    tryCatch(assay@misc$score, error = function(e) NULL),
-    tryCatch(SeuratObject::LayerData(assay, layer = "score"), error = function(e) NULL),
-    tryCatch(SeuratObject::LayerData(assay, layer = "data"), error = function(e) NULL)
-  )
-  hit <- candidates[!vapply(candidates, is_null, logical(1))]
-  if (length(hit) == 0L) stop("Could not extract a metabolism score matrix from the scMetabolism result.", call. = FALSE)
-  as.matrix(hit[[1]])
-}
-
 .sn_standardize_metabolism_output <- function(output, cells, method) {
   if (is.character(output) && length(output) == 1L && file.exists(output)) {
     output <- utils::read.delim(output, row.names = 1, check.names = FALSE)

@@ -1,0 +1,37 @@
+function_name,style,description,reference,data_requirements
+sn_plot_matrix,upper_triangle,upper triangular matrix,B 2024 Fig. 4L (single half adaptation),square matrix; identical ordered axis IDs
+sn_plot_matrix,lower_triangle,lower triangular matrix,B 2024 Fig. 4L (single half adaptation),square matrix; identical ordered axis IDs
+sn_plot_matrix,split_triangle,two matrices in opposing triangles,B 2024 Fig. 4L,x and compare; same axes and statistic
+sn_plot_matrix,circular,annular heatmap with labeled rings,CM Nature 2025 Fig. 4C,named numeric matrix
+sn_plot_matrix,annotated,heatmap with categorical annotation tracks,CM Nature 2025 Fig. 2C and 4I,row_annotation and/or column_annotation
+sn_plot_matrix,dendrogram,heatmap with row and column dendrograms,NK 2023 Fig. 3A-B; B 2024 Fig. 4A,finite matrix; Euclidean complete-linkage clustering
+sn_plot_matrix,grouped_bubble,faceted marker or pathway bubble panels,Fibroblast 2024 Fig. 1F and 3A/D,independent color matrix x and area matrix size; named splits
+sn_plot_matrix,heatmap_bar,matrix with aligned row summary bars,CM Nature 2025 Fig. 5F,named row_summary; statistic explicitly supplied
+sn_plot_matrix,heatmap_density,matrix with aligned upper area track,Myeloid 2021 Fig. 4B; CM Nature 2025 Fig. 4D,named column_summary; no automatic density inference
+sn_plot_distribution,violin_box,violin with inset boxplot,NK 2023 Fig. 3G; T 2021 Fig. 2F,numeric observations and groups
+sn_plot_distribution,raincloud,half violin plus box and observation strip,adaptation of atlas violin/box/sample-dot grammar,at least two observations per feature and group
+sn_plot_distribution,paired_box,subject links with sample boxes and dots,Myeloid 2021 Fig. 3E and 6C,pair_by; one complete subject/group/feature observation
+sn_plot_distribution,paired_slope,subject trajectories between conditions,Fibroblast 2024 Fig. 6F; CM Nature 2025 Fig. 3G,pair_by; optional sample_by aggregation
+sn_plot_distribution,split_violin,two horizontal half densities sharing a baseline,CM Nature 2025 Fig. 4E,exactly two groups; each feature is a row
+sn_plot_distribution,stacked_violin,one expression violin row per feature,Myeloid 2021 Fig. 5C; Fibroblast 2024 Fig. 1D,multiple features and groups
+sn_plot_effect,forest,effect estimates and supplied confidence intervals,B 2024 Fig. 5A-C; T 2021 Fig. 4B and 5B,label estimate lower upper; identity or positive ratio scale
+sn_plot_effect,diverging_bar,signed horizontal effect bars,B 2024 Fig. 3A; CM Nature 2025 Fig. 5J,label and estimate; identity scale
+sn_plot_effect,lollipop,reference-to-estimate stems and points,NK 2023 Fig. 2A,label and estimate; identity or ratio scale
+sn_plot_overlap,upset,exclusive intersection bars and connected membership dots,B 2024 Fig. 2C,named sets of unique sample IDs
+sn_plot_network,bipartite,two-part regulator-target network,Fibroblast 2024 Fig. 3I,group_by defines exactly two partitions; cross-partition edges
+sn_plot_network,clone_tree,rooted tree with elbow branches,B 2024 Fig. 3D,supplied rooted topology; optional branch_length
+sn_plot_network,chord,weighted ribbon chords and node sectors,Fibroblast 2024 Fig. 6B,non-negative weights; no directed arrows
+sn_plot_network,rewiring,paired networks with shared coordinates and scales,CM Nature 2025 Fig. 5I,edges and compare_edges; common node table
+sn_plot_heatmap,upper_triangle,upper triangular matrix,B 2024 Fig. 4L (single half adaptation),mode=average; backend=ggplot2; square matrix; identical ordered axis IDs
+sn_plot_heatmap,lower_triangle,lower triangular matrix,B 2024 Fig. 4L (single half adaptation),mode=average; backend=ggplot2; square matrix; identical ordered axis IDs
+sn_plot_heatmap,split_triangle,two matrices in opposing triangles,B 2024 Fig. 4L,mode=average; backend=ggplot2; x and compare; same axes and statistic
+sn_plot_heatmap,circular,annular heatmap with labeled rings,CM Nature 2025 Fig. 4C,mode=average; backend=ggplot2; named numeric matrix
+sn_plot_heatmap,annotated,heatmap with categorical annotation tracks,CM Nature 2025 Fig. 2C and 4I,mode=average; backend=ggplot2; row_annotation and/or column_annotation
+sn_plot_heatmap,dendrogram,heatmap with row and column dendrograms,NK 2023 Fig. 3A-B; B 2024 Fig. 4A,mode=average; backend=ggplot2; finite matrix; Euclidean complete-linkage clustering
+sn_plot_heatmap,grouped_bubble,faceted marker or pathway bubble panels,Fibroblast 2024 Fig. 1F and 3A/D,mode=average; backend=ggplot2; independent color matrix x and area matrix size; named splits
+sn_plot_heatmap,heatmap_bar,matrix with aligned row summary bars,CM Nature 2025 Fig. 5F,mode=average; backend=ggplot2; named row_summary; statistic explicitly supplied
+sn_plot_heatmap,heatmap_density,matrix with aligned upper area track,Myeloid 2021 Fig. 4B; CM Nature 2025 Fig. 4D,mode=average; backend=ggplot2; named column_summary; no automatic density inference
+sn_plot_violin,violin_box,violin with inset boxplot,NK 2023 Fig. 3G; T 2021 Fig. 2F,Seurat data layer; numeric observations and groups
+sn_plot_violin,raincloud,half violin plus box and observation strip,adaptation of atlas violin/box/sample-dot grammar,Seurat data layer; at least two observations per feature and group
+sn_plot_violin,split_violin,two horizontal half densities sharing a baseline,CM Nature 2025 Fig. 4E,Seurat data layer; exactly two groups; each feature is a row
+sn_plot_violin,stacked_violin,one expression violin row per feature,Myeloid 2021 Fig. 5C; Fibroblast 2024 Fig. 1D,Seurat data layer; multiple features and groups
