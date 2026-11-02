@@ -74,7 +74,7 @@ pbmc <- sn_run_cluster(
   resolution = 1.2, seed = 717,
   verbose = FALSE
 )
-#> WARN [2026-10-27 21:26:46] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 0).
+#> WARN [2026-11-02 09:57:12] Skipping cell cycle scoring because the selected assay has insufficient overlap with human cell-cycle markers (S: 0, G2M: 0).
 table(pbmc$seurat_clusters)
 #> 
 #>  0  1  2  3  4  5 
@@ -177,8 +177,8 @@ sn_list_results(pbmc)
 #> # A tibble: 2 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results de         cluster_… de       wilcox 2026-10-2…      0 NA    
-#> 2 shennong.results program_s… marker_p… program… mean   2026-10-2…     80 NA
+#> 1 shennong.results de         cluster_… de       wilcox 2026-11-0…      0 NA    
+#> 2 shennong.results program_s… marker_p… program… mean   2026-11-0…     80 NA
 full_de <- sn_get_result(pbmc, type = "de", result_id = "cluster_markers")
 full_de$parameters
 #> list()

@@ -46,4 +46,7 @@ meta <- data.frame(
   label = c("T", "T", "B", "B")
 )
 sn_calculate_cluster_purity(meta, cluster_by = "cluster", label_by = "label")
+#>   cluster n_cells dominant_label dominant_label_n purity_score impurity_score
+#> 1       T       2              T                2            1              0
+#> 2       B       2              B                2            1              0
 ```

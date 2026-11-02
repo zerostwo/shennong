@@ -37,4 +37,5 @@ The value of `expr`, with its visibility preserved.
 
 ``` r
 result <- sn_time_call(sum(seq_len(1000)), label = "sum-example")
+#> [Shennong timing] timed:sum-example: 0.000 s [ok]
 ```

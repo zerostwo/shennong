@@ -101,6 +101,17 @@ result <- list(
 )
 bundle <- sn_build_result_bundle(result)
 sn_validate_result_bundle(bundle, error = FALSE)
+#> $valid
+#> [1] TRUE
+#> 
+#> $errors
+#> character(0)
+#> 
+#> $warnings
+#> character(0)
+#> 
+#> attr(,"class")
+#> [1] "sn_result_bundle_validation" "list"                       
 path <- tempfile(fileext = ".json")
 sn_export_result_bundle(bundle, path)
 unlink(path)

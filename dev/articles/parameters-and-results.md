@@ -96,7 +96,7 @@ sn_list_results(pbmc, type = "program_scoring")
 #> # A tibble: 1 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results program_s… panel     program… mean   2026-10-2…     80 NA
+#> 1 shennong.results program_s… panel     program… mean   2026-11-0…     80 NA
 restored <- sn_get_result(pbmc, type = "program_scoring", result_id = "panel")
 stopifnot(identical(restored$tables$primary, result$tables$primary))
 ```
@@ -126,8 +126,8 @@ sn_list_results(pbmc, type = "program_scoring")
 #> # A tibble: 2 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results program_s… panel     program… mean   2026-10-2…     80 NA    
-#> 2 shennong.results program_s… panel_v2  program… mean   2026-10-2…     80 NA
+#> 1 shennong.results program_s… panel     program… mean   2026-11-0…     80 NA    
+#> 2 shennong.results program_s… panel_v2  program… mean   2026-11-0…     80 NA
 
 # Deliberately replace this exact scoring result and its owned score columns.
 pbmc <- sn_score_programs(
@@ -151,7 +151,7 @@ sn_list_results(pbmc, type = "program_scoring")
 #> # A tibble: 1 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results program_s… panel_v2  program… mean   2026-10-2…     80 NA
+#> 1 shennong.results program_s… panel_v2  program… mean   2026-11-0…     80 NA
 ```
 
 `artifact_id` refers to a runtime or backend artifact, not a stored

@@ -17,4 +17,8 @@ under `inst/pixi/`.
 
 ``` r
 sn_list_pixi_environments()
+#>  [1] "bbknn"         "cell2location" "cellphonedb"   "infercnvpy"   
+#>  [5] "mmochi"        "popv"          "scarches"      "scib-metrics" 
+#>  [9] "scrublet"      "scvi"          "spatialdata"   "squidpy"      
+#> [13] "stlearn"       "tangram"       "trajectory"   
 ```
