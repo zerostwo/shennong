@@ -438,7 +438,7 @@ test_that("strict conformance CI provisions pinned Python backends before testin
   path <- test_path("..", "..", ".github", "workflows", "backend-conformance.yaml")
   skip_if_not(file.exists(path), "Repository-only workflow is excluded from source packages.")
   workflow <- readLines(path, warn = FALSE)
-  expect_true(any(grepl("SHENNONG_CONFORMANCE_STRICT: 'true'", workflow, fixed = TRUE)))
+  expect_true(any(grepl("matrix.dependency_profile == 'validated' && 'true' || 'false'", workflow, fixed = TRUE)))
   expect_false(any(grepl("SHENNONG_RUNTIME_DIR:.*runner", workflow)))
   configure <- which(grepl('run: echo "SHENNONG_RUNTIME_DIR=$RUNNER_TEMP/shennong-runtime"',
                           workflow, fixed = TRUE))

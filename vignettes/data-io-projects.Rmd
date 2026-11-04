@@ -235,8 +235,8 @@ with one explicit import step.
 ```{r anndata-roundtrip, eval = FALSE}
 pbmc <- sn_add_data_from_anndata(
   object = pbmc,
-  metadata = "results/scanpy/obs.csv",
-  reductions = c(umap = "results/scanpy/X_umap.csv")
+  metadata_path = "results/scanpy/obs.csv",
+  umap_path = "results/scanpy/X_umap.csv"
 )
 ```
 
@@ -308,3 +308,11 @@ stopifnot(identical(readRDS("counts.rds"), counts))
 sn_write(counts, "counts.h5", auto_install = FALSE)
 sn_write(counts, "counts.bpcells", auto_install = FALSE)
 ```
+
+## Reliability fixes (2026-11-04)
+
+AnnData tables must contain exactly the Seurat cell set and are aligned by ID.
+Imports never implicitly subset the object. Python workflows require a fresh
+`artifact_id` per run and allocate unique metadata/reduction names when needed.
+Inspect `object@misc$cell2location[["run2"]]$imported_metadata` to discover
+the output columns, then retrieve them using `object[[columns]]`.

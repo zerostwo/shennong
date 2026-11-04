@@ -439,13 +439,13 @@
   },
   "evidence": {
     "test_file": "tests/testthat/test-backend-conformance-annotation-popv.R",
-    "date": "2026-08-24",
+    "date": "2026-11-04",
     "verdict": "pass",
-    "limitations": "Reduced-method C2 subset (Support_Vector, XGboost, CELLTYPIST); scVI-backed algorithms and full-default algorithm set are exercised by the scheduled C3 tier. GPU acceleration is not part of this subject."
+    "limitations": "Reduced-method C2 subset (Support_Vector, XGboost, CELLTYPIST); Admission covers only this reduced-method C2 subset. scVI-backed algorithms and the full-default algorithm set have no executed C3 evidence and are not covered by this admission. GPU acceleration is not part of this subject."
   },
   "owner": {
     "subsystem": "annotation",
     "maintainer": "Shennong maintainers",
-    "last_reviewed": "2026-08-24"
+    "last_reviewed": "2026-11-04"
   }
 }

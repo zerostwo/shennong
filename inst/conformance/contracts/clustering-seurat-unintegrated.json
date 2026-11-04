@@ -27,7 +27,7 @@
     ],
     "repository": "https://github.com/satijalab/seurat",
     "versions": [
-      "Seurat 5.5.1",
+      "Seurat 5.6.0",
       "SeuratObject 5.4.0"
     ],
     "install_source": "CRAN or the repository dependency profile"
@@ -324,7 +324,7 @@
     "R": "recorded at runtime",
     "Shennong": "0.3.0.9000",
     "upstream": [
-      "Seurat 5.5.1",
+      "Seurat 5.6.0",
       "SeuratObject 5.4.0"
     ],
     "material_dependencies": [
@@ -345,13 +345,13 @@
   },
   "evidence": {
     "test_file": "tests/testthat/test-backend-conformance-clustering.R",
-    "date": "2026-08-21",
+    "date": "2026-11-04",
     "verdict": "pilot",
     "limitations": "Fixture hashing, fresh-process, real/OOD, alternate parameter, and integration-backend tiers remain pending."
   },
   "owner": {
     "subsystem": "clustering",
     "maintainer": "Shennong maintainers",
-    "last_reviewed": "2026-08-21"
+    "last_reviewed": "2026-11-04"
   }
 }

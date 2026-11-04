@@ -1,11 +1,35 @@
 All notable changes to this project will be documented in this file.
 
 
+# Shennong (development version)
+## Reliability fixes (2026-11-04)
+
+Marker DE retains the genes actually tested before applying the reporting
+threshold, using Seurat's public API across its fast and ordinary paths.
+Program comparisons group by complete identities, including labels containing
+punctuation. A non-estimable Wilcoxon probability is recorded as NA; other
+comparisons remain available.
+
+AnnData metadata and embeddings must contain exactly the Seurat cell set;
+imports align by cell ID and never implicitly subset the object. Use
+`metadata_path` and `umap_path` with `sn_add_data_from_anndata()`.
+Python artifacts require a new `artifact_id` for each run. Existing metadata
+and reduction names are preserved; new output receives unique names recorded
+in the artifact's `imported_metadata` and `imported_reductions` fields.
+For example, inspect `object@misc$cell2location[["run2"]]$imported_metadata`
+and retrieve those columns with `object[[columns]]`.
+
+Feature plots retain shared per-feature scales across splits, preserve blend
+colors and requested layouts, and map `keep_scale = "none"` to independent
+scales. Dimensional plots honor `cols` and label the requested dimensions.
+Density mode rejects `split_by`; subset the requested cells explicitly.
+
+
+
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Shennong (development version)
 
 - `sn_plot_feature()` now exposes `order = FALSE` for classic/atlas expression
   maps, preserving cell drawing order by default. Set `order = TRUE` to restore

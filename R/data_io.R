@@ -1167,7 +1167,10 @@ sn_add_data_from_anndata <- function(object, metadata_path = NULL, umap_path = N
   if (!is_null(x = umap_path)) {
     umap <- read_anndata_table(umap_path) |>
       Matrix::as.matrix()
-    object <- object[, rownames(umap)]
+    if (!setequal(rownames(umap), colnames(object)) || anyDuplicated(rownames(umap))) {
+      stop("AnnData embedding cell IDs must exactly match the Seurat object.", call. = FALSE)
+    }
+    umap <- umap[colnames(object), , drop = FALSE]
     reduction_key <- if (grepl("_$", key)) key else paste0(key, "_")
     object[[key]] <- Seurat::CreateDimReducObject(
       embeddings = umap,
@@ -1177,6 +1180,7 @@ sn_add_data_from_anndata <- function(object, metadata_path = NULL, umap_path = N
   }
   if (!is_null(x = metadata_path)) {
     metadata <- read_anndata_table(metadata_path)
+    if (!setequal(rownames(metadata), colnames(object))) stop("AnnData metadata cell IDs must exactly match the Seurat object.", call. = FALSE)
     object <- Seurat::AddMetaData(object = object, metadata = metadata)
   }
   .sn_log_seurat_command(object = object, name = "sn_add_data_from_anndata")

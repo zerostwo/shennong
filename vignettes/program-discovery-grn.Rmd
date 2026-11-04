@@ -156,3 +156,7 @@ if (inherits(genie3_attempt, "error")) {
 pySCENIC and GRNBoost2 require an explicit audited runner or imported result.
 The documentation build does not silently install their Python environments or
 present NMF output as a GRN result.
+
+## Reliability fixes (2026-11-04)
+
+Program/sample/group labels may contain punctuation without merging identities. Non-estimable Wilcoxon comparisons return NA probabilities while other comparisons remain available.

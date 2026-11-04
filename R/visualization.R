@@ -702,11 +702,11 @@ sn_plot_dim <- function(
     object[["ident"]] <- Seurat::Idents(object = object)
     group_by <- group_by %||% "ident"
     n <- length(table(object[[group_by]]))
-    x <- ifelse(reduction == "tsne", "tSNE 1",
-      paste0(stringr::str_to_upper(reduction), " 1")
+    x <- ifelse(reduction == "tsne", paste0("tSNE ", dims[[1]]),
+      paste0(stringr::str_to_upper(reduction), " ", dims[[1]])
     )
-    y <- ifelse(reduction == "tsne", "tSNE 2",
-      paste0(stringr::str_to_upper(reduction), " 2")
+    y <- ifelse(reduction == "tsne", paste0("tSNE ", dims[[2]]),
+      paste0(stringr::str_to_upper(reduction), " ", dims[[2]])
     )
     p <- .sn_add_catplot_theme(
       p,
@@ -721,7 +721,7 @@ sn_plot_dim <- function(
         title = title
       )
 
-    p <- .sn_add_discrete_palette(p = p, palette = palette, n = n, aesthetic = "color")
+    p <- .sn_add_discrete_palette(p = p, palette = cols %||% palette, n = n, aesthetic = "color")
 
     if (isTRUE(label) && isTRUE(label_halo) && !isTRUE(label_box)) {
       p <- .sn_map_plot_leaves(p, function(plot) {
@@ -1974,6 +1974,7 @@ sn_plot_feature <-
     cells <- cells %||% colnames(object)
 
     if (identical(mode, "density")) {
+      if (!is.null(split_by)) stop("Density mode does not support split_by; subset cells explicitly.", call. = FALSE)
       check_installed("Nebulosa", reason = "to compute feature-density plots.")
       if (identical(density_method, "ks")) {
         check_installed("ks", reason = "to compute `density_method = \"ks\"` feature-density plots.")
@@ -2025,8 +2026,8 @@ sn_plot_feature <-
           palette = if (identical(density_style, "galaxy")) "galaxy" else palette,
           direction = direction,
           title = if (length(feature_titles) == 1L) title else NULL,
-          x_label = x_label %||% paste0(stringr::str_to_upper(reduction), " 1"),
-          y_label = y_label %||% paste0(stringr::str_to_upper(reduction), " 2"),
+          x_label = x_label %||% paste0(stringr::str_to_upper(reduction), " ", dims[[1]]),
+          y_label = y_label %||% paste0(stringr::str_to_upper(reduction), " ", dims[[2]]),
           legend_title = legend_title %||% "Density",
           galaxy_style = identical(density_style, "galaxy"),
           show_axis = show_axis,
@@ -2042,7 +2043,7 @@ sn_plot_feature <-
       p <- if (length(density_plots) == 1L) {
         density_plots[[1]]
       } else {
-        patchwork::wrap_plots(density_plots)
+        patchwork::wrap_plots(density_plots, ncol = ncol)
       }
       if (isTRUE(collect_legend)) {
         p <- .sn_collect_patchwork_guides(p)
@@ -2088,7 +2089,7 @@ sn_plot_feature <-
         ncol = ncol,
         coord.fixed = coord_fixed,
         by.col = by_col,
-        keep.scale = keep_scale,
+        keep.scale = if (keep_scale == "none") NULL else keep_scale,
         ...
       ),
       warning = function(w) {
@@ -2099,9 +2100,6 @@ sn_plot_feature <-
     )
     if (isTRUE(raster) && rlang::is_installed("ggrastr")) {
       p <- .sn_rasterise_point_layers(p, raster_dpi = raster_dpi)
-    }
-    if (inherits(p, "patchwork")) {
-      p <- patchwork::wrap_plots(.sn_patchwork_leaf_plots(p))
     }
     if (!show_legend) {
       p <- .sn_apply_plot_component(p, Seurat::NoLegend())
@@ -2129,22 +2127,22 @@ sn_plot_feature <-
     )
     p <- .sn_apply_plot_component(p, theme(legend.margin = margin(l = 2, r = 6))) +
       labs(
-        x = x_label %||% paste0(stringr::str_to_upper(reduction), " 1"),
-        y = y_label %||% paste0(stringr::str_to_upper(reduction), " 2"),
+        x = x_label %||% paste0(stringr::str_to_upper(reduction), " ", dims[[1]]),
+        y = y_label %||% paste0(stringr::str_to_upper(reduction), " ", dims[[2]]),
         title = title_value
       )
 
-    if (!is_null(palette)) {
-      p <- .sn_add_continuous_palette(
-        p,
-        palette = palette,
-        direction = direction,
-        aesthetic = "color",
-        guide = .sn_colorbar_guide(title = legend_title %||% NULL, order = 1),
-        limits = if (identical(keep_scale, "all")) feature_limits else NULL,
-        breaks = if (identical(keep_scale, "all")) feature_breaks$breaks else ggplot2::waiver(),
-        labels = if (identical(keep_scale, "all")) feature_breaks$labels else ggplot2::waiver()
-      )
+    if (!is_null(palette) && !isTRUE(blend)) {
+      p <- .sn_map_plot_leaves(p, function(plot) {
+        old_scale <- plot$scales$get_scales("colour")
+        suppressMessages(plot + ggplot2::scale_colour_gradientn(
+          colours = .sn_resolve_continuous_palette(palette, direction = direction),
+          guide = .sn_colorbar_guide(title = legend_title %||% NULL, order = 1),
+          limits = if (keep_scale == "all") feature_limits else if (keep_scale == "feature") old_scale$limits else NULL,
+          breaks = if (keep_scale == "all") feature_breaks$breaks else ggplot2::waiver(),
+          labels = if (keep_scale == "all") feature_breaks$labels else ggplot2::waiver()
+        ))
+      })
     }
     if (!is_null(legend_title)) {
       p <- p + guides(color = .sn_colorbar_guide(title = legend_title, order = 1))

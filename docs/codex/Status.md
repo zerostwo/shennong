@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-10-27
+Last updated: 2026-11-04
 
 This file describes what is true now. Git history and `docs/codex/archive/`
 hold point-in-time evidence, `Decisions.md` holds durable rationale, and
@@ -8,30 +8,28 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 
 ## Package audit validation
 
-- The DE/program audit fixes are included in the consolidated source delivery. A fixed
-  snapshot of starting `main` (`7b5602b`) plus the original uncommitted work
-  and these fixes passes 5,988 assertions with zero failures/errors, 17
-  warnings, and one missing local-public-data fixture skip (776 cases across
-  64 test files). Later concurrent spatial/atlas development is outside this
-  full-suite claim.
-- Empty DE subsets and table selection work without fabricating statistics;
-  subset metadata cannot overwrite genes, comparisons, or backend columns.
-  Missing/blank subset labels fail before dispatch. Mean program scoring
-  preserves multiple programs for one cell/group, and malformed signature
-  tables report missing columns explicitly. Two unused extraction helpers
-  are removed; compatibility aliases remain.
-- Source build and structural `R CMD check` return `Status: OK`, including
-  the repaired Sankey `utils::head()` namespace lookup. The check skips
-  examples/tests; the complete `testthat::test_local()` pass runs separately.
-  Pkgdown was rebuilt in the fixed snapshot and the changed guide text was
-  independently read back. The consolidated source delivery includes these
-  fixes; validation uses an isolated library without modifying the user's
-  installed package. Website publication is verified separately.
-- One environment warning requires separate attention: installed glmmTMB was
-  built with TMB 1.9.21, while the host has TMB 1.9.23. The audit preserves
-  shared libraries. The remaining warnings concern small fixtures, missing
-  scale data, or method-specific controls; passing tests do not establish
-  equivalence for every optional backend.
+- Marker DE now retains its tested background through the public Seurat API,
+  including Seurat 5.6.0 fast Wilcoxon and ordinary t-test paths. Program
+  comparisons preserve compound identities and return NA for undefined
+  Wilcoxon probabilities without discarding other comparisons.
+- AnnData imports require complete cell identity. Python runs retain previous
+  metadata/reductions and reject reused artifact IDs. Feature plots preserve
+  split scales, blend colors, layout, explicit colors and dimension labels.
+- The complete local suite produced 6,246 passes, zero errors, one obsolete
+  CI-text assertion failure, 288 warnings and one absent-local-fixture skip.
+  That assertion was repaired, then all 590 CI/architecture/registry assertions
+  passed with zero failures, errors, warnings or skips. The complete suite was
+  not repeated after this test-only correction. Most warnings are the existing
+  ShennongOpt/Seurat version-drift notification.
+- Strict backend conformance passes 582 assertions, with zero failures/errors
+  or skips and two existing Scrublet argument warnings. Exact R dependency
+  records were refreshed only after direct comparisons passed; CI separates
+  validated versions from latest-version compatibility. PopV admission covers
+  the three executed algorithms; full-default/scVI C3 remains unvalidated.
+- Source build and R CMD check --no-manual --no-tests report Status: OK,
+  including examples and vignette rebuilding. Full pkgdown rebuild succeeds;
+  changed article text and scale/blend renderings were independently inspected.
+  User libraries are unchanged. Remote CI and publication are separate checks.
 
 ## Atlas figure styles
 
@@ -102,18 +100,8 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   `R CMD check --no-manual --no-tests` with `Status: OK`, including examples
   and vignette rebuilding. `_R_CHECK_FORCE_SUGGESTS_=false` permits unavailable
   optional packages; the source test suite runs separately.
-- The complete source suite is not claimed green: the marker-DE regression
-  records an empty tested-feature background (expected 90 genes). The same
-  two assertions fail on unchanged baseline `7b5602b` in a fresh process under
-  the current installed dependencies. This predates the consolidated changes;
-  retain this limitation rather than silently substituting all input genes.
-  The extended full-suite run was stopped after reproducing that baseline
-  failure; it is not a completed full-suite pass. The separate DE suite has
-  two failed background assertions and three dependent enrichment errors;
-  the DE-boundary suite has one failed background assertion and one NULL
-  background error. Atlas layouts/styles, spatial plotting, heatmaps, program
-  scoring and architecture gates complete without failures in the focused run.
-  The existing ggplot2 boxplot deprecation warning remains.
+- The former empty marker-background regression is repaired. The current audit
+  validation and its final test-only correction are documented above.
 - The complete local pkgdown site is rebuilt from an isolated installation of
   the current source. Atlas resources are available in that installation;
   the atlas/spatial/visualization guides, feature reference and NEWS pages are

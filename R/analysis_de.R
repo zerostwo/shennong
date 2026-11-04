@@ -195,19 +195,10 @@
 
   if (analysis == "markers") {
     only_pos <- only_pos %||% TRUE
-    tested <- list()
-    # Capture each backend result before FindAllMarkers applies return.thresh.
-    # A private function environment leaves Seurat's namespace unchanged.
-    find_all <- Seurat::FindAllMarkers
-    capture_env <- new.env(parent = environment(find_all))
-    capture_env$FindMarkers <- function(object, ident.1, ident.2 = NULL, ...) {
-      result <- Seurat::FindMarkers(object = object, ident.1 = ident.1, ident.2 = ident.2, ...)
-      table <- .sn_de_tested_table(result)
-      table$cluster <- rep(as.character(if (length(ident.1) == 1L) ident.1 else ident.2), nrow(table))
-      tested[[length(tested) + 1L]] <<- table
-      result
-    }
-    environment(find_all) <- capture_env
+    dots <- list(...)
+    threshold <- dots$return.thresh %||% if (method == "roc") 0.7 else 0.01
+    dots$return.thresh <- if (method == "roc") 0 else Inf
+    find_all <- function(...) do.call(Seurat::FindAllMarkers, c(list(...), dots))
     result <- .sn_with_default_seurat_acceleration(
       find_all(
         object = object,
@@ -219,13 +210,17 @@
         only.pos = only_pos,
         min.pct = min_pct,
         logfc.threshold = logfc_threshold,
-        verbose = verbose,
-        ...
+        verbose = verbose
       ),
       object = object,
       assay = assay
     )
-    attr(result, "shennong_tested_features") <- dplyr::bind_rows(tested)
+    tested <- .sn_de_tested_table(result)
+    if (nrow(result)) {
+      keep <- if (method == "roc") result$myAUC > threshold | result$myAUC < (1 - threshold) else result$p_val < threshold
+      result <- result[which(keep), , drop = FALSE]
+    }
+    attr(result, "shennong_tested_features") <- tested
     return(result)
   }
 

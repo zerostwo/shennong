@@ -39,8 +39,12 @@ permissions:
 jobs:
   backend-conformance:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dependency_profile: [validated, latest]
     env:
-      SHENNONG_CONFORMANCE_STRICT: 'true'
+      SHENNONG_CONFORMANCE_STRICT: ${{ matrix.dependency_profile == 'validated' && 'true' || 'false' }}
       SHENNONG_ACCELERATION_DISABLED: 'true'
       OMP_NUM_THREADS: '1'
       OPENBLAS_NUM_THREADS: '1'
@@ -64,7 +68,13 @@ jobs:
             any::SeuratObject
             any::msigdbr
             bioc::clusterProfiler
-            bioc::edgeR@4.10.5
+            bioc::edgeR
+            any::remotes
+            any::BiocManager
+
+      - name: Install and verify validated R versions
+        if: matrix.dependency_profile == 'validated'
+        run: Rscript scripts/prepare-conformance-r.R
 
       - name: Configure isolated Python runtime
         run: echo "SHENNONG_RUNTIME_DIR=$RUNNER_TEMP/shennong-runtime" >> "$GITHUB_ENV"
