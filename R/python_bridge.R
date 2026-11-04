@@ -753,6 +753,9 @@
                                             return_object = TRUE,
                                             retain_run_dir = TRUE,
                                             max_artifact_import_gb = 0.5) {
+  if (!is.null(object@misc[[method]][[result_name]])) {
+    stop("Python artifact ID already exists; choose a new artifact_id.", call. = FALSE)
+  }
   manifest_path <- file.path(output_dir, "manifest.json")
   if (!file.exists(manifest_path)) {
     stop("Python backend output is missing required `manifest.json`: ", manifest_path, call. = FALSE)
@@ -835,6 +838,7 @@
       if (anyDuplicated(colnames(metadata))) {
         stop("Python metadata column names collide after applying `metadata_prefix`.", call. = FALSE)
       }
+      colnames(metadata) <- utils::tail(make.unique(c(colnames(object[[]]), colnames(metadata))), ncol(metadata))
       imported_metadata <- colnames(metadata)
       object <- Seurat::AddMetaData(object = object, metadata = metadata)
     }
@@ -860,6 +864,7 @@
       }
     )
     reduction_name <- paste0(metadata_prefix, tools::file_path_sans_ext(basename(embedding_file)))
+    reduction_name <- utils::tail(make.unique(c(names(object@reductions), reduction_name)), 1L)
     reduction_key <- paste0(gsub("[^A-Za-z0-9]", "", toupper(reduction_name)), "_")
     colnames(embedding) <- paste0(reduction_key, seq_len(ncol(embedding)))
     object[[reduction_name]] <- Seurat::CreateDimReducObject(

@@ -96,3 +96,25 @@ When the exported entry point is unclear, use
 [package API map](../_shared/references/package_api_map.md) or the installed MCP
 help. Consult [workflow recipes](../_shared/references/workflow_recipes.md) for
 an end-to-end example only when the task needs one.
+
+## Reliability fixes (2026-11-04)
+
+Marker DE retains the genes actually tested before applying the reporting
+threshold, using Seurat's public API across its fast and ordinary paths.
+Program comparisons group by complete identities, including labels containing
+punctuation. A non-estimable Wilcoxon probability is recorded as NA; other
+comparisons remain available.
+
+AnnData metadata and embeddings must contain exactly the Seurat cell set;
+imports align by cell ID and never implicitly subset the object. Use
+`metadata_path` and `umap_path` with `sn_add_data_from_anndata()`.
+Python artifacts require a new `artifact_id` for each run. Existing metadata
+and reduction names are preserved; new output receives unique names recorded
+in the artifact's `imported_metadata` and `imported_reductions` fields.
+For example, inspect `object@misc$cell2location[["run2"]]$imported_metadata`
+and retrieve those columns with `object[[columns]]`.
+
+Feature plots retain shared per-feature scales across splits, preserve blend
+colors and requested layouts, and map `keep_scale = "none"` to independent
+scales. Dimensional plots honor `cols` and label the requested dimensions.
+Density mode rejects `split_by`; subset the requested cells explicitly.

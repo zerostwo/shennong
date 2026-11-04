@@ -20,8 +20,8 @@
     ],
     "repository": "https://git.bioconductor.org/packages/clusterProfiler",
     "versions": [
-      "clusterProfiler 4.20.0",
-      "enrichit 0.2.4",
+      "clusterProfiler 4.20.3",
+      "enrichit 0.2.6",
       "msigdbr 26.1.1"
     ],
     "install_source": "Bioconductor plus CRAN msigdbr/enrichit"
@@ -316,8 +316,8 @@
     "R": "recorded at runtime",
     "Shennong": "0.3.0.9000",
     "upstream": [
-      "clusterProfiler 4.20.0",
-      "enrichit 0.2.4",
+      "clusterProfiler 4.20.3",
+      "enrichit 0.2.6",
       "msigdbr 26.1.1"
     ],
     "material_dependencies": [
@@ -337,13 +337,13 @@
   },
   "evidence": {
     "test_file": "tests/testthat/test-backend-conformance-enrichment.R",
-    "date": "2026-08-21",
+    "date": "2026-11-04",
     "verdict": "pilot",
     "limitations": "Fixture hashing, fresh process, real/OOD terms, GO/KEGG, grouped, and warning/error tiers remain pending."
   },
   "owner": {
     "subsystem": "enrichment",
     "maintainer": "Shennong maintainers",
-    "last_reviewed": "2026-08-21"
+    "last_reviewed": "2026-11-04"
   }
 }

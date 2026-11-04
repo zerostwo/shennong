@@ -236,3 +236,7 @@ one. Never infer a database from list position.
 
 Continue with [annotation and pathways](annotation-pathways.html) for feature
 classes, reference annotation, plotting, and scoring on a larger real dataset.
+
+## Reliability fixes (2026-11-04)
+
+Marker backgrounds are retained before the reporting threshold using the public Seurat API, including fast Wilcoxon and ordinary test paths.

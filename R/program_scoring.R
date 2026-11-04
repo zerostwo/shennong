@@ -427,7 +427,7 @@ sn_test_programs <- function(object,
   if (is_null(sample_by)) {
     .sn_log_warn("`sample_by` was not supplied; cells are exploratory units, not biological replicates.")
   }
-  aggregate_key <- interaction(scores$sample, scores$condition, scores$group, scores$program, drop = TRUE, lex.order = TRUE)
+  aggregate_key <- do.call(interaction, c(lapply(scores[c("sample", "condition", "group", "program")], function(x) match(x, unique(x))), list(drop = TRUE, lex.order = TRUE)))
   aggregated <- dplyr::bind_rows(lapply(split(scores, aggregate_key), function(table) {
     tibble::tibble(
       sample = table$sample[[1]],
@@ -444,7 +444,7 @@ sn_test_programs <- function(object,
     stop("`contrast` must contain two observed condition levels.", call. = FALSE)
   }
   comparison <- paste(contrast[[1]], "vs", contrast[[2]])
-  test_groups <- split(aggregated, interaction(aggregated$group, aggregated$program, drop = TRUE, lex.order = TRUE))
+  test_groups <- split(aggregated, interaction(match(aggregated$group, unique(aggregated$group)), match(aggregated$program, unique(aggregated$program)), drop = TRUE))
   tests <- dplyr::bind_rows(lapply(test_groups, function(table) {
     group <- table$group[[1]]
     program <- table$program[[1]]
@@ -474,13 +474,15 @@ sn_test_programs <- function(object,
       fit <- limma::eBayes(limma::contrasts.fit(fit, contrast_matrix))
       p_value <- fit$p.value[[1]]
     }
+    if (!is.finite(p_value)) p_value <- NA_real_
+    if (!is.finite(estimate)) estimate <- NA_real_
     tibble::tibble(
       group = group,
       program = program,
       comparison = comparison,
       estimate = estimate,
-      mean_1 = mean(x, na.rm = TRUE),
-      mean_2 = mean(y, na.rm = TRUE),
+      mean_1 = if (length(x)) mean(x, na.rm = TRUE) else NA_real_,
+      mean_2 = if (length(y)) mean(y, na.rm = TRUE) else NA_real_,
       n_1 = length(x),
       n_2 = length(y),
       paired = paired,

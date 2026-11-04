@@ -2100,3 +2100,44 @@ to preserve existing positional arguments. Density and nebula/glass rendering
 are unaffected. Validate default, explicit FALSE, and explicit TRUE ordering
 with both vector and raster requests in `test-feature-order.R`; retain the
 explicit ordered small-point regression in `test-feature-point-size.R`.
+
+## Reliability fixes (2026-11-04)
+
+Marker DE retains the genes actually tested before applying the reporting
+threshold, using Seurat's public API across its fast and ordinary paths.
+Program comparisons group by complete identities, including labels containing
+punctuation. A non-estimable Wilcoxon probability is recorded as NA; other
+comparisons remain available.
+
+AnnData metadata and embeddings must contain exactly the Seurat cell set;
+imports align by cell ID and never implicitly subset the object. Use
+`metadata_path` and `umap_path` with `sn_add_data_from_anndata()`.
+Python artifacts require a new `artifact_id` for each run. Existing metadata
+and reduction names are preserved; new output receives unique names recorded
+in the artifact's `imported_metadata` and `imported_reductions` fields.
+For example, inspect `object@misc$cell2location[["run2"]]$imported_metadata`
+and retrieve those columns with `object[[columns]]`.
+
+Feature plots retain shared per-feature scales across splits, preserve blend
+colors and requested layouts, and map `keep_scale = "none"` to independent
+scales. Dimensional plots honor `cols` and label the requested dimensions.
+Density mode rejects `split_by`; subset the requested cells explicitly.
+
+These fixes retain the public API and add no dependencies. Strict AnnData
+identity matching and rejection of duplicate Python artifact IDs intentionally
+replace unsafe implicit subsetting/overwriting. Conformance admission for PopV
+is limited to the three tested algorithms; no full-default C3 claim is made.
+Candidate/oracle cell sets must match exactly. R conformance now separates
+validated direct dependency versions from latest-version compatibility.
+Updated version records require a fresh direct-parity run before closeout.
+
+Source-size baselines for the five repaired domain modules are refreshed to
+the reviewed sizes. Growth is limited to identity checks and result isolation;
+no new public API or runtime dependency is admitted.
+
+Validation: `testthat::test_local()`; strict `backend-conformance` (582 passes);
+`ci-workflows|architecture-gates|backend-conformance-registry` (590 passes after
+the final CI-text correction); source build and R CMD check --no-manual
+--no-tests (Status: OK); `Rscript scripts/build-pkgdown.R --full` (success).
+The full run's only failure was the subsequently corrected CI-text assertion;
+its 288 warnings and missing local-fixture skip are retained, not suppressed.

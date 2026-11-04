@@ -99,6 +99,7 @@ test_that("sn_find_doublets(method='scrublet') matches the direct scanpy oracle 
   )
   names(oracle_calls) <- rownames(oracle_predictions)
 
+  expect_setequal(names(candidate_scores), names(oracle_scores))
   shared <- intersect(names(candidate_scores), names(oracle_scores))
   expect_gt(length(shared), 0.9 * ncol(fixture))
   expect_identical(

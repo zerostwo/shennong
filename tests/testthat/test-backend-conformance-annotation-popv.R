@@ -157,6 +157,7 @@ test_that("annotation::popv matches the direct PopV oracle (C2)", {
 
   candidate_raw <- candidate_result$tables$backend_predictions
   candidate_labels <- setNames(candidate_raw$prediction, candidate_raw$cell)
+  expect_setequal(names(candidate_labels), names(oracle_labels))
   shared <- intersect(names(candidate_labels), names(oracle_labels))
   expect_gt(length(shared), 0.9 * ncol(fixture$query))
 

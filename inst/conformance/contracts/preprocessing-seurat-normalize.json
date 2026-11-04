@@ -14,7 +14,7 @@
     "package": "Seurat",
     "api": ["Seurat::NormalizeData"],
     "repository": "https://github.com/satijalab/seurat",
-    "versions": ["Seurat 5.5.1", "SeuratObject 5.4.0"],
+    "versions": ["Seurat 5.6.0", "SeuratObject 5.4.0"],
     "install_source": "CRAN or the repository dependency profile"
   },
   "oracle": {
@@ -81,7 +81,7 @@
   "versions": {
     "R": "recorded at runtime",
     "Shennong": "0.3.0.9000",
-    "upstream": ["Seurat 5.5.1", "SeuratObject 5.4.0"],
+    "upstream": ["Seurat 5.6.0", "SeuratObject 5.4.0"],
     "material_dependencies": ["Matrix"]
   },
   "ci": {
@@ -91,13 +91,13 @@
   },
   "evidence": {
     "test_file": "tests/testthat/test-backend-conformance-pilots.R",
-    "date": "2026-08-20",
+    "date": "2026-11-04",
     "verdict": "pilot",
     "limitations": "Fixture hashing, fresh-process, BPCells, split-layer, real-data, and OOD tiers remain pending."
   },
   "owner": {
     "subsystem": "preprocessing",
     "maintainer": "Shennong maintainers",
-    "last_reviewed": "2026-08-20"
+    "last_reviewed": "2026-11-04"
   }
 }
