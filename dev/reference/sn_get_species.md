@@ -30,10 +30,8 @@ A character string indicating the inferred or explicit species.
 
 ``` r
 sn_get_species(c("CD3D", "LTB", "MS4A1"))
-#> [1] "human"
 
 m <- matrix(0, nrow = 3, ncol = 2)
 rownames(m) <- c("Cd3d", "Ltb", "Ms4a1")
 sn_get_species(m)
-#> [1] "mouse"
 ```

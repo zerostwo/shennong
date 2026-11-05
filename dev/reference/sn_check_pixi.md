@@ -99,7 +99,6 @@ invisibly returns the refreshed check result.
 ``` r
 info <- sn_check_pixi(quiet = TRUE)
 info$installed
-#> [1] FALSE
 if (FALSE) { # \dontrun{
 sn_ensure_pixi()
 sn_install_pixi(pixi_home = "~/.pixi", no_path_update = TRUE)

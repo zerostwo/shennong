@@ -722,3 +722,10 @@ and a common continuous scale across panels. See the [spatial workflow
 guide](https://zerostwo.github.io/shennong/dev/articles/spatial-workflows.md)
 for complete examples, coordinate precedence, missing values, raster
 export, and stored-result retrieval.
+
+## Reliability fixes (2026-11-04)
+
+Feature plots preserve per-feature color limits across split panels.
+`keep_scale = "none"` uses independent scales; `blend = TRUE` retains
+Seurat blend colors. Requested layouts, `cols`, and dimension labels are
+preserved. Density mode rejects `split_by`; subset cells explicitly.

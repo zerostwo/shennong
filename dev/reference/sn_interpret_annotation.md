@@ -220,29 +220,4 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   prompt$task
 }
-#> INFO [2026-11-02 09:55:16] Initializing Seurat object for project: Shennong.
-#> INFO [2026-11-02 09:55:16] Running QC metrics for human.
-#> INFO [2026-11-02 09:55:16] Seurat object initialization complete.
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: No DE genes identified
-#> Warning: The following tests were not performed: 
-#> Warning: When testing Tcell versus all:
-#>  Failed to get one or more globals that were identified via static code inspection (function (x); {; vals <- data.use[x, ]; return(wilcox.test(x = vals[j], y = vals[-j], ...)$p.value); }). Specifically, the 1 globals ‘...’ give an error. The reason was: argument "ident.1" is missing, with no default
-#> Warning: When testing Bcell versus all:
-#>  Failed to get one or more globals that were identified via static code inspection (function (x); {; vals <- data.use[x, ]; return(wilcox.test(x = vals[j], y = vals[-j], ...)$p.value); }). Specifically, the 1 globals ‘...’ give an error. The reason was: argument "ident.1" is missing, with no default
-#> Warning: Unknown or uninitialised column: `gene`.
-#> INFO [2026-11-02 09:55:16] [sn_interpret_annotation] Starting interpretation workflow.
-#> INFO [2026-11-02 09:55:16] [sn_interpret_annotation] Step 1/5: Preparing annotation evidence (elapsed 0.0s).
-#> As of Seurat v5, we recommend using AggregateExpression to perform pseudo-bulk analysis.
-#> This message is displayed once per session.
-#> INFO [2026-11-02 09:55:16] [sn_interpret_annotation] Step 2/5: Building annotation prompt (elapsed 0.1s).
-#> INFO [2026-11-02 09:55:16] [sn_interpret_annotation] Prompt prepared (total elapsed 0.1s).
-#> [1] "annotation"
 ```

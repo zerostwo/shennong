@@ -114,31 +114,4 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(evidence)
 }
-#> INFO [2026-11-02 09:55:45] Initializing Seurat object for project: Shennong.
-#> INFO [2026-11-02 09:55:45] Running QC metrics for human.
-#> INFO [2026-11-02 09:55:45] Seurat object initialization complete.
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: No DE genes identified
-#> Warning: The following tests were not performed: 
-#> Warning: When testing Tcell versus all:
-#>  Failed to get one or more globals that were identified via static code inspection (function (x); {; vals <- data.use[x, ]; return(wilcox.test(x = vals[j], y = vals[-j], ...)$p.value); }). Specifically, the 1 globals ‘...’ give an error. The reason was: argument "ident.1" is missing, with no default
-#> Warning: When testing Bcell versus all:
-#>  Failed to get one or more globals that were identified via static code inspection (function (x); {; vals <- data.use[x, ]; return(wilcox.test(x = vals[j], y = vals[-j], ...)$p.value); }). Specifically, the 1 globals ‘...’ give an error. The reason was: argument "ident.1" is missing, with no default
-#> Warning: Unknown or uninitialised column: `gene`.
-#>  [1] "task"                        "cluster_col"                
-#>  [3] "source_de_result_id"         "source_enrichment_result_id"
-#>  [5] "analysis_method"             "species"                    
-#>  [7] "marker_selection"            "enrichment_selection"       
-#>  [9] "geometry_reduction"          "cluster_summary"            
-#> [11] "top_marker_table"            "enrichment_summary"         
-#> [13] "qc_summary"                  "lineage_hints"              
-#> [15] "canonical_marker_snapshot"   "geometry_summary"           
-#> [17] "caveats"                    
 ```

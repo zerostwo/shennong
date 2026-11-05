@@ -287,8 +287,8 @@ the Seurat object with one explicit import step.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_add_data_from_anndata.html">sn_add_data_from_anndata</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
-<span>  metadata <span class="op">=</span> <span class="st">"results/scanpy/obs.csv"</span>,</span>
-<span>  reductions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>umap <span class="op">=</span> <span class="st">"results/scanpy/X_umap.csv"</span><span class="op">)</span></span>
+<span>  metadata_path <span class="op">=</span> <span class="st">"results/scanpy/obs.csv"</span>,</span>
+<span>  umap_path <span class="op">=</span> <span class="st">"results/scanpy/X_umap.csv"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>This keeps cross-language handoffs visible in the analysis script
 instead of leaving them as undocumented slot edits.</p>
@@ -350,6 +350,17 @@ directories or 10x HDF5:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"counts.rds"</span><span class="op">)</span>, <span class="va">counts</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_write.html">sn_write</a></span><span class="op">(</span><span class="va">counts</span>, <span class="st">"counts.h5"</span>, auto_install <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_write.html">sn_write</a></span><span class="op">(</span><span class="va">counts</span>, <span class="st">"counts.bpcells"</span>, auto_install <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="reliability-fixes-2026-11-04">Reliability fixes (2026-11-04)<a class="anchor" aria-label="anchor" href="#reliability-fixes-2026-11-04"></a>
+</h2>
+<p>AnnData tables must contain exactly the Seurat cell set and are
+aligned by ID. Imports never implicitly subset the object. Python
+workflows require a fresh <code>artifact_id</code> per run and allocate
+unique metadata/reduction names when needed. Inspect
+<code>object@misc$cell2location[["run2"]]$imported_metadata</code> to
+discover the output columns, then retrieve them using
+<code>object[[columns]]</code>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

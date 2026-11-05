@@ -109,27 +109,4 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   prompt$task
 }
-#> INFO [2026-11-02 09:56:00] Initializing Seurat object for project: Shennong.
-#> INFO [2026-11-02 09:56:00] Running QC metrics for human.
-#> INFO [2026-11-02 09:56:00] Seurat object initialization complete.
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: No DE genes identified
-#> Warning: The following tests were not performed: 
-#> Warning: When testing Tcell versus all:
-#>  Failed to get one or more globals that were identified via static code inspection (function (x); {; vals <- data.use[x, ]; return(wilcox.test(x = vals[j], y = vals[-j], ...)$p.value); }). Specifically, the 1 globals ‘...’ give an error. The reason was: argument "ident.1" is missing, with no default
-#> Warning: When testing Bcell versus all:
-#>  Failed to get one or more globals that were identified via static code inspection (function (x); {; vals <- data.use[x, ]; return(wilcox.test(x = vals[j], y = vals[-j], ...)$p.value); }). Specifically, the 1 globals ‘...’ give an error. The reason was: argument "ident.1" is missing, with no default
-#> Warning: Unknown or uninitialised column: `gene`.
-#> INFO [2026-11-02 09:56:00] [sn_write_figure_legend] Starting interpretation workflow.
-#> INFO [2026-11-02 09:56:00] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).
-#> INFO [2026-11-02 09:56:00] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.1s).
-#> INFO [2026-11-02 09:56:00] [sn_write_figure_legend] Prompt prepared (total elapsed 0.1s).
-#> [1] "figure_legend"
 ```

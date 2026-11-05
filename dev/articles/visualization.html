@@ -781,6 +781,15 @@ scale across panels. See the <a href="spatial-workflows.html">spatial
 workflow guide</a> for complete examples, coordinate precedence, missing
 values, raster export, and stored-result retrieval.</p>
 </div>
+<div class="section level2">
+<h2 id="reliability-fixes-2026-11-04">Reliability fixes (2026-11-04)<a class="anchor" aria-label="anchor" href="#reliability-fixes-2026-11-04"></a>
+</h2>
+<p>Feature plots preserve per-feature color limits across split panels.
+<code>keep_scale = "none"</code> uses independent scales;
+<code>blend = TRUE</code> retains Seurat blend colors. Requested
+layouts, <code>cols</code>, and dimension labels are preserved. Density
+mode rejects <code>split_by</code>; subset cells explicitly.</p>
+</div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

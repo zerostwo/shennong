@@ -31,5 +31,4 @@ if (requireNamespace("Shennong", quietly = TRUE)) {
   sn_get_codex_skill_path("codex_root")
   sn_get_codex_skill_path("package_skills")
 }
-#> [1] "/tmp/RtmpoK0Koq/temp_libpath2c1e6b70e214/Shennong/codex/package-skills"
 ```

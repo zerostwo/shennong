@@ -103,25 +103,4 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   prompt <- sn_interpret_de(obj, de_result_id = "celltype_markers", return_prompt = TRUE)
   prompt$task
 }
-#> INFO [2026-11-02 09:55:17] Initializing Seurat object for project: Shennong.
-#> INFO [2026-11-02 09:55:17] Running QC metrics for human.
-#> INFO [2026-11-02 09:55:17] Seurat object initialization complete.
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: restarting interrupted promise evaluation
-#> Warning: No DE genes identified
-#> Warning: The following tests were not performed: 
-#> Warning: When testing Tcell versus all:
-#>  Failed to get one or more globals that were identified via static code inspection (function (x); {; vals <- data.use[x, ]; return(wilcox.test(x = vals[j], y = vals[-j], ...)$p.value); }). Specifically, the 1 globals ‘...’ give an error. The reason was: argument "ident.1" is missing, with no default
-#> Warning: When testing Bcell versus all:
-#>  Failed to get one or more globals that were identified via static code inspection (function (x); {; vals <- data.use[x, ]; return(wilcox.test(x = vals[j], y = vals[-j], ...)$p.value); }). Specifically, the 1 globals ‘...’ give an error. The reason was: argument "ident.1" is missing, with no default
-#> Warning: Unknown or uninitialised column: `gene`.
-#> INFO [2026-11-02 09:55:17] [sn_interpret_de] Starting interpretation workflow.
-#> INFO [2026-11-02 09:55:17] [sn_interpret_de] Step 1/4: Preparing DE evidence (elapsed 0.0s).
-#> Error in sn_prepare_de_evidence(object = object, de_result_id = de_result_id,     n_genes = n_genes): The stored DE result does not contain a ranking column.
 ```
