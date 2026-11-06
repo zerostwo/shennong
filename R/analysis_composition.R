@@ -343,22 +343,28 @@ sn_calculate_roe <- function(x,
 }
 
 .sn_roe_matrix <- function(roe_tbl, group_by, variable, value) {
+  group_id <- .sn_base_group_id(roe_tbl, group_by)
+  group_levels <- unique(group_id)
+  group_rows <- roe_tbl[match(group_levels, group_id), group_by, drop = FALSE]
   group_labels <- if (length(group_by) == 1L) {
-    as.character(roe_tbl[[group_by]])
+    as.character(group_rows[[group_by]])
   } else {
-    do.call(paste, c(as.data.frame(roe_tbl[group_by]), sep = "|"))
+    escaped <- lapply(group_rows, function(x) {
+      x <- gsub("\\", "\\\\", as.character(x), fixed = TRUE)
+      gsub("|", "\\|", x, fixed = TRUE)
+    })
+    do.call(paste, c(escaped, sep = "|"))
   }
   variable_labels <- as.character(roe_tbl[[variable]])
 
-  group_levels <- unique(group_labels)
   variable_levels <- unique(variable_labels)
   mat <- matrix(
     NA_real_,
     nrow = length(group_levels),
     ncol = length(variable_levels),
-    dimnames = list(group_levels, variable_levels)
+    dimnames = list(group_labels, variable_levels)
   )
-  mat[cbind(match(group_labels, group_levels), match(variable_labels, variable_levels))] <- roe_tbl[[value]]
+  mat[cbind(match(group_id, group_levels), match(variable_labels, variable_levels))] <- roe_tbl[[value]]
   mat
 }
 
@@ -635,6 +641,12 @@ sn_compare_composition <- function(x,
     } else {
       factor(value)
     }
+  })
+  # Length-prefixed levels remain collision-free and stable across subsets.
+  values <- lapply(values, function(value) {
+    labels <- levels(value)
+    levels(value) <- ifelse(is.na(labels), "NA", paste0(nchar(labels, type = "bytes"), ":", labels))
+    value
   })
   do.call(
     interaction,

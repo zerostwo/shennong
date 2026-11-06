@@ -43,6 +43,8 @@ canonical envelope with `sn_get_result()`.
    roles/digests, but never add credentials.
 4. Run `sn_validate_result_bundle()` and then
    `sn_export_result_bundle()`. Record the returned JSON SHA-256 digest.
+   Retain its versioned `serialization` records when reading matrix/array
+   values in another language; dimension names are part of result identity.
 5. Treat the file as a candidate handoff only. Shennong does not authorize,
    upload, or promote artifacts; the trusted external receiver must verify
    digests and complete those actions.

@@ -504,6 +504,30 @@ test_that("sn_calculate_roe can return a matrix and supports multi-column groupi
   expect_equal(mat["control|S2", "Bcell"], 2)
 })
 
+test_that("ROE grouping and matrix rows preserve delimiter-containing identities", {
+  for (separator in c("|", ".", "\\")) {
+    metadata <- data.frame(
+      a = rep(c(paste0("x", separator, "y"), "x"), each = 4),
+      b = rep(c("z", paste0("y", separator, "z")), each = 4),
+      type = c("T", "T", "T", "NK", "T", "NK", "NK", "NK")
+    )
+    actual <- sn_calculate_roe(metadata, c("a", "b"), "type", return_matrix = TRUE)
+    expect_identical(dim(actual), c(2L, 2L))
+    expect_false(anyDuplicated(rownames(actual)) > 0L)
+    expect_equal(unname(actual), matrix(c(1.5, .5, .5, 1.5), nrow = 2))
+    composition <- sn_calculate_composition(metadata, c("a", "b"), "type", min_cells = 0, measure = "both")
+    expect_equal(nrow(composition), 4L)
+    expect_equal(sort(composition$count), c(1, 1, 3, 3))
+    expect_true(all(composition$group_total == 4))
+  }
+  # Keys must also align with totals when filtering drops an intervening group.
+  filtered <- sn_calculate_composition(
+    data.frame(group = rep(c("A", "B", "C"), c(5, 1, 3)), type = "T"),
+    "group", "type", min_cells = 2, measure = "both")
+  expect_equal(filtered$group_total, c(5, 3))
+  expect_equal(filtered$proportion, c(100, 100))
+})
+
 test_that("sn_calculate_roe supports Seurat-object metadata directly", {
   skip_if_not_installed("Seurat")
 

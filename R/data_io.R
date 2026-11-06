@@ -362,7 +362,7 @@ sn_list_10x_paths <- function(path,
 #' @export
 .import.rio_h5 <- function(file, ...) {
   check_installed(pkg = c("Seurat", "hdf5r"), reason = "to read 10x h5 files.")
-  mat <- Seurat::Read10X_h5(file)
+  mat <- Seurat::Read10X_h5(file, ...)
 
   return(mat)
 }

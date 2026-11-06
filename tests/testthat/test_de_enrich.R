@@ -353,6 +353,65 @@ test_that("sn_find_de supports pseudobulk contrasts", {
   expect_true(all(c("gene", "comparison", "cell_type", "log2FoldChange") %in% colnames(result)))
 })
 
+test_that("BPCells pseudobulk validates and aggregates in bounded sparse blocks", {
+  skip_if_not_installed("BPCells")
+  skip_if_not_installed("edgeR")
+  set.seed(771)
+  counts <- Matrix::Matrix(matrix(rpois(60 * 2400, 3), 60, 2400), sparse = TRUE)
+  dimnames(counts) <- list(paste0("g", seq_len(60)), paste0("c", seq_len(2400)))
+  metadata <- data.frame(sample = rep(paste0("s", 1:6), each = 400),
+    condition = rep(c("control", "treated"), each = 1200),
+    cell_type = rep(rep(c("T", "NK"), each = 200), 6), row.names = colnames(counts))
+  counts[1:10, metadata$condition == "treated"] <- counts[1:10, metadata$condition == "treated"] + 4
+  path <- tempfile("pseudobulk-counts-")
+  on.exit(unlink(path, recursive = TRUE), add = TRUE)
+  BPCells::write_matrix_dir(BPCells::convert_matrix_type(counts, "uint32_t"), dir = path)
+  disk_counts <- BPCells::open_matrix_dir(path)
+  in_memory <- SeuratObject::CreateSeuratObject(counts = counts, meta.data = metadata)
+  on_disk <- SeuratObject::CreateSeuratObject(counts = disk_counts, meta.data = metadata)
+  materialized <- list()
+  original <- Shennong:::.sn_as_sparse_matrix
+  local_mocked_bindings(.sn_as_sparse_matrix = function(x) {
+    if (Shennong:::.sn_is_iterable_matrix(x)) materialized[[length(materialized) + 1L]] <<- dim(x)
+    original(x)
+  }, .package = "Shennong")
+  run <- function(object) sn_find_de(object, analysis = "pseudobulk",
+    ident_1 = "treated", ident_2 = "control", group_by = "condition", sample_by = "sample",
+    subset_by = "cell_type", subset_levels = "T", features = rownames(counts)[1:40],
+    method = "edgeR", min_cells_per_sample = 5, return_object = FALSE, verbose = FALSE)
+  actual <- run(on_disk)
+  reference <- run(in_memory)
+  expect_equal(actual$tables$primary, reference$tables$primary, tolerance = 1e-10)
+  expect_equal(actual$input$tested_features_by_comparison, reference$input$tested_features_by_comparison)
+  # Compare with an independently aggregated, direct upstream edgeR call.
+  aggregated <- vapply(unique(metadata$sample), function(sample) {
+    Matrix::rowSums(counts[1:40, metadata$sample == sample & metadata$cell_type == "T", drop = FALSE])
+  }, numeric(40))
+  rownames(aggregated) <- rownames(counts)[1:40]
+  design <- stats::model.matrix(~factor(rep(c("control", "treated"), each = 3)))
+  dge <- edgeR::calcNormFactors(edgeR::DGEList(counts = aggregated))
+  dge <- edgeR::estimateDisp(dge, design)
+  fit <- edgeR::glmQLFit(dge, design)
+  oracle <- edgeR::topTags(edgeR::glmQLFTest(fit, contrast = c(0, 1)), n = Inf, sort.by = "none")$table
+  columns <- c("logFC", "logCPM", "F", "PValue", "FDR")
+  observed <- as.data.frame(actual$tables$primary)
+  expect_equal(unname(as.matrix(observed[, columns])),
+    unname(as.matrix(oracle[observed$gene, columns])), tolerance = 1e-10)
+  expect_true(length(materialized) > 1L)
+  expect_lte(max(vapply(materialized, `[[`, integer(1), 2L)), 1024L)
+  expect_true(any(vapply(materialized, `[[`, integer(1), 1L) == 40L))
+  expect_true(Shennong:::.sn_is_iterable_matrix(SeuratObject::LayerData(on_disk, layer = "counts")))
+
+  # The whole layer remains validated, including genes/cells omitted from DE.
+  bad_counts <- counts
+  bad_counts[60, 2400] <- -1
+  invalid_path <- tempfile("pseudobulk-invalid-")
+  on.exit(unlink(invalid_path, recursive = TRUE), add = TRUE)
+  BPCells::write_matrix_dir(bad_counts, dir = invalid_path)
+  invalid <- SeuratObject::CreateSeuratObject(counts = BPCells::open_matrix_dir(invalid_path), meta.data = metadata)
+  expect_error(run(invalid), "negative values")
+})
+
 test_that("sn_find_de supports limma pseudobulk contrasts", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("edgeR")

@@ -101,3 +101,14 @@ The scPoli label column belongs in `backend_control$label_by`.
 parameters. Use the top-level `seed` to control workflow randomness; advanced
 `...` arguments must be named. Use `sn_get_integration_control_template()` to
 discover the available backend options.
+
+Seed `0` is valid and is preserved by the scVI/scANVI/totalVI, scPoli, and
+BBKNN Python adapters. For `sn_run_trajectory()`, the effective seed is the
+top-level `seed`, then `backend_control$seed`, then `717L`. It controls direct
+trajectory inference, Monocle 3 clustering, and tradeSeq fitting while restoring
+the caller's random state even on failure. Check the stored result's
+`provenance$random_seed` alongside input identity and backend versions.
+Direct Monocle 3 accepts multiple original cluster partitions when
+`backend_control$monocle3$use_partition = FALSE` learns one graph across cells;
+original partition labels are retained. Partitioned graph learning still
+rejects multiple disconnected partitions.

@@ -36,5 +36,16 @@ git -C "$deploy_dir" add --all dev index.html .nojekyll
 if ! git -C "$deploy_dir" diff --cached --quiet; then
   source_commit="$(git -C "$repo_root" rev-parse HEAD)"
   git -C "$deploy_dir" commit -m "docs: publish pkgdown for $source_commit"
-  git -C "$deploy_dir" push "$remote" "HEAD:$branch"
+  # Retry the same commit on transient transport/server errors. Never force a
+  # push: concurrent publications and permanent rejections must still fail.
+  for attempt in 1 2 3; do
+    if git -C "$deploy_dir" push "$remote" "HEAD:$branch"; then
+      exit 0
+    fi
+    if [ "$attempt" -eq 3 ]; then
+      echo "Failed to publish pkgdown after three push attempts." >&2
+      exit 1
+    fi
+    sleep "${SHENNONG_DEPLOY_RETRY_DELAY:-5}"
+  done
 fi

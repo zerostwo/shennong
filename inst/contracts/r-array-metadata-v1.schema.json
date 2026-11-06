@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shennong.dev/r-array-metadata/v1",
+  "title": "Shennong R array identity metadata v1",
+  "description": "Additive Result Bundle serialization metadata. Paths address the native R structure; strings select named entries/data-frame columns, positive integers select unnamed entries using one-based indexing. JSON numeric value paths remain unchanged.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "arrays"
+  ],
+  "properties": {
+    "schema": {
+      "const": "shennong.dev/r-array-metadata/v1"
+    },
+    "arrays": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "storage_type",
+          "dim",
+          "dimnames",
+          "axis_names"
+        ],
+        "properties": {
+          "path": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              ]
+            }
+          },
+          "storage_type": {
+            "enum": [
+              "logical",
+              "integer",
+              "double",
+              "character"
+            ]
+          },
+          "dim": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "dimnames": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "axis_names": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -130,7 +130,7 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
     labels_key = config.get("labels_key")
     unlabeled_category = config.get("unlabeled_category", "Unknown")
     n_latent = int(config.get("n_latent") or 30)
-    seed = int(config.get("seed") or 717)
+    seed = int(717 if config.get("seed") is None else config["seed"])
 
     scvi.settings.seed = seed
     adata = _read_input(input_dir)

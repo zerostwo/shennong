@@ -1,6 +1,39 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-09-23
+Last updated: 2026-11-05
+
+## 2026-11-05: Preserve identities, effective seeds and bounded count processing
+
+- Keep the outer Result Bundle v1 and existing JSON value paths. Add the
+  versioned `shennong.dev/r-array-metadata/v1` serialization extension, with
+  an installed schema, so matrices/arrays retain dimensions, axis labels and
+  storage types. Paths address the native R structure; dataframe columns
+  precede their row serialization. Metadata is derived on export rather than
+  duplicated in the mutable native bundle. Native validation/provenance must
+  be present; ambiguous JSON field names and empty data-frame column names
+  fail before writing. Consumers must
+  use the extension for identity-aware readback; value-only consumers retain
+  their existing paths. This does not claim service deployment compatibility.
+- Generate scran chunk membership from immutable original clusters and reserve
+  all original/generated labels. Encode composition internal keys with lengths
+  so punctuation cannot merge groups and keys stay stable across filtering;
+  escape pipes/backslashes only in multi-column RoE display labels.
+- Apply trajectory seeds over computation and restore caller RNG state.
+  Resolve top-level seed, then backend control, then the established 717L
+  default; zero is valid. The former implicit ambient-RNG behavior is replaced
+  by the documented reproducibility contract. Monocle3 receives the effective
+  clustering seed and checks partitions against the actual graph policy.
+- Validate the full BPCells count layer in bounded sparse blocks, then subset
+  and aggregate selected data in blocks of at most 1,024 cells/5 million
+  matrix elements. Preserve error detection outside the selected subset. The
+  final feature-by-profile aggregate remains in memory. No runtime speedup or
+  whole-atlas memory benchmark is claimed.
+- Test computed values, identity-preserving readback, ambient-RNG independence
+  and built plot scales. Keep ordinary full tests in the coverage job while
+  exercising portable IO/result contracts on all R-CMD-check platforms. Retry
+  the identical documentation publication commit without force pushes.
+- Admit the focused growth in existing domain owners through the updated
+  source-size baseline. No public exports or package dependencies are added.
 
 ## 2026-10-02: Atlas figure styles and supplied-value renderers
 

@@ -248,6 +248,26 @@
   result
 }
 
+.sn_pseudobulk_column_blocks <- function(counts) {
+  block_size <- max(1L, min(1024L, floor(5e6 / max(1L, nrow(counts)))))
+  split(seq_len(ncol(counts)), ceiling(seq_len(ncol(counts)) / block_size))
+}
+
+.sn_aggregate_pseudobulk_counts <- function(counts, groups) {
+  if (!.sn_is_iterable_matrix(counts)) {
+    return(.sn_aggregate_columns_by_group(counts, groups))
+  }
+  membership <- .sn_sparse_group_membership(groups)
+  aggregated <- Matrix::sparseMatrix(i = integer(), j = integer(), x = numeric(),
+    dims = c(nrow(counts), ncol(membership)),
+    dimnames = list(rownames(counts), colnames(membership)))
+  for (indices in .sn_pseudobulk_column_blocks(counts)) {
+    current <- .sn_as_sparse_matrix(counts[, indices, drop = FALSE])
+    aggregated <- aggregated + current %*% membership[indices, , drop = FALSE]
+  }
+  aggregated
+}
+
 .sn_validate_pseudobulk_count_layer <- function(counts,
                                                 layer,
                                                 require_integer = TRUE) {
@@ -256,6 +276,17 @@
       "Pseudobulk differential expression requires a raw or corrected count layer; normalized expression layers are not supported.",
       call. = FALSE
     )
+  }
+  if (.sn_is_iterable_matrix(counts)) {
+    # Validate the complete input without retaining a full sparse copy. Selection
+    # must not hide invalid values in excluded cells or features.
+    for (indices in .sn_pseudobulk_column_blocks(counts)) {
+      .sn_validate_pseudobulk_count_layer(
+        .sn_as_sparse_matrix(counts[, indices, drop = FALSE]),
+        layer = layer, require_integer = require_integer
+      )
+    }
+    return(counts)
   }
   counts <- .sn_as_sparse_matrix(counts)
   stored_values <- if (inherits(counts, "sparseMatrix")) counts@x else as.numeric(counts)
@@ -500,8 +531,8 @@
       }
     }
 
-    aggregated <- .sn_aggregate_columns_by_group(
-      x = counts_subset,
+    aggregated <- .sn_aggregate_pseudobulk_counts(
+      counts = counts_subset,
       groups = meta_subset$.pb_key
     )
     pb_meta <- meta_subset[!duplicated(meta_subset$.pb_key), , drop = FALSE]

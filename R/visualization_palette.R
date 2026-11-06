@@ -184,10 +184,10 @@
   values <- if (named_colors) palette else .sn_resolve_discrete_palette(palette = palette, n = n)
 
   if (identical(aesthetic, "fill")) {
-    return(p + ggplot2::scale_fill_manual(values = values))
+    return(.sn_apply_scale_to_plot(p, ggplot2::scale_fill_manual(values = values)))
   }
 
-  p + ggplot2::scale_color_manual(values = values)
+  .sn_apply_scale_to_plot(p, ggplot2::scale_color_manual(values = values))
 }
 
 .sn_add_continuous_palette <- function(p,

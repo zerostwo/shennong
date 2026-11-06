@@ -127,6 +127,14 @@ sn_list_results(study, type = "de")
 head(sn_get_de_result(study, "T_cell_treated_vs_control", p_adjusted_cutoff = 0.05))
 ```
 
+BPCells count layers are validated in bounded sparse blocks, then the selected
+features and cells are aggregated in blocks. The complete single-cell matrix
+is not materialized; the feature-by-profile pseudobulk matrix still needs to
+fit in memory for DESeq2, edgeR, or limma. Validation continues to inspect the
+whole selected count layer, including values outside `features` or
+`subset_levels`, so invalid counts are not hidden by subsetting. The source
+BPCells layer and its backing directory remain unchanged.
+
 The recipe uses DESeq2 through the pseudobulk path. Inspect retained samples
 and the design, especially after subsetting rare cell types. For a paired or
 covariate-adjusted design, see [bulk transcriptomics](bulk-transcriptomics.html)
