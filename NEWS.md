@@ -2,6 +2,33 @@ All notable changes to this project will be documented in this file.
 
 
 # Shennong (development version)
+## Identity, reproducibility and memory repairs (2026-11-05)
+
+- Supplied-cluster scran splitting preserves original group membership even
+  when labels collide with generated chunk names. Composition and RoE retain
+  compound group identities containing punctuation; multi-column RoE matrix
+  labels now escape literal pipes and backslashes. Use the long table's
+  original grouping columns for joins.
+- Trajectory `seed` now controls computation, including tradeSeq and Monocle3,
+  and restores the caller's RNG state. Precedence is top-level `seed`, then
+  `backend_control$seed`, then 717L. Python scVI/scPoli/BBKNN preserve seed zero.
+  Monocle3 with `use_partition = FALSE` retains original partition diagnostics
+  while permitting the unified learned graph.
+- DotPlot preserves unscaled expression ranges and split-specific colors.
+  Violin palettes cover split levels and every panel; feature titles remain
+  visible and an explicit title applies to the whole combined plot.
+- Result Bundle JSON retains value paths and adds versioned array dimensions
+  and axis identities under `serialization`. Native bundles require non-NULL
+  validation and provenance; ambiguous JSON keys, empty data-frame column
+  names, and list arrays are rejected before export. 10x H5 import forwards
+  reader arguments, including `use.names` and `unique.features`.
+- BPCells pseudobulk validates counts and aggregates in bounded sparse blocks
+  instead of materializing the full layer; output matches the in-memory path.
+  The final feature-by-profile aggregate must still fit in memory.
+- Routine CI executes portable IO/result contracts on all four R/OS jobs.
+  Pkgdown retries the same publication commit after transient push failures,
+  without force pushing or hiding permanent failures.
+
 ## Reliability fixes (2026-11-04)
 
 Marker DE retains the genes actually tested before applying the reporting

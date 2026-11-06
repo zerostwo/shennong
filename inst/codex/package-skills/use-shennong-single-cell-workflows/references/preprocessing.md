@@ -24,3 +24,6 @@ Start with data access and preprocessing:
    Use `sn_set_layer_backend()` when selected Seurat layers must move between
    BPCells and in-memory `dgCMatrix` storage; materialize only the layers needed
    by an in-memory-only operation.
+   For scran normalization on BPCells, provide `clusters` to retain bounded
+   sparse processing. Labels such as `A` and `A-1` remain separate during
+   chunking; renaming a cluster does not change its cell membership or size factors.

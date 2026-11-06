@@ -71,14 +71,17 @@ must be finite, non-negative, and integer-valued.}
 and \code{tradeSeq} argument lists for direct backends. Palantir accepts
 \code{runner} or \code{result}; the same explicit adapter boundary can override
 Monocle 3 for externally managed execution. The direct Monocle 3 path
-rejects terminal-cluster constraints and disconnected partitions that it
-cannot faithfully encode as one lineage.}
+rejects terminal-cluster constraints and multiple partitions when graph
+learning uses partitions. Set \code{monocle3$use_partition = FALSE} to learn
+one graph across the cells; original partition labels remain in the result.}
 
 \item{return_object}{Return the updated object instead of the result.}
 
-\item{seed}{Top-level reproducibility seed. Precedence:
-\code{seed} > \code{backend_control$seed} > task default, and the resolved
-value is stamped into result provenance.}
+\item{seed}{Non-negative integer reproducibility seed, including zero.
+Precedence: \code{seed} > \code{backend_control$seed} > \code{717L}.
+The resolved seed scopes trajectory inference and tradeSeq fitting,
+overrides Monocle 3's clustering seed, and is recorded in provenance.
+The caller's random state is restored, including when a backend fails.}
 
 \item{verbose}{Top-level progress switch forwarded to backends through
 \code{backend_control$verbose} when explicitly supplied.}

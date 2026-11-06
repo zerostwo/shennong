@@ -35,12 +35,18 @@
 
   max_cluster_size <- as.integer(max_cluster_size)
   chunks <- as.character(clusters)
-  for (cluster_label in unique(chunks)) {
-    indices <- which(chunks == cluster_label)
+  original <- chunks
+  # Generated names must not shadow any original cluster or earlier chunk.
+  reserved <- unique(original)
+  for (cluster_label in unique(original)) {
+    indices <- which(original == cluster_label)
     if (length(indices) > max_cluster_size) {
       n_chunks <- ceiling(length(indices) / max_cluster_size)
       allocation <- rep(seq_len(n_chunks), length.out = length(indices))
-      chunks[indices] <- sprintf("%s-%s", cluster_label, allocation)
+      candidates <- sprintf("%s-%s", cluster_label, seq_len(n_chunks))
+      labels <- utils::tail(make.unique(c(reserved, candidates)), n_chunks)
+      chunks[indices] <- labels[allocation]
+      reserved <- c(reserved, labels)
     }
   }
   factor(chunks, levels = unique(chunks))

@@ -363,6 +363,12 @@ sn_plot_heatmap(
 
 Shennong wraps common summary plots so a report can move from cell-level maps to
 sample-level summaries without switching visual grammar.
+For `sn_plot_violin()`, `palette` applies to every feature panel. With
+`split_by`, the fill colors describe the split levels, so a named palette should
+use condition or sample names from that column; without splitting, its names
+should match `group_by` levels.
+Each feature keeps its panel title. For multiple features, `title` adds an
+overall heading without replacing those feature names.
 
 ```{r plot-violin-box}
 sn_plot_violin(
@@ -435,6 +441,27 @@ sn_plot_dot(
   n = 4,
   palette = "Purples"
 )
+```
+
+Dot colors normally show per-feature Z scores. Use `scale = FALSE` for
+`log1p` of mean expression; its numeric colorbar spans the observed values.
+Explicit `col_min` and `col_max` give common limits across plots and clamp
+out-of-range colors without changing the source values. A single identity also
+uses unscaled expression, following Seurat.
+
+With `style = "classic"`, `split_by` uses a separate grey-to-condition-color
+gradient for each split, as in Seurat. `palette` supplies the condition colors;
+a named vector maps them explicitly and must include all displayed split
+levels. Split plots retain these identity colors rather than a shared colorbar.
+Split labels may contain punctuation. Group/split pairs whose combined display
+names collide (for example, `A_x` + `y` and `A` + `x_y`) are rejected so their
+expression summaries cannot silently merge; rename those labels first.
+
+```{r plot-dot-expression-and-splits}
+sn_plot_dot(pbmc, features = c("IL7R", "NKG7"),
+  group_by = "seurat_clusters", scale = FALSE)
+sn_plot_dot(pbmc, features = c("IL7R", "NKG7"),
+  group_by = "seurat_clusters", split_by = "real_response", palette = "Set2")
 ```
 
 ## One result-aware plotting interface

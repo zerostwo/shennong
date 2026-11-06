@@ -116,7 +116,7 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
             raise ValueError(f"Labels key {labels_key!r} was not found in obs.csv.")
         adata.obs[labels_key] = adata.obs[labels_key].astype(str).astype("category")
 
-    seed = int(config.get("seed") or 717)
+    seed = int(717 if config.get("seed") is None else config["seed"])
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():

@@ -158,10 +158,23 @@ ID resolves only a unique result. Discover ambiguous choices with
 `sn_list_results()`. Never assume a default write overwrites a prior analysis:
 explicit storage replacement requires `overwrite = TRUE`.
 
-Pass computational `seed` at the top level. Group program scoring requires
+Pass computational `seed` at the top level. Trajectory inference resolves
+`seed > backend_control$seed > 717L`, accepts zero, applies it during computation,
+and restores the calling R session's RNG state. Python clustering also preserves
+zero seeds. Group program scoring requires
 `aggregate = "expression"` (average expression, then score) or `"scores"`
 (score cells, then average); record which question the analysis answers.
 Milo's `keep_model` retains `models$milo` without changing its return shape.
+
+Keep Result Bundle JSON array values together with the versioned
+`serialization` axis metadata. Native validation/provenance records cannot be
+NULL. Use `sn_read(path, use.names = FALSE)` for 10x H5 feature IDs and record
+that namespace before annotation joins. Composition matrix group labels escape
+literal pipes and backslashes; retain the original columns from the long table
+for joins. Supplied-cluster scran must be invariant to relabeling. BPCells
+pseudobulk validates the complete count layer in bounded blocks, then aggregates
+selected features/cells without materializing the whole atlas; the final
+feature-by-profile aggregate still needs memory.
 
 ## Styled embedding figures
 

@@ -138,6 +138,14 @@ Use `sn_run_cnv()` only with explicit normal references; include
 
 ## Explicit selection, aggregation, and return values
 
+- BPCells pseudobulk DE validates the full count layer in bounded blocks, then
+  aggregates the requested features and cells in sparse blocks. Budget memory
+  for the final feature-by-sample/group matrix and the statistical backend;
+  subsetting does not bypass count validation or modify backing files.
+- `sn_calculate_roe(return_matrix = TRUE)` retains distinct multi-column group
+  combinations even when labels contain punctuation. Matrix row labels escape
+  literal `|` and `\` within components; use the long table for original columns.
+
 `sn_find_de`, `sn_score_programs`, `sn_run_milo`, and `sn_run_enrichment` return
 unified results with `return_object = FALSE`. Read `tables$primary` or a typed
 getter for rows; use `sn_get_result()` for complete metadata. Discover stored

@@ -91,6 +91,10 @@ jobs:
             bioc::rtracklayer
           needs: check
 
+      - name: Exercise portable IO and result contracts
+        run: testthat::test_local(filter = "^(h5-parameters|result-bundle|data_io_contracts)$", stop_on_failure = TRUE)
+        shell: Rscript {0}
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           args: ${{ (github.event_name == 'workflow_dispatch' && inputs.full_tests) && 'c("--no-manual", "--as-cran")' || 'c("--no-manual", "--as-cran", "--no-tests")' }}

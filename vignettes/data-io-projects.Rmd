@@ -36,6 +36,12 @@ explicit sample metadata, and writes reusable analysis artifacts without
 changing APIs for every file type. Dataset discovery, download, caching, and
 publication are handled by the separate `ShennongData` package.
 
+For 10x H5 files, `sn_read()` forwards reader parameters to
+`Seurat::Read10X_h5()`. Use `sn_read("filtered_feature_bc_matrix.h5",
+use.names = FALSE)` to retain feature IDs instead of gene symbols; use
+`unique.features = FALSE` only when the next step can handle duplicate feature
+names. Keep the identifier namespace explicit before joining annotation tables.
+
 This article uses a small, provenance-tracked public PBMC subset materialized
 under `SHENNONG_REAL_DATA_DIR`. The data are used locally for validation and
 pkgdown output but are intentionally not stored in the Shennong repository.

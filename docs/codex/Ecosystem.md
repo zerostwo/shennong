@@ -333,6 +333,23 @@ only an explicit `runtime_job_id` participates in that consistency check.
 Runtime-assigned Artifact identity, byte size, and digest override path-only
 producer descriptions. Zero-byte outputs are valid.
 
+### Result Bundle array identity extension (2026-11-05)
+
+Core now exports `serialization` with schema
+`shennong.dev/r-array-metadata/v1`, preserving array dimensions, dimnames,
+axis names and storage types alongside unchanged v1 value paths. The installed
+JSON schema and independent R-producer/Python-consumer fixture define this
+additive boundary. Consumers restoring sample/feature identities must retain
+and interpret it; transporting the bytes alone does not verify those semantics.
+
+No sibling source or deployment is updated by this package repair. Runtime
+source inspected at `a6d83d0a320fe2abd1c5d7c03695fa09be601280` still requires
+analysis schema `1.0.0` and `name`, whereas the current package produces `2.0.0`
+and `result_id`. This pre-existing version mismatch prevents claiming current
+Core-to-Runtime end-to-end compatibility. The additive array extension does not
+resolve that mismatch. Runtime's unrelated dirty AGENTS/CHANGELOG files were
+left intact; publication/deployment was not re-audited.
+
 ### 4. Ecosystem compatibility lock
 
 The machine-readable compatibility lock is

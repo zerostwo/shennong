@@ -1,6 +1,6 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-11-04
+Last updated: 2026-11-06
 
 This file describes what is true now. Git history and `docs/codex/archive/`
 hold point-in-time evidence, `Decisions.md` holds durable rationale, and
@@ -8,28 +8,49 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 
 ## Package audit validation
 
-- Marker DE now retains its tested background through the public Seurat API,
-  including Seurat 5.6.0 fast Wilcoxon and ordinary t-test paths. Program
-  comparisons preserve compound identities and return NA for undefined
-  Wilcoxon probabilities without discarding other comparisons.
-- AnnData imports require complete cell identity. Python runs retain previous
-  metadata/reductions and reject reused artifact IDs. Feature plots preserve
-  split scales, blend colors, layout, explicit colors and dimension labels.
-- The complete local suite produced 6,246 passes, zero errors, one obsolete
-  CI-text assertion failure, 288 warnings and one absent-local-fixture skip.
-  That assertion was repaired, then all 590 CI/architecture/registry assertions
-  passed with zero failures, errors, warnings or skips. The complete suite was
-  not repeated after this test-only correction. Most warnings are the existing
-  ShennongOpt/Seurat version-drift notification.
-- Strict backend conformance passes 582 assertions, with zero failures/errors
-  or skips and two existing Scrublet argument warnings. Exact R dependency
-  records were refreshed only after direct comparisons passed; CI separates
-  validated versions from latest-version compatibility. PopV admission covers
-  the three executed algorithms; full-default/scVI C3 remains unvalidated.
-- Source build and R CMD check --no-manual --no-tests report Status: OK,
-  including examples and vignette rebuilding. Full pkgdown rebuild succeeds;
-  changed article text and scale/blend renderings were independently inspected.
-  User libraries are unchanged. Remote CI and publication are separate checks.
+- Supplied-cluster scran and composition/RoE retain compound group identities.
+  The original scran relabeling counterexample now has exactly zero change in
+  size factors or normalized expression; RoE retains both colliding groups.
+- Trajectory seeds govern Slingshot/tradeSeq and Monocle3 computation and
+  restore caller RNG state. Python clustering preserves seed zero. Monocle3
+  unified graphs respect the effective partition policy.
+- DotPlot retains unscaled expression ranges and split colors; violin palettes
+  apply to every panel and preserve feature titles. Runtime render assertions
+  and inspected PNGs cover the corrected outputs.
+- Result Bundle JSON preserves array axes through a versioned additive metadata
+  contract; required validation/provenance and unambiguous JSON field names
+  are enforced. H5 imports forward requested feature-ID/uniqueness controls.
+- BPCells pseudobulk validates the complete layer and aggregates selected data
+  in bounded sparse blocks. A 2,400-cell fixture matches independently
+  aggregated direct edgeR output while preserving on-disk source storage.
+- Portable IO/result tests now execute in every R-CMD-check platform job.
+  Documentation pushes retry the identical commit without force. The prior
+  current-main publication failure was retried successfully: Pages built
+  `959181674d043ae3b4d211c6b5e414513f4ce3c6` for source `4e49a88`.
+  That publication is distinct from this repair branch.
+- The consolidated source suite passes 6,468 assertions with zero failures or
+  errors, 288 warnings (predominantly existing ShennongOpt/Seurat drift), and
+  one skip for an unavailable local public-data fixture. The subsequent empty
+  data-frame column guard passes 57 focused Bundle/independent-consumer
+  assertions without failures, warnings or skips. The final affected Bundle,
+  plot, architecture, CI and installed-Codex-asset checks pass 344 assertions
+  with no failures, errors, warnings or skips. Strict backend
+  conformance passes 582 assertions with two expected Scrublet parameter
+  warnings and no failures, errors or skips.
+- `R CMD build` and `R CMD check --no-manual --no-tests` pass with `Status: OK`,
+  including examples and vignette rebuilding. Tests run separately as above;
+  `_R_CHECK_FORCE_SUGGESTS_=false` permits unavailable optional packages.
+  A full pkgdown rebuild succeeds from an isolated source installation, and
+  the changed guides, references and NEWS are read back from rendered HTML.
+  Independent Python consumption restores 15 arrays from real and edge-case
+  Result Bundle outputs and rejects changed values or sample identities.
+  Source-file checksums match the build snapshot; local validation logs remain
+  under `/tmp/shennong-fixes-20261105/` and `/tmp/shennong-fixes-20261106/`.
+  Remote CI and branch publication are
+  reported separately from these completed local checks.
+- No sibling service deployment or whole-atlas performance benchmark is
+  claimed. The pre-existing Runtime analysis-schema mismatch is recorded in
+  `Ecosystem.md`; method admission remains separate from these defect repairs.
 
 ## Atlas figure styles
 

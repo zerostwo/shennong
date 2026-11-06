@@ -93,6 +93,9 @@
     return(prepared)
   }
   if (is.matrix(value) || is.array(value)) {
+    if (is.list(value)) {
+      stop("`", path, "` contains a list array; convert it to a list of atomic arrays before Result Bundle export.", call. = FALSE)
+    }
     if (is.numeric(value) && any(!is.finite(value) & !is.na(value))) {
       stop("`", path, "` contains non-finite numeric values.", call. = FALSE)
     }
@@ -279,9 +282,57 @@
   })
 }
 
+.sn_result_bundle_array_metadata <- function(value, path = list()) {
+  if (is.array(value)) {
+    if (is.list(value)) stop("Result Bundle JSON does not support list arrays; convert them to lists of atomic arrays.", call. = FALSE)
+    if (!typeof(value) %in% c("logical", "integer", "double", "character")) {
+      stop("Result Bundle JSON arrays must contain logical, integer, double or character values.", call. = FALSE)
+    }
+    axes <- dimnames(value)
+    return(list(list(
+      path = path,
+      storage_type = typeof(value),
+      dim = I(dim(value)),
+      dimnames = if (is.null(axes)) NULL else unname(lapply(axes, function(axis) {
+        if (is.null(axis)) NULL else I(axis)
+      })),
+      axis_names = if (is.null(names(axes))) NULL else I(names(axes))
+    )))
+  }
+  if (!is.list(value)) return(list())
+  entry_names <- names(value)
+  if (!is.null(entry_names)) {
+    if (anyNA(entry_names)) stop("Result Bundle JSON does not support missing list or data-frame names.", call. = FALSE)
+    if (is.data.frame(value) && any(!nzchar(entry_names))) {
+      stop("Result Bundle JSON requires non-empty data-frame column names; unnamed columns make array paths ambiguous.", call. = FALSE)
+    }
+    effective_names <- ifelse(nzchar(entry_names), entry_names, as.character(seq_along(value)))
+    if (anyDuplicated(effective_names)) {
+      stop("Result Bundle JSON requires unique list and data-frame keys; duplicate names (including generated unnamed-entry keys) make array identities ambiguous.", call. = FALSE)
+    }
+  }
+  records <- list()
+  for (index in seq_along(value)) {
+    name <- names(value)[index]
+    selector <- if (length(name) && !is.na(name) && nzchar(name)) name else index
+    records <- c(records, .sn_result_bundle_array_metadata(
+      value[[index]], c(path, list(selector))
+    ))
+  }
+  records
+}
+
 .sn_result_bundle_json <- function(bundle, pretty = FALSE) {
+  if ("serialization" %in% names(bundle)) {
+    stop("`serialization` is generated during export; supply a native Result Bundle.", call. = FALSE)
+  }
+  payload <- unclass(bundle)
+  payload$serialization <- list(
+    schema = "shennong.dev/r-array-metadata/v1",
+    arrays = .sn_result_bundle_array_metadata(payload)
+  )
   encoded <- jsonlite::toJSON(
-    unclass(bundle),
+    payload,
     auto_unbox = TRUE,
     dataframe = "rows",
     matrix = "rowmajor",
@@ -348,15 +399,13 @@
     }
   }
   validation <- bundle[["validation"]]
-  if (!is_null(validation)) {
-    if (!is.list(validation) || !identical(validation[["valid"]], TRUE) ||
-        !is.character(validation[["errors"]] %||% character()) ||
-        !is.character(validation[["warnings"]] %||% character())) {
+  if (!is.list(validation) || !identical(validation[["valid"]], TRUE) ||
+        !is.character(validation[["errors"]]) || length(validation[["errors"]]) > 0L ||
+        !is.character(validation[["warnings"]])) {
       errors <- c(
         errors,
         "`validation` must record a successful analysis-result validation report."
       )
-    }
   }
   for (kind in c("inputs", "artifacts")) {
     if (kind %in% names(bundle)) {
@@ -371,7 +420,7 @@
     }
   }
   provenance <- bundle[["provenance"]]
-  if (!is_null(provenance) && !is.list(provenance)) {
+  if (!is.list(provenance)) {
     errors <- c(errors, "`provenance` must be a list.")
   } else if (is.list(provenance)) {
     provenance_required <- c(
@@ -431,6 +480,20 @@
 #' It contains no service calls or credentials. Input records identify exact
 #' immutable revisions and SHA-256 digests; artifact records describe candidate
 #' outputs that an authorized external service may verify and promote.
+#'
+#' Exported JSON retains numeric array values at their existing paths and adds
+#' `serialization` with schema `shennong.dev/r-array-metadata/v1`. Its `arrays`
+#' records preserve each R array's `path`, `storage_type`, `dim`, `dimnames`,
+#' and `axis_names`, including singleton and empty dimensions. Paths are lists
+#' of R indexing selectors: names for named entries and one-based indices for
+#' unnamed entries; data frames are traversed by column before row serialization.
+#' Data-frame columns must have non-empty, unique names. Ordinary lists may mix
+#' named and unnamed entries when their resulting JSON field keys are unique.
+#' Consumers restoring array identities must use these records. Only atomic
+#' arrays are supported; convert list arrays to lists of atomic arrays first.
+#' Duplicate JSON field keys are rejected rather than renamed. Metadata is
+#' generated on export; validation/export accept native R bundles, not a
+#' JSON-decoded object. The outer Result Bundle v1 and value paths are unchanged.
 #'
 #' @param result A canonical Shennong analysis result accepted by
 #'   [sn_validate_result()].

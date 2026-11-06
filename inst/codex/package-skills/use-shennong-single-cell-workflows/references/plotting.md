@@ -173,6 +173,18 @@ result is also accepted. Stored section boundaries are retained.
   area describe different quantities. Keep aligned dimnames, missing values,
   units, statistic names and explicit common limits. `sn_plot_dot()` retains
   percent-expression area; it must not stand in for a significance bubble.
+- `sn_plot_dot(scale = FALSE)` colors log1p mean expression, with a numeric
+  Average expression legend and observed limits. Explicit `col_min`/`col_max`
+  clamp colors while retaining source values. Classic `split_by` plots use
+  separate grey-to-condition-color gradients; `palette` supplies split colors,
+  and named colors must cover all displayed split levels. These plots use
+  identity colors, not a shared continuous colorbar. Punctuation in split labels
+  is preserved. Rename group/split labels if their combined display names collide;
+  ambiguous pairs are rejected rather than merged.
+- `sn_plot_violin()` applies its palette to every feature panel. With
+  `split_by`, name palette entries for split levels; otherwise name them for
+  `group_by` levels. More split levels than groups are supported. Feature names
+  remain as panel titles; an explicit multi-feature `title` is an overall heading.
 - `sn_plot_network(edges, nodes, layout = "supplied")` renders provided scores
   and fixed coordinates. It does not infer CoVarNet CMs, correlation, or LR
   communication. Preserve isolates and original weights.

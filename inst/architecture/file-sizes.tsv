@@ -7,8 +7,8 @@ analysis_celltypist.R	369
 analysis_clustering.R	3499
 analysis_cnv.R	494
 analysis_communication.R	827
-analysis_composition.R	616
-analysis_de.R	1053
+analysis_composition.R	670
+analysis_de.R	1084
 analysis_deconvolution.R	824
 analysis_enrichment.R	971
 analysis_grn.R	245
@@ -25,7 +25,7 @@ analysis_regulatory.R	228
 analysis_result.R	1145
 analysis_rogue.R	192
 analysis_spatial.R	708
-analysis_trajectory.R	575
+analysis_trajectory.R	750
 analysis_velocity_fate.R	470
 annotation_ontology.R	105
 annotation.R	827
@@ -64,14 +64,14 @@ preprocessing.R	2437
 program_discovery.R	253
 program_scoring.R	507
 python_bridge.R	1411
-result_bundle.R	643
+result_bundle.R	706
 shennong-package.R	11
 signatures.R	542
 simulation.R	265
 usage_tracking.R	2238
 utils.R	835
 visualization_density.R	192
-visualization_palette.R	363
+visualization_palette.R	365
 visualization_theme.R	301
-visualization.R	2170
+visualization.R	2235
 zzz.R	26

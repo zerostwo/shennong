@@ -109,6 +109,9 @@ does not substitute a different algorithm when that explicit backend is absent.
 The top-level `seed` is the workflow seed: it takes precedence over nested
 integration and clustering seeds, is recorded in provenance, and runs under a
 scoped RNG context so the caller's random state is restored afterward.
+Zero is a valid seed and is passed unchanged to scVI, scANVI, totalVI, scPoli,
+and BBKNN; it does not select the default seed of 717. Reproducibility still
+requires matching inputs, backend versions, execution settings, and hardware.
 
 Variable-feature and PCA diagnostics are produced from the same real RNA
 matrix used for clustering.
