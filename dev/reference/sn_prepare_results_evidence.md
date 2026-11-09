@@ -81,4 +81,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   names(evidence)
 }
+#> INFO [2026-11-09 09:57:38] Initializing Seurat object for project: Shennong.
+#> INFO [2026-11-09 09:57:38] Running QC metrics for human.
+#> INFO [2026-11-09 09:57:38] Seurat object initialization complete.
+#> [1] "task"               "dataset"            "cluster_summary"   
+#> [4] "cluster_markers"    "enrichment_summary"
 ```

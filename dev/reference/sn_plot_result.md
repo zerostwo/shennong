@@ -67,6 +67,7 @@ de_table <- data.frame(
   adjusted_p_value = c(0.01, 0.03, 0.8)
 )
 sn_plot_result(de_table, analysis_type = "de", view = "volcano")
+
 if (FALSE) { # \dontrun{
 sn_list_results(seurat_object, type = "de")
 sn_plot_result(

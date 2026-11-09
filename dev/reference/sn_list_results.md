@@ -55,4 +55,15 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   sn_list_results(obj)
 }
+#> INFO [2026-11-09 09:57:18] Initializing Seurat object for project: Shennong.
+#> INFO [2026-11-09 09:57:18] Running QC metrics for human.
+#> INFO [2026-11-09 09:57:18] Seurat object initialization complete.
+#> Warning: No DE genes identified
+#> Warning: The following tests were not performed: 
+#> Warning: When testing Shennong versus all:
+#>  Cell group 2 is empty - no cells with identity class 
+#> # A tibble: 1 × 8
+#>   collection       type  result_id analysis method created_at      n_rows source
+#>   <chr>            <chr> <chr>     <chr>    <chr>  <chr>            <int> <chr> 
+#> 1 shennong.results de    default   de       wilcox 2026-11-09 09:…      0 NA    
 ```

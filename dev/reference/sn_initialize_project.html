@@ -125,17 +125,21 @@ directory plus the main created directory and file paths.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="va">project_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"analysis-project"</span><span class="op">)</span></span>
-<span><span class="va">created</span> <span class="op">&lt;-</span> <span class="fu">sn_initialize_project</span><span class="op">(</span></span>
-<span>  path <span class="op">=</span> <span class="va">project_dir</span>,</span>
-<span>  project_name <span class="op">=</span> <span class="st">"PBMC pilot study"</span>,</span>
-<span>  objective <span class="op">=</span> <span class="st">"Build a reproducible Shennong-based PBMC analysis workflow."</span>,</span>
-<span>  with_agent <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">created</span><span class="op">$</span><span class="va">readme</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">created</span><span class="op">$</span><span class="va">gitignore</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">created</span><span class="op">$</span><span class="va">rproj</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">project_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"analysis-project"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">created</span> <span class="op">&lt;-</span> <span class="fu">sn_initialize_project</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  path <span class="op">=</span> <span class="va">project_dir</span>,</span></span>
+<span class="r-in"><span>  project_name <span class="op">=</span> <span class="st">"PBMC pilot study"</span>,</span></span>
+<span class="r-in"><span>  objective <span class="op">=</span> <span class="st">"Build a reproducible Shennong-based PBMC analysis workflow."</span>,</span></span>
+<span class="r-in"><span>  with_agent <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">created</span><span class="op">$</span><span class="va">readme</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">created</span><span class="op">$</span><span class="va">gitignore</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">created</span><span class="op">$</span><span class="va">rproj</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

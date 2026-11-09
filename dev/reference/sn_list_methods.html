@@ -98,9 +98,39 @@ can run in the current session and <code>FALSE</code> for unavailable methods.</
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sn_list_methods</span><span class="op">(</span><span class="st">"trajectory"</span><span class="op">)</span></span>
-<span><span class="fu">sn_list_methods</span><span class="op">(</span>available <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">sn_list_methods</span><span class="op">(</span><span class="st">"trajectory"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 19</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   task       name    description runtime package environment implemented default</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> trajectory slings… Cluster-aw… r       slings… <span style="color: #BB0000;">NA</span>          TRUE        TRUE   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> trajectory monocl… Direct gra… r       monocl… <span style="color: #BB0000;">NA</span>          TRUE        FALSE  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> trajectory palant… Standardiz… pixi    Shenno… trajectory  TRUE        FALSE  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 11 more variables: runnable &lt;lgl&gt;, available &lt;lgl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   availability_reason &lt;chr&gt;, conformance_status &lt;chr&gt;, cpu_gpu &lt;chr&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   install_action &lt;chr&gt;, input_requirements &lt;list&gt;, outputs &lt;list&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   supports &lt;list&gt;, citation &lt;chr&gt;, registry_file &lt;chr&gt;</span></span>
+<span class="r-in"><span><span class="fu">sn_list_methods</span><span class="op">(</span>available <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 12 × 19</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    task        name  description runtime package environment implemented default</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> annotation  seur… Seurat anc… r       Seurat  <span style="color: #BB0000;">NA</span>          TRUE        FALSE  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> bulk_de     auto  Design-awa… r       Shenno… <span style="color: #BB0000;">NA</span>          TRUE        TRUE   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> bulk_survi… cox   Cox propor… r       surviv… <span style="color: #BB0000;">NA</span>          TRUE        TRUE   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> differenti… perm… Sample-awa… r       Shenno… <span style="color: #BB0000;">NA</span>          TRUE        FALSE  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> metabolism  gene… Curated me… r       Shenno… <span style="color: #BB0000;">NA</span>          TRUE        TRUE   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> program_di… nmf   Multi-rest… r       Shenno… <span style="color: #BB0000;">NA</span>          TRUE        TRUE   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> program_sc… ucell Rank-based… r       UCell   <span style="color: #BB0000;">NA</span>          TRUE        TRUE   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> program_sc… mean  Dependency… r       Shenno… <span style="color: #BB0000;">NA</span>          TRUE        FALSE  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> spatial_co… dist… Distance-a… r       Shenno… <span style="color: #BB0000;">NA</span>          TRUE        TRUE   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> spatial_ne… knn   Memory-bou… r       Shenno… <span style="color: #BB0000;">NA</span>          TRUE        TRUE   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span> spatial_svg mora… Native R M… r       Shenno… <span style="color: #BB0000;">NA</span>          TRUE        TRUE   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">12</span> state_prio… augur Sample-awa… r       Shenno… <span style="color: #BB0000;">NA</span>          TRUE        TRUE   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 11 more variables: runnable &lt;lgl&gt;, available &lt;lgl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   availability_reason &lt;chr&gt;, conformance_status &lt;chr&gt;, cpu_gpu &lt;chr&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   install_action &lt;chr&gt;, input_requirements &lt;list&gt;, outputs &lt;list&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   supports &lt;list&gt;, citation &lt;chr&gt;, registry_file &lt;chr&gt;</span></span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

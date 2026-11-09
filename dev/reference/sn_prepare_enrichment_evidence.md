@@ -46,4 +46,8 @@ enrich_tbl <- tibble::tibble(
 )
 evidence <- sn_prepare_enrichment_evidence(result = enrich_tbl, n_terms = 1)
 evidence$top_terms
+#> # A tibble: 1 × 4
+#>   ID      Description       NES p.adjust
+#>   <chr>   <chr>           <dbl>    <dbl>
+#> 1 GO:0001 immune response   2.1     0.01
 ```
