@@ -203,20 +203,20 @@ sn_list_results(object)
 #> # A tibble: 2 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results qc_assess… example_… qc_asse… unkno… 2026-11-0…      1 NA    
-#> 2 shennong.results qc_assess… qc_copy   qc_asse… unkno… 2026-11-0…      1 NA
+#> 1 shennong.results qc_assess… example_… qc_asse… unkno… 2026-11-1…      1 NA    
+#> 2 shennong.results qc_assess… qc_copy   qc_asse… unkno… 2026-11-1…      1 NA
 sn_list_results(object, type = "qc_assessment")
 #> # A tibble: 2 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results qc_assess… example_… qc_asse… unkno… 2026-11-0…      1 NA    
-#> 2 shennong.results qc_assess… qc_copy   qc_asse… unkno… 2026-11-0…      1 NA
+#> 1 shennong.results qc_assess… example_… qc_asse… unkno… 2026-11-1…      1 NA    
+#> 2 shennong.results qc_assess… qc_copy   qc_asse… unkno… 2026-11-1…      1 NA
 sn_list_results(object, include_artifacts = TRUE)
 #> # A tibble: 2 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results qc_assess… example_… qc_asse… unkno… 2026-11-0…      1 NA    
-#> 2 shennong.results qc_assess… qc_copy   qc_asse… unkno… 2026-11-0…      1 NA
+#> 1 shennong.results qc_assess… example_… qc_asse… unkno… 2026-11-1…      1 NA    
+#> 2 shennong.results qc_assess… qc_copy   qc_asse… unkno… 2026-11-1…      1 NA
 
 qc_copy <- sn_get_result(
   object,
@@ -244,7 +244,7 @@ qc_copy$provenance
 #> [1] NA
 #> 
 #> $timestamp
-#> [1] "2026-11-09 09:58:00 UTC"
+#> [1] "2026-11-16 09:53:56 UTC"
 #> 
 #> $result_id
 #> [1] "qc_copy"
@@ -262,7 +262,7 @@ sn_list_results(object)
 #> # A tibble: 1 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results qc_assess… example_… qc_asse… unkno… 2026-11-0…      1 NA
+#> 1 shennong.results qc_assess… example_… qc_asse… unkno… 2026-11-1…      1 NA
 ```
 
 Prefer these APIs over direct `object@misc` access. Stable result IDs
@@ -287,7 +287,7 @@ sn_list_results(object, type = "qc_assessment")
 #> # A tibble: 1 × 8
 #>   collection       type       result_id analysis method created_at n_rows source
 #>   <chr>            <chr>      <chr>     <chr>    <chr>  <chr>       <int> <chr> 
-#> 1 shennong.results qc_assess… example_… qc_asse… unkno… 2026-11-0…      1 NA
+#> 1 shennong.results qc_assess… example_… qc_asse… unkno… 2026-11-1…      1 NA
 qc_result <- sn_get_result(
   object,
   type = "qc_assessment",
@@ -331,7 +331,7 @@ handoff[c("size_bytes", "digest")]
 #> [1] "sha256"
 #> 
 #> $digest$value
-#> [1] "cd2f552eb85eb70eb4728bb7b6784b9422074d44e092bfa1cd21fb0d7180153d"
+#> [1] "056081c8d3a6a21f2e9dcd9ecccf33fd82858278ac3e32cda8605e8eb9e87167"
 unlink(bundle_path)
 ```
 

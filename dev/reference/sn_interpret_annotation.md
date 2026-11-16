@@ -220,14 +220,14 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   prompt$task
 }
-#> INFO [2026-11-09 09:57:05] Initializing Seurat object for project: Shennong.
-#> INFO [2026-11-09 09:57:05] Running QC metrics for human.
-#> INFO [2026-11-09 09:57:05] Seurat object initialization complete.
-#> INFO [2026-11-09 09:57:05] [sn_interpret_annotation] Starting interpretation workflow.
-#> INFO [2026-11-09 09:57:05] [sn_interpret_annotation] Step 1/5: Preparing annotation evidence (elapsed 0.0s).
+#> INFO [2026-11-16 09:53:22] Initializing Seurat object for project: Shennong.
+#> INFO [2026-11-16 09:53:22] Running QC metrics for human.
+#> INFO [2026-11-16 09:53:22] Seurat object initialization complete.
+#> INFO [2026-11-16 09:53:22] [sn_interpret_annotation] Starting interpretation workflow.
+#> INFO [2026-11-16 09:53:22] [sn_interpret_annotation] Step 1/5: Preparing annotation evidence (elapsed 0.0s).
 #> As of Seurat v5, we recommend using AggregateExpression to perform pseudo-bulk analysis.
 #> This message is displayed once per session.
-#> INFO [2026-11-09 09:57:05] [sn_interpret_annotation] Step 2/5: Building annotation prompt (elapsed 0.1s).
-#> INFO [2026-11-09 09:57:05] [sn_interpret_annotation] Prompt prepared (total elapsed 0.2s).
+#> INFO [2026-11-16 09:53:23] [sn_interpret_annotation] Step 2/5: Building annotation prompt (elapsed 0.1s).
+#> INFO [2026-11-16 09:53:23] [sn_interpret_annotation] Prompt prepared (total elapsed 0.1s).
 #> [1] "annotation"
 ```

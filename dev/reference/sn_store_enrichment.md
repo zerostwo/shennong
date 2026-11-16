@@ -97,9 +97,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   sn_list_results(obj, type = "enrichment")
   sn_get_result(obj, type = "enrichment", result_id = "demo_gsea")
 }
-#> INFO [2026-11-09 09:57:48] Initializing Seurat object for project: Shennong.
-#> INFO [2026-11-09 09:57:48] Running QC metrics for human.
-#> INFO [2026-11-09 09:57:48] Seurat object initialization complete.
+#> INFO [2026-11-16 09:53:49] Initializing Seurat object for project: Shennong.
+#> INFO [2026-11-16 09:53:49] Running QC metrics for human.
+#> INFO [2026-11-16 09:53:49] Seurat object initialization complete.
 #> $schema_version
 #> [1] "2.0.0"
 #> 
@@ -154,7 +154,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
 #> [1] NA
 #> 
 #> $provenance$timestamp
-#> [1] "2026-11-09 09:57:48 UTC"
+#> [1] "2026-11-16 09:53:49 UTC"
 #> 
 #> $provenance$result_id
 #> [1] "demo_gsea"

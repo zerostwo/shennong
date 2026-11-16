@@ -228,9 +228,9 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   sn_list_results(obj, type = "de")
   sn_get_result(obj, type = "de", result_id = "celltype_markers")
 }
-#> INFO [2026-11-09 09:56:58] Initializing Seurat object for project: Shennong.
-#> INFO [2026-11-09 09:56:58] Running QC metrics for human.
-#> INFO [2026-11-09 09:56:58] Seurat object initialization complete.
+#> INFO [2026-11-16 09:53:18] Initializing Seurat object for project: Shennong.
+#> INFO [2026-11-16 09:53:18] Running QC metrics for human.
+#> INFO [2026-11-16 09:53:19] Seurat object initialization complete.
 #> For a (much!) faster implementation of the Wilcoxon Rank Sum Test,
 #> (default method for FindMarkers) please install the presto package
 #> --------------------------------------------
@@ -365,7 +365,7 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
 #> [1] NA
 #> 
 #> $provenance$timestamp
-#> [1] "2026-11-09 09:56:59 UTC"
+#> [1] "2026-11-16 09:53:19 UTC"
 #> 
 #> $provenance$acceleration
 #> $provenance$acceleration$patches

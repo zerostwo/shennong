@@ -109,12 +109,12 @@ if (requireNamespace("Seurat", quietly = TRUE)) {
   )
   prompt$task
 }
-#> INFO [2026-11-09 09:57:51] Initializing Seurat object for project: Shennong.
-#> INFO [2026-11-09 09:57:51] Running QC metrics for human.
-#> INFO [2026-11-09 09:57:52] Seurat object initialization complete.
-#> INFO [2026-11-09 09:57:52] [sn_write_figure_legend] Starting interpretation workflow.
-#> INFO [2026-11-09 09:57:52] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).
-#> INFO [2026-11-09 09:57:52] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.1s).
-#> INFO [2026-11-09 09:57:52] [sn_write_figure_legend] Prompt prepared (total elapsed 0.1s).
+#> INFO [2026-11-16 09:53:51] Initializing Seurat object for project: Shennong.
+#> INFO [2026-11-16 09:53:51] Running QC metrics for human.
+#> INFO [2026-11-16 09:53:51] Seurat object initialization complete.
+#> INFO [2026-11-16 09:53:51] [sn_write_figure_legend] Starting interpretation workflow.
+#> INFO [2026-11-16 09:53:51] [sn_write_figure_legend] Step 1/4: Preparing legend evidence (elapsed 0.0s).
+#> INFO [2026-11-16 09:53:52] [sn_write_figure_legend] Step 2/4: Building legend prompt (elapsed 0.0s).
+#> INFO [2026-11-16 09:53:52] [sn_write_figure_legend] Prompt prepared (total elapsed 0.0s).
 #> [1] "figure_legend"
 ```
