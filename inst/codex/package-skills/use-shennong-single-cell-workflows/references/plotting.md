@@ -173,6 +173,18 @@ result is also accepted. Stored section boundaries are retained.
   area describe different quantities. Keep aligned dimnames, missing values,
   units, statistic names and explicit common limits. `sn_plot_dot()` retains
   percent-expression area; it must not stand in for a significance bubble.
+- `sn_plot_dot(scale = FALSE)` colors log1p mean expression, with a numeric
+  Average expression legend and observed limits. Explicit `col_min`/`col_max`
+  clamp colors while retaining source values. Classic `split_by` plots use
+  separate grey-to-condition-color gradients; `palette` supplies split colors,
+  and named colors must cover all displayed split levels. These plots use
+  identity colors, not a shared continuous colorbar. Punctuation in split labels
+  is preserved. Rename group/split labels if their combined display names collide;
+  ambiguous pairs are rejected rather than merged.
+- `sn_plot_violin()` applies its palette to every feature panel. With
+  `split_by`, name palette entries for split levels; otherwise name them for
+  `group_by` levels. More split levels than groups are supported. Feature names
+  remain as panel titles; an explicit multi-feature `title` is an overall heading.
 - `sn_plot_network(edges, nodes, layout = "supplied")` renders provided scores
   and fixed coordinates. It does not infer CoVarNet CMs, correlation, or LR
   communication. Preserve isolates and original weights.
@@ -200,3 +212,11 @@ bounds, and supplied network/tree topology. No automatic P-values, BCR trees,
 CoVarNet discovery or imputation. Reusable source tables survive PDF/PNG bundle
 export. Consult `extdata/zhang-atlas-layouts.csv` and the rendered atlas article;
 synthetic layout examples must not be described as original cancer results.
+
+## Statistical figures and PDF export
+
+A nominal P value is displayed on its nominal scale. Provide an adjusted
+probability for adjusted thresholds, and a measured mean abundance for an
+MA plot. For a PDF requiring embedded fonts, inspect the `embed_fonts`
+attribute returned by `sn_save_figure()`. Headless systems lacking Cairo
+can use the base PDF fallback with a warning.

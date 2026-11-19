@@ -286,6 +286,9 @@ Shennong compute size factors in sparse chunks of at most
 and normalized `data` layer remain BPCells-backed. Without supplied clusters,
 `scran::quickCluster()` still requires one full sparse materialization, though
 the normalized output remains lazy.
+Chunk membership preserves the supplied clusters even when labels contain
+hyphens or resemble generated chunk names (for example, `A` and `A-1`).
+Renaming those labels does not change the size factors.
 
 ```{r scran-bpcells-normalization, eval = FALSE}
 reference <- sn_normalize_data(

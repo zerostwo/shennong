@@ -491,6 +491,30 @@ test_that("sn_normalize_data resolves scran cluster metadata and streams BPCells
   )
 })
 
+test_that("streamed scran partitions are invariant to colliding cluster labels", {
+  skip_if_not_installed("scran")
+  skip_if_not_installed("SingleCellExperiment")
+  original <- c(rep("A", 4), rep("A-1", 2))
+  chunks <- Shennong:::.sn_split_scran_clusters(original, 2)
+  expect_true(all(vapply(split(original, chunks), function(x) length(unique(x)) == 1L, logical(1))))
+  expect_lte(max(table(chunks)), 2L)
+
+  set.seed(123)
+  counts <- matrix(rpois(300 * 120, 5), 300, 120,
+    dimnames = list(paste0("g", seq_len(300)), paste0("c", seq_len(120))))
+  counts[1:100, 1:60] <- counts[1:100, 1:60] * 5
+  counts[101:200, 61:120] <- counts[101:200, 61:120] * 5
+  counts <- Matrix::Matrix(round(sweep(counts, 2, seq(.5, 2, length.out = 120), "*")), sparse = TRUE)
+  object <- SeuratObject::CreateSeuratObject(counts = counts)
+  normalize <- function(labels) sn_normalize_data(object, method = "scran",
+    clusters = labels, max.cluster.size = 30, sizes = c(10, 15, 20))
+  actual <- normalize(rep(c("A", "A-1"), each = 60))
+  relabeled <- normalize(rep(c("A", "B"), each = 60))
+  expect_equal(actual$size.factor, relabeled$size.factor, tolerance = 1e-12)
+  expect_equal(SeuratObject::LayerData(actual, layer = "data"),
+    SeuratObject::LayerData(relabeled, layer = "data"), tolerance = 1e-12)
+})
+
 test_that("sn_normalize_data validates scran cluster metadata", {
   skip_if_not_installed("scran")
   skip_if_not_installed("SingleCellExperiment")

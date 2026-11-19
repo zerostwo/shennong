@@ -174,7 +174,7 @@ sn_simulate <- function(object,
       mu_formula = mu_formula,
       sigma_formula = sigma_formula,
       family_use = family_use,
-      n_workers = n_workers,
+      n_cores = n_workers,
       corr_formula = corr_formula,
       ...
     )

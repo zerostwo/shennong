@@ -2,6 +2,31 @@
 
 Last updated: 2026-11-19
 
+## 2026-11-19: Preserve input identities across storage, inference and rendering
+
+- QS2 retains the relative location and SHA-256 identity of each unique
+  BPCells matrix directory. Streaming fingerprints support transformed and
+  subsetted file-backed layers without materializing the assay. Legacy files
+  with no recorded identity can use an explicit, operator-verified mapping.
+  Storage-specific traversal and validation live in `R/data_io_bpcells.R`.
+- The full pseudobulk gene matrix defines normalization and model fitting.
+  A feature panel determines the testing and adjustment family. Bulk metadata
+  alignment checks explicit identifiers and rejects conflicting mappings.
+- A sorted cell-to-group digest freezes marker membership. A grid checkpoint
+  restores a complete saved object. Its identity includes the serialized caller
+  state so a change to another assay, reduction, metadata or stored result
+  invalidates reuse. Marker results predating the membership digest remain
+  retrievable and require recomputation before joining to current cell groups.
+  The CITE-seq stage hashes its ADT input as well as the RNA input.
+- SingleR raw labels and pruning evidence remain available when the reported
+  label is unassigned. Annotation records the actual metadata output names.
+  PDF exports use Cairo for requested font embedding when available. The
+  base-device fallback reports its effective state in headless environments.
+- Statistical plots expose the supplied probability and abundance measures.
+  Cells missing backend measurements retain an explicit missing or unknown
+  value in the relevant denominator. These corrections extend the regression
+  coverage in the existing domains without adding dependencies or exports.
+
 ## Native Seurat kernels
 
 From Seurat 5.6 onward, upstream owns sparse VST, dense PCA, Annoy/SNN graph
@@ -15,6 +40,38 @@ settings belong to the caller. Clustering records both upstream versions
 in its stage metadata and checkpoint key so previously patched outputs
 are recomputed when an older or unversioned object is reused. [Seurat 5.6 release](https://github.com/satijalab/seurat/releases/tag/v5.6.0)
 
+## 2026-11-05: Preserve identities, effective seeds and bounded count processing
+
+- Keep the outer Result Bundle v1 and existing JSON value paths. Add the
+  versioned `shennong.dev/r-array-metadata/v1` serialization extension, with
+  an installed schema, so matrices/arrays retain dimensions, axis labels and
+  storage types. Paths address the native R structure; dataframe columns
+  precede their row serialization. Metadata is derived on export rather than
+  duplicated in the mutable native bundle. Native validation/provenance must
+  be present; ambiguous JSON field names and empty data-frame column names
+  fail before writing. Consumers must
+  use the extension for identity-aware readback; value-only consumers retain
+  their existing paths. This does not claim service deployment compatibility.
+- Generate scran chunk membership from immutable original clusters and reserve
+  all original/generated labels. Encode composition internal keys with lengths
+  so punctuation cannot merge groups and keys stay stable across filtering;
+  escape pipes/backslashes only in multi-column RoE display labels.
+- Apply trajectory seeds over computation and restore caller RNG state.
+  Resolve top-level seed, then backend control, then the established 717L
+  default; zero is valid. The former implicit ambient-RNG behavior is replaced
+  by the documented reproducibility contract. Monocle3 receives the effective
+  clustering seed and checks partitions against the actual graph policy.
+- Validate the full BPCells count layer in bounded sparse blocks, then subset
+  and aggregate selected data in blocks of at most 1,024 cells/5 million
+  matrix elements. Preserve error detection outside the selected subset. The
+  final feature-by-profile aggregate remains in memory. No runtime speedup or
+  whole-atlas memory benchmark is claimed.
+- Test computed values, identity-preserving readback, ambient-RNG independence
+  and built plot scales. Keep ordinary full tests in the coverage job while
+  exercising portable IO/result contracts on all R-CMD-check platforms. Retry
+  the identical documentation publication commit without force pushes.
+- Admit the focused growth in existing domain owners through the updated
+  source-size baseline. No public exports or package dependencies are added.
 
 ## 2026-10-02: Atlas figure styles and supplied-value renderers
 

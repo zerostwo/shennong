@@ -24,9 +24,13 @@ sn_prepare_annotation_evidence(
 \item{de_result_id}{Optional stored marker-result name in
 the canonical Shennong result registry. When omitted, Shennong prefers
 \code{"default"}, then a single available result, and otherwise the most
-recent marker result.}
+recent marker result. Annotation evidence requires the marker run's stored
+cell membership fingerprint. Use \code{\link[=sn_get_de_result]{sn_get_de_result()}} to retrieve historical
+marker tables and \code{\link[=sn_find_de]{sn_find_de()}} to recompute markers for annotation.}
 
-\item{cluster_by}{Metadata column containing cluster labels.}
+\item{cluster_by}{Metadata column containing the marker result's original
+cell-to-group assignments. Defaults to the marker result's named grouping
+column, or \code{"seurat_clusters"} for active-identity marker analyses.}
 
 \item{n_markers}{Number of top markers to retain per cluster.}
 

@@ -1302,6 +1302,7 @@ sn_filter_cells <- function(
     input_dir = input_dir,
     output_dir = result_dir,
     config_path = config_path,
+    runtime_dir = control$runtime_dir,
     quiet = isTRUE(control$quiet)
   )
 

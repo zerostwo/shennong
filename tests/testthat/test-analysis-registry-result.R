@@ -427,3 +427,16 @@ test_that("generic storage rejects artifact-reserved namespaces", {
     "reserved for a registered workflow artifact"
   )
 })
+
+test_that("upgrading historical results preserves generation versions and creation time", {
+  old <- list(schema_version = "1.0.0", created_at = "2021-03-01 UTC",
+              package_version = "0.1.2", method = "base", table = data.frame(x = 1))
+  migrated <- Shennong:::.sn_upgrade_analysis_result(old, "demo", "old")
+  expect_identical(migrated$provenance$package_versions$Shennong, "0.1.2")
+  expect_identical(migrated$provenance$timestamp, "2021-03-01 UTC")
+  old$package_version <- old$created_at <- NULL
+  migrated <- Shennong:::.sn_upgrade_analysis_result(old, "demo", "old")
+  expect_null(migrated$provenance$package_versions$R)
+  expect_null(migrated$provenance$package_versions$Shennong)
+  expect_identical(migrated$provenance$timestamp, "unknown")
+})

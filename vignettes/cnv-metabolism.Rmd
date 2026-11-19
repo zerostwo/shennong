@@ -130,6 +130,10 @@ not imported as a backend result. The runner calls `sn_run_infercnvpy()`
 explicitly once, then hands its real score, chromosome, cluster, and embedding
 outputs to `sn_run_cnv()` for unified summaries and plots.
 
+Sample fractions use all cells in each sample as the denominator. A query cell
+omitted from the backend scores is reported as `unknown`. The subclone column
+retains named backend subclones for malignant cells.
+
 Malignancy standardization is reference-anchored: its center and spread are
 estimated from at least two finite reference-cell scores only. Query-cell
 variance is never used to rescue an unusable reference, because that would let

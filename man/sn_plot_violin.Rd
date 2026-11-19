@@ -49,7 +49,10 @@ derives the missing panel dimension automatically.}
 \item{panel_widths, panel_heights}{Optional panel size arguments forwarded to
 \code{catplot::theme_cat()} when available.}
 
-\item{x_label, y_label, title}{Optional plot labels.}
+\item{x_label, y_label}{Optional axis labels.}
+
+\item{title}{Optional plot title. Multi-feature violin plots keep each
+feature name as its panel title and use this as an overall title.}
 
 \item{style}{Presentation preset: \code{classic}, \code{atlas}, \code{atlas_outline}, or
 \code{atlas_module}. See \code{\link[=sn_list_plot_styles]{sn_list_plot_styles()}} and the atlas-figure-styles article.

@@ -11,6 +11,8 @@ test_that("routine package checks avoid duplicate full tests", {
   expect_match(text, "windows-latest, r: 'release'", fixed = TRUE)
   expect_match(text, "macos-latest, r: 'release'", fixed = TRUE)
   expect_match(text, "r-lib/actions/setup-pandoc@v2", fixed = TRUE)
+  expect_match(text, "Exercise portable IO and result contracts", fixed = TRUE)
+  expect_match(text, "^(h5-parameters|result-bundle|data_io_contracts)$", fixed = TRUE)
   expect_true(all(c("any::knitr", "any::rmarkdown") %in% trimws(workflow)))
   expect_lt(
     regexpr("r-lib/actions/setup-pandoc@v2", text, fixed = TRUE)[[1L]],
@@ -29,7 +31,7 @@ test_that("managed Pixi environments cannot enter source packages", {
   gitignore <- readLines(gitignore_path, warn = FALSE)
   expect_true("^inst/pixi/.*/[.]pixi(/|$)" %in% buildignore)
   expect_true("^[.]codegraph(/|$)" %in% buildignore)
-  expect_true(all(c("^[.]github$", "^README[.]Rmd$") %in% buildignore))
+  expect_true(all(c("^[.]git$", "^[.]github$", "^README[.]Rmd$") %in% buildignore))
   expect_true(".pixi/" %in% gitignore)
 })
 

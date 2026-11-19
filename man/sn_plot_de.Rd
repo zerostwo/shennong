@@ -21,7 +21,10 @@ sn_plot_de(
 
 \item{type}{Volcano, MA, ranked effect, or comparison heatmap.}
 
-\item{adjusted_p_value, log2_fold_change}{Significance thresholds.}
+\item{adjusted_p_value, log2_fold_change}{Thresholds for highlighting genes
+with adjusted p-values. Raw-only input is plotted on its own probability
+scale without significance calls. Explicitly supplying \code{adjusted_p_value}
+requires adjusted probabilities.}
 
 \item{n}{Maximum effects displayed for effect/heatmap views.}
 

@@ -124,6 +124,12 @@
   table
 }
 
+.sn_marker_membership_signature <- function(cells, groups) {
+  ordered <- order(cells, method = "radix")
+  digest::digest(list(cells = as.character(cells)[ordered], groups = as.character(groups)[ordered]),
+                 algo = "sha256", serializeVersion = 2L)
+}
+
 .sn_run_seurat_de <- function(object,
                               analysis = c("markers", "contrast"),
                               ident_1 = NULL,
@@ -240,6 +246,26 @@
   result
 }
 
+.sn_pseudobulk_column_blocks <- function(counts) {
+  block_size <- max(1L, min(1024L, floor(5e6 / max(1L, nrow(counts)))))
+  split(seq_len(ncol(counts)), ceiling(seq_len(ncol(counts)) / block_size))
+}
+
+.sn_aggregate_pseudobulk_counts <- function(counts, groups) {
+  if (!.sn_is_iterable_matrix(counts)) {
+    return(.sn_aggregate_columns_by_group(counts, groups))
+  }
+  membership <- .sn_sparse_group_membership(groups)
+  aggregated <- Matrix::sparseMatrix(i = integer(), j = integer(), x = numeric(),
+    dims = c(nrow(counts), ncol(membership)),
+    dimnames = list(rownames(counts), colnames(membership)))
+  for (indices in .sn_pseudobulk_column_blocks(counts)) {
+    current <- .sn_as_sparse_matrix(counts[, indices, drop = FALSE])
+    aggregated <- aggregated + current %*% membership[indices, , drop = FALSE]
+  }
+  aggregated
+}
+
 .sn_validate_pseudobulk_count_layer <- function(counts,
                                                 layer,
                                                 require_integer = TRUE) {
@@ -248,6 +274,17 @@
       "Pseudobulk differential expression requires a raw or corrected count layer; normalized expression layers are not supported.",
       call. = FALSE
     )
+  }
+  if (.sn_is_iterable_matrix(counts)) {
+    # Validate the complete input without retaining a full sparse copy. Selection
+    # must not hide invalid values in excluded cells or features.
+    for (indices in .sn_pseudobulk_column_blocks(counts)) {
+      .sn_validate_pseudobulk_count_layer(
+        .sn_as_sparse_matrix(counts[, indices, drop = FALSE]),
+        layer = layer, require_integer = require_integer
+      )
+    }
+    return(counts)
   }
   counts <- .sn_as_sparse_matrix(counts)
   stored_values <- if (inherits(counts, "sparseMatrix")) counts@x else as.numeric(counts)
@@ -388,7 +425,6 @@
     if (length(features) == 0L) {
       stop("None of the requested pseudobulk features were found in the selected assay layer.", call. = FALSE)
     }
-    counts <- counts[features, , drop = FALSE]
   }
 
   contrast <- contrast %||% c(group_by, ident_1, ident_2)
@@ -492,8 +528,8 @@
       }
     }
 
-    aggregated <- .sn_aggregate_columns_by_group(
-      x = counts_subset,
+    aggregated <- .sn_aggregate_pseudobulk_counts(
+      counts = counts_subset,
       groups = meta_subset$.pb_key
     )
     pb_meta <- meta_subset[!duplicated(meta_subset$.pb_key), , drop = FALSE]
@@ -554,6 +590,7 @@
           call. = FALSE
         )
       }
+      if (!is_null(features)) dds <- dds[features, ]
       result <- as.data.frame(DESeq2::results(
         dds,
         contrast = unname(contrast_vector)
@@ -565,8 +602,9 @@
       dge <- edgeR::estimateDisp(dge, design = design_info$matrix)
       fit <- edgeR::glmQLFit(dge, design = design_info$matrix)
       test <- edgeR::glmQLFTest(fit, contrast = contrast_vector)
+      if (!is_null(features)) test <- test[features, ]
       result <- edgeR::topTags(test, n = Inf, sort.by = "none")$table
-      result$baseMean <- Matrix::rowMeans(aggregated)
+      result$baseMean <- Matrix::rowMeans(aggregated)[rownames(result)]
       result$log2FoldChange <- result$logFC
       result$pvalue <- result$PValue
       result$padj <- result$FDR
@@ -581,8 +619,9 @@
         contrasts = matrix(contrast_vector, ncol = 1L)
       )
       fit <- limma::eBayes(fit)
+      if (!is_null(features)) fit <- fit[features, ]
       result <- limma::topTable(fit, coef = 1L, number = Inf, sort.by = "none")
-      result$baseMean <- Matrix::rowMeans(aggregated)
+      result$baseMean <- Matrix::rowMeans(aggregated)[rownames(result)]
       result$log2FoldChange <- result$logFC
       result$pvalue <- result$P.Value
       result$padj <- result$adj.P.Val
@@ -644,7 +683,9 @@
 #'   candidates are stored separately from \code{input$tested_features}, the
 #'   features with finite backend statistics before marker significance
 #'   filtering. \code{input$tested_features_by_comparison} retains each
-#'   comparison's background for downstream ORA. COSG records scored features.
+#'   comparison's background for downstream ORA. Pseudobulk normalization and
+#'   model fitting use all genes in the selected layer. The requested panel
+#'   defines the testing and multiple-adjustment family. COSG records scored features.
 #' @param modality Input modality. \code{"auto"} selects single-cell analysis
 #'   for Seurat objects and bulk analysis for matrices, lists, and
 #'   \code{SummarizedExperiment} objects.
@@ -1012,6 +1053,10 @@ sn_find_de <- function(
       assay = assay,
       layer = layer,
       requested_features = de_feature_universe$requested_features,
+      marker_membership = if (analysis == "markers") {
+        groups <- if (is.null(group_by)) SeuratObject::Idents(object) else object[[group_by, drop = TRUE]]
+        .sn_marker_membership_signature(colnames(object), groups)
+      },
       candidate_features = de_feature_universe$candidate_features,
       tested_features = tested_features,
       tested_features_count = length(tested_features),

@@ -173,3 +173,57 @@ test_that("failed cross-platform replacement restores the previous bundle", {
   expect_identical(readLines(target), "previous")
   expect_identical(readLines(temporary), "candidate")
 })
+
+test_that("bundle JSON preserves array identities without changing value paths", {
+  result <- make_result_bundle_test_result()
+  coordinates <- matrix(seq_len(6L), 3L, dimnames = list(
+    sample = c("s3", "s1", "s2"), component = c("PC2", "PC1")
+  ))
+  result$embeddings <- list(`pca/one~two` = coordinates)
+  result$models <- list(list(single = matrix(7L, 1L, 1L,
+    dimnames = list("one", "column"))), empty = matrix(numeric(), 0L, 3L))
+  bundle <- sn_build_result_bundle(result)
+  output <- tempfile(fileext = ".json")
+  first <- sn_export_result_bundle(bundle, output)
+  parsed <- jsonlite::read_json(output, simplifyVector = FALSE)
+  expect_identical(parsed$schema, "shennong.dev/analysis-result-bundle/v1")
+  expect_identical(parsed$serialization$schema, "shennong.dev/r-array-metadata/v1")
+  axes <- parsed$serialization$arrays[[1L]]
+  expect_identical(axes$path, list("result", "embeddings", "pca/one~two"))
+  expect_identical(unlist(axes$dim), c(3L, 2L))
+  expect_identical(axes$storage_type, "integer")
+  values <- parsed$result$embeddings[["pca/one~two"]]
+  restored <- matrix(unlist(values), nrow = axes$dim[[1L]], byrow = TRUE,
+    dimnames = lapply(axes$dimnames, unlist))
+  names(dimnames(restored)) <- unlist(axes$axis_names)
+  expect_identical(restored, coordinates)
+  expect_identical(parsed$serialization$arrays[[2L]]$path,
+    list("result", "models", 1L, "single"))
+  expect_identical(parsed$serialization$arrays[[2L]]$dimnames,
+    list(list("one"), list("column")))
+  expect_identical(unlist(parsed$serialization$arrays[[3L]]$dim), c(0L, 3L))
+
+  dimnames(result$embeddings[[1L]]) <- lapply(dimnames(coordinates), rev)
+  renamed <- sn_build_result_bundle(result, created_at = bundle$created_at)
+  second <- sn_export_result_bundle(renamed, output, overwrite = TRUE)
+  expect_false(identical(first$digest$value, second$digest$value))
+})
+
+test_that("bundle required validation and provenance cannot be null", {
+  bundle <- sn_build_result_bundle(make_result_bundle_test_result())
+  for (field in c("validation", "provenance")) {
+    bad <- bundle
+    bad[field] <- list(NULL)
+    expect_false(sn_validate_result_bundle(bad, error = FALSE)$valid)
+    expect_error(sn_export_result_bundle(bad, tempfile()), field)
+  }
+  bundle$validation$errors <- "failed validation"
+  expect_false(sn_validate_result_bundle(bundle, error = FALSE)$valid)
+})
+
+test_that("bundle JSON rejects ambiguous duplicate field names", {
+  result <- make_result_bundle_test_result()
+  result$models <- structure(list(matrix(1, 1L, 1L), matrix(2, 1L, 1L)),
+    names = c("x", "x"))
+  expect_error(sn_build_result_bundle(result), "duplicate names")
+})

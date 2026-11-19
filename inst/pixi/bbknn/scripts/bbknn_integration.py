@@ -61,7 +61,7 @@ def run(input_dir: Path, output_dir: Path, config: dict) -> None:
     if obs["batch"].nunique() < 2:
         raise ValueError("BBKNN requires at least two non-empty batches.")
 
-    seed = int(config.get("seed") or 717)
+    seed = int(717 if config.get("seed") is None else config["seed"])
     np.random.seed(seed)
     pca_values = pca.to_numpy(dtype=float, copy=False)
     if pca_values.ndim != 2 or pca_values.shape[1] < 1 or not np.isfinite(pca_values).all():

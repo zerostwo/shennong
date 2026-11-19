@@ -63,6 +63,21 @@ It contains no service calls or credentials. Input records identify exact
 immutable revisions and SHA-256 digests; artifact records describe candidate
 outputs that an authorized external service may verify and promote.
 }
+\details{
+Exported JSON retains numeric array values at their existing paths and adds
+\code{serialization} with schema \code{shennong.dev/r-array-metadata/v1}. Its \code{arrays}
+records preserve each R array's \code{path}, \code{storage_type}, \code{dim}, \code{dimnames},
+and \code{axis_names}, including singleton and empty dimensions. Paths are lists
+of R indexing selectors: names for named entries and one-based indices for
+unnamed entries; data frames are traversed by column before row serialization.
+Data-frame columns must have non-empty, unique names. Ordinary lists may mix
+named and unnamed entries when their resulting JSON field keys are unique.
+Consumers restoring array identities must use these records. Only atomic
+arrays are supported; convert list arrays to lists of atomic arrays first.
+Duplicate JSON field keys are rejected rather than renamed. Metadata is
+generated on export; validation/export accept native R bundles, not a
+JSON-decoded object. The outer Result Bundle v1 and value paths are unchanged.
+}
 \examples{
 result <- list(
   schema_version = "2.0.0", analysis_type = "demo", result_id = "example",

@@ -5,9 +5,19 @@
   if (identical(units, "mm")) value else if (identical(units, "cm")) value * 10 else value * 25.4
 }
 
-.sn_figure_device <- function(extension) {
+.sn_has_cairo_pdf <- function() {
+  isTRUE(capabilities("cairo")) &&
+    isTRUE(nzchar(suppressWarnings(grDevices::grSoftVersion()[["cairo"]]), keepNA = TRUE))
+}
+
+.sn_figure_device <- function(extension, embed_fonts) {
   switch(extension,
-    pdf = grDevices::pdf,
+    pdf = if (isTRUE(embed_fonts) && .sn_has_cairo_pdf()) {
+      grDevices::cairo_pdf
+    } else {
+      if (isTRUE(embed_fonts)) warning("Cairo PDF is unavailable; exporting PDF without embedded fonts.", call. = FALSE)
+      grDevices::pdf
+    },
     svg = .sn_figure_svg_device(),
     png = "png",
     tiff = "tiff",
@@ -24,16 +34,14 @@
   )
 }
 
-.sn_save_grid_figure <- function(plot, filename, extension, width_mm, height_mm, dpi, background) {
+.sn_save_grid_figure <- function(plot, filename, extension, width_mm, height_mm, dpi, background, device) {
   width <- width_mm / 25.4
   height <- height_mm / 25.4
-  if (extension == "pdf") grDevices::pdf(filename, width = width, height = height, bg = background)
-  else if (extension == "svg") {
-    .sn_figure_svg_device()(filename, width = width, height = height, bg = background)
+  if (extension %in% c("pdf", "svg")) {
+    device(filename, width = width, height = height, bg = background)
   } else if (extension %in% c("tif", "tiff")) grDevices::tiff(filename, width = width, height = height, units = "in", res = dpi, bg = background, compression = "lzw")
   else grDevices::png(filename, width = width, height = height, units = "in", res = dpi, bg = background)
   on.exit(grDevices::dev.off(), add = TRUE)
-  grid::grid.newpage()
   if (inherits(plot, "Heatmap") || inherits(plot, "HeatmapList")) ComplexHeatmap::draw(plot) else print(plot)
   invisible(filename)
 }
@@ -96,7 +104,9 @@ print.sn_figure_validation <- function(x, ...) {
 #' @param units Units for explicit dimensions.
 #' @param dpi Numeric DPI or `"auto"`.
 #' @param background Explicit output background.
-#' @param embed_fonts Use Cairo PDF output for embedded/subsettable fonts.
+#' @param embed_fonts Use Cairo PDF output for embedded fonts. If Cairo is
+#'   unavailable the portable PDF device is used with a warning. The returned
+#'   path's `embed_fonts` attribute records the device choice.
 #' @param validate Run figure QA before saving.
 #' @details SVG export uses the optional \pkg{svglite} package. If it is not
 #'   installed, the function fails before drawing with an actionable dependency
@@ -108,7 +118,7 @@ sn_save_figure <- function(plot, filename, profile = NULL, width = "auto", heigh
                            embed_fonts = TRUE, validate = TRUE) {
   units <- match.arg(units)
   extension <- tolower(tools::file_ext(filename))
-  device <- .sn_figure_device(extension)
+  device <- .sn_figure_device(extension, embed_fonts)
   spec <- sn_get_figure_spec(plot, profile = profile)
   width_mm <- .sn_figure_dimension(width, spec$recommended$width_mm, units)
   height_mm <- .sn_figure_dimension(height, spec$recommended$height_mm, units)
@@ -124,11 +134,11 @@ sn_save_figure <- function(plot, filename, profile = NULL, width = "auto", heigh
       bg = background, limitsize = FALSE
     )
   } else {
-    .sn_save_grid_figure(plot, filename, extension, width_mm, height_mm, dpi, background)
+    .sn_save_grid_figure(plot, filename, extension, width_mm, height_mm, dpi, background, device)
   }
   path <- normalizePath(filename, mustWork = TRUE)
   attr(path, "shennong_figure_spec") <- spec
-  attr(path, "embed_fonts") <- isTRUE(embed_fonts) && identical(extension, "pdf")
+  attr(path, "embed_fonts") <- identical(device, grDevices::cairo_pdf)
   invisible(path)
 }
 

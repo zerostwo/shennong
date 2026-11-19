@@ -43,6 +43,8 @@ canonical envelope with `sn_get_result()`.
    roles/digests, but never add credentials.
 4. Run `sn_validate_result_bundle()` and then
    `sn_export_result_bundle()`. Record the returned JSON SHA-256 digest.
+   Retain its versioned `serialization` records when reading matrix/array
+   values in another language; dimension names are part of result identity.
 5. Treat the file as a candidate handoff only. Shennong does not authorize,
    upload, or promote artifacts; the trusted external receiver must verify
    digests and complete those actions.
@@ -145,6 +147,11 @@ canonical envelope with `sn_get_result()`.
 8. Run QC and filtering with `sn_filter_cells()` and `sn_filter_genes()`.
 
 ## Recipe: Switch Seurat layer storage backends
+
+QS2 snapshots written by `sn_write()` carry BPCells directory fingerprints.
+Read a relocated snapshot with `sn_read()`. For legacy snapshots, verify
+the backing store before supplying an explicit old-to-new `bpcells_paths` map.
+
 
 1. Use `sn_set_layer_backend(object, backend = "bpcells", directory = ...)`
    to write selected assay layers to external BPCells matrix directories and

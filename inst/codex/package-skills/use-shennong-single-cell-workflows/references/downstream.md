@@ -138,6 +138,15 @@ Use `sn_run_cnv()` only with explicit normal references; include
 
 ## Explicit selection, aggregation, and return values
 
+- BPCells pseudobulk DE validates the full count layer in bounded blocks, then
+  aggregates all genes for the selected profiles in sparse blocks. A requested
+  panel defines the testing and adjustment family. Budget memory
+  for the final feature-by-sample/group matrix and the statistical backend;
+  subsetting does not bypass count validation or modify backing files.
+- `sn_calculate_roe(return_matrix = TRUE)` retains distinct multi-column group
+  combinations even when labels contain punctuation. Matrix row labels escape
+  literal `|` and `\` within components; use the long table for original columns.
+
 `sn_find_de`, `sn_score_programs`, `sn_run_milo`, and `sn_run_enrichment` return
 unified results with `return_object = FALSE`. Read `tables$primary` or a typed
 getter for rows; use `sn_get_result()` for complete metadata. Discover stored
@@ -157,3 +166,9 @@ overwrite = TRUE)`; metadata ownership checks remain active. Use a new ID
 to retain the previous fate result.
 
 For runnable marker examples and complete ORA/GSEA recipes, use the [DE and enrichment guide](https://zerostwo.github.io/shennong/dev/articles/differential-expression.html). Common result-return and filtering rules are demonstrated in [Parameters and results](https://zerostwo.github.io/shennong/dev/articles/parameters-and-results.html).
+
+
+For bulk expression with a separate sample table, provide unique sample IDs
+and resolve conflicting row names before fitting. For CNV summaries, count
+unscored query cells as unknown and inspect backend subclone assignments.
+Program scores use measured cells when the selected assay covers a subset.

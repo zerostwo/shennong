@@ -330,8 +330,13 @@
   rownames(umap) <- rownames(embedding)
   SingleCellExperiment::reducedDim(cds, "UMAP") <- umap
   cluster_args <- utils::modifyList(list(cds = cds, reduction_method = "UMAP", verbose = FALSE), backend_control$monocle3$cluster %||% list(), keep.null = TRUE)
+  cluster_args$random_seed <- backend_control$seed
   cds <- do.call(monocle3::cluster_cells, cluster_args)
   graph_args <- utils::modifyList(list(cds = cds, use_partition = backend_control$monocle3$use_partition %||% TRUE, verbose = FALSE), backend_control$monocle3$learn_graph %||% list(), keep.null = TRUE)
+  partitions <- monocle3::partitions(cds, reduction_method = "UMAP")
+  if (!identical(graph_args$use_partition, FALSE)) {
+    .sn_validate_monocle3_partitions(partitions)
+  }
   cds <- do.call(monocle3::learn_graph, graph_args)
   root_cells <- backend_control$monocle3$root_cells %||% if (length(start) > 0L) names(clusters)[clusters %in% start] else NULL
   if (is_null(root_cells) || length(root_cells) == 0L) {
@@ -339,8 +344,6 @@
   }
   cds <- monocle3::order_cells(cds, reduction_method = "UMAP", root_cells = root_cells)
   pseudotime <- monocle3::pseudotime(cds)
-  partitions <- monocle3::partitions(cds, reduction_method = "UMAP")
-  .sn_validate_monocle3_partitions(partitions)
   monocle_clusters <- monocle3::clusters(cds, reduction_method = "UMAP")
   cluster_medians <- tapply(pseudotime, clusters[names(pseudotime)], stats::median, na.rm = TRUE)
   cluster_order <- names(sort(cluster_medians[is.finite(cluster_medians)]))
@@ -358,6 +361,7 @@
     model = list(class = class(cds), principal_graph = TRUE),
     diagnostics = list(
       partitions = length(unique(partitions)),
+      use_partition = graph_args$use_partition,
       monocle_clusters = length(unique(monocle_clusters)),
       finite_pseudotime_cells = sum(is.finite(pseudotime))
     ),
@@ -538,12 +542,15 @@
 #'   and `tradeSeq` argument lists for direct backends. Palantir accepts
 #'   `runner` or `result`; the same explicit adapter boundary can override
 #'   Monocle 3 for externally managed execution. The direct Monocle 3 path
-#'   rejects terminal-cluster constraints and disconnected partitions that it
-#'   cannot faithfully encode as one lineage.
+#'   rejects terminal-cluster constraints and multiple partitions when graph
+#'   learning uses partitions. Set `monocle3$use_partition = FALSE` to learn
+#'   one graph across the cells; original partition labels remain in the result.
 #' @param return_object Return the updated object instead of the result.
-#' @param seed Top-level reproducibility seed. Precedence:
-#'   \code{seed} > \code{backend_control$seed} > task default, and the resolved
-#'   value is stamped into result provenance.
+#' @param seed Non-negative integer reproducibility seed, including zero.
+#'   Precedence: \code{seed} > \code{backend_control$seed} > \code{717L}.
+#'   The resolved seed scopes trajectory inference and tradeSeq fitting,
+#'   overrides Monocle 3's clustering seed, and is recorded in provenance.
+#'   The caller's random state is restored, including when a backend fails.
 #' @param verbose Top-level progress switch forwarded to backends through
 #'   \code{backend_control$verbose} when explicitly supplied.
 #'
@@ -584,7 +591,15 @@ sn_run_trajectory <- function(object,
   result_id <- .sn_validate_result_id(result_id)
   .sn_validate_seurat_object(object)
   method <- match.arg(method)
-  backend_control$seed <- seed %||% backend_control$seed
+  backend_control$seed <- seed %||% backend_control$seed %||% 717L
+  effective_seed <- backend_control$seed
+  if (!is.numeric(effective_seed) || length(effective_seed) != 1L ||
+      is.na(effective_seed) || !is.finite(effective_seed) ||
+      effective_seed < 0 || effective_seed > .Machine$integer.max ||
+      effective_seed != floor(effective_seed)) {
+    stop("`seed` must be one non-negative finite integer.", call. = FALSE)
+  }
+  backend_control$seed <- as.integer(effective_seed)
   if (!missing(verbose)) {
     backend_control$verbose <- isTRUE(verbose)
   }
@@ -605,6 +620,7 @@ sn_run_trajectory <- function(object,
     if (identical(method, "slingshot")) "slingshot",
     if (isTRUE(test_dynamic)) "tradeseq"
   )
+  .sn_with_seed(backend_control$seed, {
   .sn_with_acceleration_provenance_context({
   output <- if (identical(method, "slingshot")) {
     .sn_trajectory_slingshot(
@@ -722,7 +738,7 @@ sn_run_trajectory <- function(object,
       backend = backend_diagnostics
     ),
     warnings = c(requested_warning, backend_warnings, dynamics$warnings),
-    provenance = .sn_analysis_provenance(random_seed = backend_control$seed %||% NA_integer_)
+    provenance = .sn_analysis_provenance(random_seed = backend_control$seed)
   )
   sn_validate_result(result)
   object <- sn_store_result(object, "trajectory", result_id, result)
@@ -730,4 +746,5 @@ sn_run_trajectory <- function(object,
   if (isTRUE(return_object)) object else sn_get_result(object, "trajectory", result_id)
   }, patches = if (isTRUE(test_dynamic)) "tradeseq" else character(0))
   }, patches = trajectory_acceleration_patches)
+  })
 }

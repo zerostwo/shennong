@@ -3,6 +3,34 @@ All notable changes to this project will be documented in this file.
 
 # Shennong (development version)
 
+## Package audit repairs (2026-11-19)
+
+- QS2 snapshots written through `sn_write()` record verified, relocatable
+  BPCells matrix directories. `sn_read()` accepts an explicit `bpcells_paths`
+  map for relocating legacy snapshots. BPCells overwrite checks protect
+  unrelated files. bedGraph import recognizes the standard extension.
+  Result migrations preserve the recorded generating package version.
+- Bulk models align expression columns with explicit sample identifiers.
+  Pseudobulk fits use the full gene background for the selected sample
+  profiles. A requested panel defines the tests and their adjustment family.
+- CITE-seq caches include protein layer values. Grid checkpoints verify the complete caller
+  object before restoring a saved object. Marker evidence verifies the recorded
+  cell-to-group membership. Historical markers without this record remain
+  readable and require recomputation for cell-group annotation evidence. SingleR preserves raw predictions and
+  pruning, marks rejected cells unassigned, and records the metadata columns
+  written by annotation. Program scores account for partial assay coverage.
+- Evidence summaries handle sample grouping and fractional GeneRatio values.
+  CNV summaries include unknown cells in their denominator and retain named
+  subclones. Spatial neighborhood bins support equally spaced coordinates.
+  scDesign3 uses the installed backend's core-count parameter. Python object
+  adapters use the explicit runtime directory for Pixi and run artifacts.
+- DE and enrichment figures label nominal and adjusted probabilities;
+  adjusted thresholds require adjusted values. MA plots require a measured
+  abundance axis. Heatmaps use the requested assay, distinct pathway IDs
+  can share a display name, and communication chords render self-interactions.
+  Font embedding uses Cairo when available and reports the effective state.
+  A single ComplexHeatmap exports to one PDF page.
+
 ## Seurat 6 compatibility (2026-11-19)
 
 Shennong delegates variable feature selection, PCA, nearest-neighbor graphs
@@ -14,6 +42,33 @@ SeuratObject merge and layer-joining patches remain available. Nested
 acceleration scopes now preserve manually enabled patches on exit.
 Clustering recomputes stages and checkpoints saved with other or unknown
 Seurat/SeuratObject versions.
+
+## Identity, reproducibility and memory repairs (2026-11-05)
+
+- Supplied-cluster scran splitting preserves original group membership even
+  when labels collide with generated chunk names. Composition and RoE retain
+  compound group identities containing punctuation; multi-column RoE matrix
+  labels now escape literal pipes and backslashes. Use the long table's
+  original grouping columns for joins.
+- Trajectory `seed` now controls computation, including tradeSeq and Monocle3,
+  and restores the caller's RNG state. Precedence is top-level `seed`, then
+  `backend_control$seed`, then 717L. Python scVI/scPoli/BBKNN preserve seed zero.
+  Monocle3 with `use_partition = FALSE` retains original partition diagnostics
+  while permitting the unified learned graph.
+- DotPlot preserves unscaled expression ranges and split-specific colors.
+  Violin palettes cover split levels and every panel; feature titles remain
+  visible and an explicit title applies to the whole combined plot.
+- Result Bundle JSON retains value paths and adds versioned array dimensions
+  and axis identities under `serialization`. Native bundles require non-NULL
+  validation and provenance; ambiguous JSON keys, empty data-frame column
+  names, and list arrays are rejected before export. 10x H5 import forwards
+  reader arguments, including `use.names` and `unique.features`.
+- BPCells pseudobulk validates counts and aggregates in bounded sparse blocks
+  instead of materializing the full layer; output matches the in-memory path.
+  The final feature-by-profile aggregate must still fit in memory.
+- Routine CI executes portable IO/result contracts on all four R/OS jobs.
+  Pkgdown retries the same publication commit after transient push failures,
+  without force pushing or hiding permanent failures.
 
 ## Reliability fixes (2026-11-04)
 

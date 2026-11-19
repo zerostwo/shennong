@@ -41,30 +41,18 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   fixture under `SHENNONG_REAL_DATA_DIR` to cover the single initial skip.
   Totals count each file once.
 
-## Package audit validation (2026-11-04)
+## Package audit repairs on the integration branch
 
-- Marker DE now retains its tested background through the public Seurat API,
-  including Seurat 5.6.0 fast Wilcoxon and ordinary t-test paths. Program
-  comparisons preserve compound identities and return NA for undefined
-  Wilcoxon probabilities without discarding other comparisons.
-- AnnData imports require complete cell identity. Python runs retain previous
-  metadata/reductions and reject reused artifact IDs. Feature plots preserve
-  split scales, blend colors, layout, explicit colors and dimension labels.
-- The complete local suite produced 6,246 passes, zero errors, one obsolete
-  CI-text assertion failure, 288 warnings and one absent-local-fixture skip.
-  That assertion was repaired, then all 590 CI/architecture/registry assertions
-  passed with zero failures, errors, warnings or skips. The complete suite was
-  not repeated after this test-only correction. Most warnings are the existing
-  ShennongOpt/Seurat version-drift notification.
-- Strict backend conformance passes 582 assertions, with zero failures/errors
-  or skips and two existing Scrublet argument warnings. Exact R dependency
-  records were refreshed only after direct comparisons passed; CI separates
-  validated versions from latest-version compatibility. PopV admission covers
-  the three executed algorithms; full-default/scVI C3 remains unvalidated.
-- Source build and R CMD check --no-manual --no-tests report Status: OK,
-  including examples and vignette rebuilding. Full pkgdown rebuild succeeds;
-  changed article text and scale/blend renderings were independently inspected.
-  User libraries are unchanged. Remote CI and publication are separate checks.
+The repaired workflows preserve the original sample, cell group, gene and
+matrix identities across DE, annotation and storage. QS2 checks BPCells
+content on read. The CITE-seq cache follows ADT changes and checkpoint reuse
+checks the serialized caller object. Slingshot/tradeSeq respects its resolved seed.
+Plotting regressions exercise ggplot builds, PDF output and font embedding.
+
+The regression cases cover the 35 findings from the November 19 audit,
+including historical Result Bundle consumers and direct backend comparisons.
+This describes the integration branch. Publication follows the main-branch
+CI and pkgdown workflows.
 
 ## Atlas figure styles
 

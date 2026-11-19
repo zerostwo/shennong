@@ -29,6 +29,13 @@ interpretation layer.
 
 ## Rules
 
+Use the stored cell membership fingerprint for annotation evidence. Changed
+membership or a historical result without a fingerprint requires a new
+marker run. Retrieve historical marker tables with `sn_get_de_result()`. In SingleR results, inspect the raw prediction,
+pruned label and rejection flag in `tables$backend_predictions`. Retrieve
+the actual output column names from `tables$metadata_columns`.
+
+
 - use stored results rather than recomputing upstream analyses unnecessarily
 - audit unfamiliar or older objects with `sn_audit_results()` before treating
   arbitrary `object@misc` payloads as analytical evidence

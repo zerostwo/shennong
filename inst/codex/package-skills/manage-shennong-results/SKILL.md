@@ -68,6 +68,12 @@ package API.
 - treat `sn_export_result_bundle()` as a local JSON handoff only. It neither
   uploads bytes nor authorizes/promotes artifacts, and credentials must never
   enter the bundle
+- retain the exported `serialization` array metadata together with values:
+  `shennong.dev/r-array-metadata/v1` preserves matrix dimensions, sample/feature
+  labels and axis names. Value paths remain unchanged. Validate/export native
+  R bundles; reject NULL validation or provenance rather than inventing them.
+  Data-frame columns need non-empty, unique names. Ordinary lists may mix named
+  and unnamed entries when their resulting JSON field keys are unique.
 - remember that DE, enrichment, Milo, deconvolution, communication, regulatory
   activity, and interpretation each have separate storage or retrieval entry
   points

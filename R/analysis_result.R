@@ -35,20 +35,24 @@
 .sn_analysis_provenance <- function(result = NULL,
                                     random_seed = NULL,
                                     capture_acceleration = TRUE) {
-  result <- result %||% list()
   existing <- result[["provenance"]] %||% list()
-  package_version <- tryCatch(
-    as.character(utils::packageVersion("Shennong")),
-    error = function(e) as.character(result[["package_version"]] %||% NA_character_)
-  )
-  existing[["package_versions"]] <- existing[["package_versions"]] %||% list(
-    Shennong = package_version,
-    R = paste(R.version$major, R.version$minor, sep = ".")
-  )
+  if (is.null(result)) {
+    existing[["package_versions"]] <- list(
+      Shennong = as.character(utils::packageVersion("Shennong")),
+      R = paste(R.version$major, R.version$minor, sep = ".")
+    )
+    existing[["timestamp"]] <- format(Sys.time(), tz = "UTC", usetz = TRUE)
+  } else {
+    # Migration can only recover the versions that the producer recorded.
+    versions <- existing[["package_versions"]] %||% list()
+    if (is.list(versions) && is.null(versions[["Shennong"]]) && !is.null(result[["package_version"]])) {
+      versions[["Shennong"]] <- as.character(result[["package_version"]])
+    }
+    existing[["package_versions"]] <- versions
+    existing[["timestamp"]] <- existing[["timestamp"]] %||% result[["created_at"]] %||% "unknown"
+  }
   existing[["random_seed"]] <- existing[["random_seed"]] %||% random_seed %||%
     result[["random_seed"]] %||% NA_integer_
-  existing[["timestamp"]] <- existing[["timestamp"]] %||% result[["created_at"]] %||%
-    format(Sys.time(), tz = "UTC", usetz = TRUE)
   acceleration <- if (isTRUE(capture_acceleration)) {
     tryCatch(.sn_acceleration_provenance(), error = function(e) list())
   } else {
@@ -868,10 +872,17 @@ sn_upgrade_results <- function(object, type = NULL, strict = TRUE) {
   requested_types <- if (is_null(type)) NULL else tolower(as.character(type))
   entries <- .sn_stored_analysis_result_entries(object, requested_types)
   for (entry in entries) {
-    updated <- tryCatch(
-      sn_store_result(object, entry$type, entry$result_id, entry$result, overwrite = TRUE),
-      error = identity
-    )
+    updated <- tryCatch({
+      result <- entry$result
+      if (is.list(result) && !identical(result$schema_version, .sn_analysis_result_schema_version()) &&
+          (is.null(result$provenance) || is.list(result$provenance))) {
+        result$provenance$migration <- list(
+          package_version = as.character(utils::packageVersion("Shennong")),
+          timestamp = format(Sys.time(), tz = "UTC", usetz = TRUE)
+        )
+      }
+      sn_store_result(object, entry$type, entry$result_id, result, overwrite = TRUE)
+    }, error = identity)
     if (inherits(updated, "error")) {
       message <- paste0(
         "Could not upgrade stored result '", entry$result_id, "' of type '",
@@ -1181,21 +1192,25 @@ sn_get_enrichment_result <- function(object,
   group_col <- .sn_result_first_column(table, c("Cluster", "cluster", ".sign"))
   rank_col <- .sn_result_first_column(table, c("NES", "p.adjust", "pvalue", "Count", "GeneRatio"))
   if (!is.null(top_n) && identical(rank_col, "GeneRatio")) {
-    parts <- strsplit(as.character(table$GeneRatio), "/", fixed = TRUE)
-    ratios <- vapply(parts, function(part) {
-      values <- suppressWarnings(as.numeric(part))
-      if (length(values) == 1L) return(values)
-      if (length(values) == 2L && !is.na(values[[2L]]) && values[[2L]] > 0) return(values[[1L]] / values[[2L]])
-      NA_real_
-    }, numeric(1))
-    if (any(!is.finite(ratios))) stop("`GeneRatio` must contain finite numbers or numerator/denominator ratios.", call. = FALSE)
-    table$..enrichment_rank <- ratios
+    table$..enrichment_rank <- .sn_parse_gene_ratio(table$GeneRatio)
     rank_col <- "..enrichment_rank"
   }
   result <- .sn_subset_ranked_table(table, rank_col = rank_col, group_col = group_col,
     top_n = top_n, groups = groups, top_scope = top_scope,
     decreasing = !rank_col %in% c("p.adjust", "pvalue"), absolute = identical(rank_col, "NES"))
   dplyr::select(result, -dplyr::any_of("..enrichment_rank"))
+}
+
+.sn_parse_gene_ratio <- function(x) {
+  parts <- strsplit(as.character(x), "/", fixed = TRUE)
+  ratios <- vapply(parts, function(part) {
+    values <- suppressWarnings(as.numeric(part))
+    if (length(values) == 1L) return(values)
+    if (length(values) == 2L && !is.na(values[[2L]]) && values[[2L]] > 0) return(values[[1L]] / values[[2L]])
+    NA_real_
+  }, numeric(1))
+  if (any(!is.finite(ratios))) stop("`GeneRatio` must contain finite numbers or numerator/denominator ratios.", call. = FALSE)
+  ratios
 }
 
 .sn_result_first_column <- function(table, candidates) {

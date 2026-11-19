@@ -315,3 +315,17 @@ test_that("discovered program plots render weights, activity, and stability", {
 test_that("program discovery methods are registered", {
   expect_true(all(c("nmf", "cnmf", "hotspot") %in% sn_list_methods("program_discovery")$name))
 })
+
+test_that("program scores align subset assays and count only measured cells", {
+  skip_if_not_installed("Seurat")
+  m <- matrix(1:32, 4, dimnames = list(paste0("g", 1:4), paste0("c", 1:8)))
+  object <- SeuratObject::CreateSeuratObject(Matrix::Matrix(m, sparse = TRUE))
+  object[["ADT"]] <- SeuratObject::CreateAssay5Object(counts = Matrix::Matrix(m[1:2, 3:6], sparse = TRUE))
+  object$group <- c(NA, NA, "A", "B", "A", "B", NA, NA)
+  run <- function(...) sn_score_programs(object, list(marker = c("g1", "g2")),
+    method = "mean", assay = "ADT", layer = "counts", result_id = "partial",
+    min_genes = 1, species = "human", ...)
+  scored <- run()
+  expect_equal(unname(scored$partial_marker), c(NA, NA, colMeans(m[1:2, 3:6]), NA, NA), ignore_attr = TRUE)
+  expect_equal(run(group_by = "group", aggregate = "scores", return_object = FALSE)$input$cells, 4)
+})

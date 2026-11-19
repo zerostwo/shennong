@@ -41,6 +41,18 @@ Shennong uses Slingshot as the default cluster-aware trajectory backend and
 tradeSeq for negative-binomial smooth models. The workflow stores a versioned
 result instead of only adding a single pseudotime vector to cell metadata.
 
+Set `seed` to a non-negative integer, including `0`, to reproduce trajectory
+inference and tradeSeq fitting with the same input, package versions, and
+backend settings. The effective seed is chosen in this order: top-level
+`seed`, `backend_control$seed`, then `717L`. It also controls Monocle 3's
+clustering seed. Shennong restores the caller's random state on success or
+failure and records the effective seed in `result$provenance$random_seed`.
+For direct Monocle 3, `backend_control = list(monocle3 = list(use_partition =
+FALSE))` learns one graph across all analyzed cells while retaining the
+original cluster partition labels in `tables$backend_cells`. The effective
+setting is reported in `diagnostics$backend$use_partition`. With partitioned
+graph learning enabled, multiple disconnected partitions remain unsupported.
+
 This article reads the locally materialized Hermann mouse spermatogenesis
 fixture from `SHENNONG_REAL_DATA_DIR`. The analysis runs only when that file is
 present and `SHENNONG_RUN_VIGNETTES=true`; a normal package check therefore
@@ -270,8 +282,10 @@ The `all` profile may run Monocle 3 only when its R dependency is already
 installed. The article does not install packages while knitting. The direct
 Monocle 3 path uses a real `umap` reduction by default and will not relabel PCA
 coordinates as UMAP. It also fails on an `end` constraint or multiple
-disconnected partitions that cannot be represented faithfully by this adapter;
-use an explicit external result/runner when those semantics are required.
+disconnected partitions when partitioned graph learning is enabled. Set
+`backend_control$monocle3$use_partition = FALSE` to learn one graph across
+the analyzed cells, or use an explicit external result/runner when separate
+partition semantics are required.
 
 ```{r extended-trajectory-status}
 tibble::tibble(

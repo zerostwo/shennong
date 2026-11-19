@@ -67,7 +67,9 @@ analyses.}
 candidates are stored separately from \code{input$tested_features}, the
 features with finite backend statistics before marker significance
 filtering. \code{input$tested_features_by_comparison} retains each
-comparison's background for downstream ORA. COSG records scored features.}
+comparison's background for downstream ORA. Pseudobulk normalization and
+model fitting use all genes in the selected layer. The requested panel
+defines the testing and multiple-adjustment family. COSG records scored features.}
 
 \item{method}{Statistical method. For \code{"markers"} and
 \code{"contrast"}, this can be any Seurat \code{test.use} value or

@@ -1040,3 +1040,22 @@ test_that("scCAD output contract rejects misaligned identities and scores", {
     "one finite score"
   )
 })
+
+test_that("explicit runtime reaches the Pixi call for object backends", {
+  skip_if_not_installed("Seurat")
+  counts <- matrix(1:12, nrow = 3L, dimnames = list(paste0("g", 1:3), paste0("c", 1:4)))
+  object <- SeuratObject::CreateSeuratObject(Matrix::Matrix(counts, sparse = TRUE))
+  object$x <- 1:4
+  object$y <- 1:4
+  explicit <- withr::local_tempdir()
+  fallback <- withr::local_tempdir()
+  withr::local_options(list(shennong.runtime_dir = fallback))
+  observed <- NULL
+  local_mocked_bindings(sn_call_pixi_environment = function(runtime_dir = NULL, ...) {
+    observed <<- runtime_dir
+    stop("captured Pixi invocation")
+  }, .package = "Shennong")
+  expect_error(sn_run_squidpy(object, layer = "counts", runtime_dir = explicit,
+    keep_run_dir = TRUE), "captured Pixi invocation")
+  expect_identical(observed, explicit)
+})

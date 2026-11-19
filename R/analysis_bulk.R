@@ -57,18 +57,26 @@
     metadata <- data.frame(sample = colnames(expression), row.names = colnames(expression), check.names = FALSE)
   } else {
     metadata <- as.data.frame(metadata, check.names = FALSE)
-    if (is.null(rownames(metadata)) || any(!colnames(expression) %in% rownames(metadata))) {
-      sample_col <- intersect(c("sample", "sample_id", "Sample", "SampleID"), colnames(metadata))
-      if (length(sample_col) == 0L) {
-        stop("Sample metadata row names (or a sample ID column) must match expression columns.", call. = FALSE)
-      }
-      rownames(metadata) <- as.character(metadata[[sample_col[[1]]]])
+    samples <- colnames(expression)
+    id_columns <- intersect(c("sample", "sample_id", "Sample", "SampleID"), names(metadata))
+    identifiers <- lapply(metadata[id_columns], as.character)
+    if (.row_names_info(metadata, type = 1L) > 0L || !length(id_columns)) {
+      identifiers <- c(list(rownames(metadata)), identifiers)
     }
-    missing_samples <- setdiff(colnames(expression), rownames(metadata))
-    if (length(missing_samples) > 0L) {
-      stop("Sample metadata is missing: ", paste(missing_samples, collapse = ", "), ".", call. = FALSE)
+    matches <- lapply(identifiers, function(ids) {
+      if (anyNA(ids) || any(!nzchar(ids)) || anyDuplicated(ids)) return(NULL)
+      index <- match(samples, ids)
+      if (!anyNA(index)) index else NULL
+    })
+    matches <- unique(Filter(Negate(is.null), matches))
+    if (!length(matches)) {
+      stop("Sample metadata row names (or a unique sample ID column) must match expression columns.", call. = FALSE)
     }
-    metadata <- metadata[colnames(expression), , drop = FALSE]
+    if (length(matches) > 1L) {
+      stop("Sample metadata contains conflicting sample identifiers.", call. = FALSE)
+    }
+    metadata <- metadata[matches[[1L]], , drop = FALSE]
+    rownames(metadata) <- samples
   }
   metadata$.sn_sample <- rownames(metadata)
   integer_like <- all(expression >= 0) && all(abs(expression - round(expression)) < 1e-8)

@@ -487,7 +487,8 @@ sn_plot_spatial_domain(domains)
 
 The neighborhood test uses the actual BANKSY assignments written to metadata.
 Its enrichment P values come from label permutations on the retained KNN graph;
-co-occurrence summarizes graph edges by distance bin.
+co-occurrence summarizes graph edges by distance bin. On a regular grid with
+a single observed edge distance, all edges contribute to one bin.
 
 ```{r spatial-neighborhoods, eval=run_banksy}
 spatial_object <- sn_run_spatial_neighborhood(
@@ -728,6 +729,10 @@ if (identical(mapping_entrypoint, "direct")) {
 }
 mapped_object@misc$tangram$lymph_node_tangram
 ```
+
+Supplying `runtime_dir` to a Python object adapter selects its Pixi runtime and
+the default location for retained run files. An explicit `output_dir` selects
+the run location independently.
 
 Squidpy and SpatialData need no additional biological reference, but they remain
 behind the same explicit already-prepared-environment gate. `sn_run_stlearn()`

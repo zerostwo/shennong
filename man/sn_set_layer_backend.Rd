@@ -54,7 +54,9 @@ layers, or \code{backend = "memory"} to materialize them as
 }
 \details{
 BPCells matrix directories remain external to a serialized Seurat object.
-Keep them alongside the object when moving an analysis. Materializing a
+With \code{sn_write()} and \code{sn_read()}, QS2 snapshots use relative
+directory paths and verify their content fingerprints. Move the matrix
+directories and snapshot together, preserving their relative paths. Materializing a
 layer with \code{backend = "memory"} does not delete its BPCells directory.
 }
 \examples{

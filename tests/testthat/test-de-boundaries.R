@@ -111,3 +111,31 @@ test_that("pseudobulk subset annotations cannot overwrite gene IDs", {
     subset_by = "gene", min_cells_per_sample = 5, verbose = FALSE),
     "subset_by.*conflict|conflict.*subset_by")
 })
+
+test_that("pseudobulk panels preserve the full-assay fit across backends", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("edgeR")
+  skip_if_not_installed("limma")
+  set.seed(57)
+  counts <- matrix(rpois(500 * 160, lambda = 4), 500,
+    dimnames = list(paste0("g", 1:500), paste0("c", 1:160)))
+  counts[1:10, 81:160] <- counts[1:10, 81:160] * 4
+  object <- SeuratObject::CreateSeuratObject(Matrix::Matrix(counts, sparse = TRUE))
+  object$sample <- rep(paste0("s", 1:8), each = 20)
+  object$condition <- rep(c("ctl", "tx"), each = 80)
+  selected <- rownames(counts)[10:1]
+  for (method in c("edgeR", "limma", if (requireNamespace("DESeq2", quietly = TRUE)) "DESeq2")) {
+    run <- function(features) sn_find_de(object, analysis = "pseudobulk", method = method,
+      ident_1 = "tx", ident_2 = "ctl", group_by = "condition", sample_by = "sample",
+      features = features, return_object = FALSE, verbose = FALSE)
+    full <- run(NULL)$tables$primary
+    panel <- run(selected)
+    table <- panel$tables$primary
+    expect_setequal(table$gene, selected)
+    expect_setequal(panel$input$tested_features, selected)
+    ref <- full[match(table$gene, full$gene), ]
+    expect_equal(table$log2FoldChange, ref$log2FoldChange, tolerance = 1e-9)
+    expect_equal(table$pvalue, ref$pvalue, tolerance = 1e-9)
+    expect_equal(table$padj, p.adjust(table$pvalue, "BH"), tolerance = 1e-9)
+  }
+})

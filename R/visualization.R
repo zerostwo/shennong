@@ -817,7 +817,9 @@ sn_plot_dim <- function(
 #'   derives the missing panel dimension automatically.
 #' @param panel_widths,panel_heights Optional panel size arguments forwarded to
 #'   \code{catplot::theme_cat()} when available.
-#' @param x_label,y_label,title Optional plot labels.
+#' @param x_label,y_label Optional axis labels.
+#' @param title Optional plot title. Multi-feature violin plots keep each
+#'   feature name as its panel title and use this as an overall title.
 #'
 #' @return A ggplot2 object.
 #'
@@ -870,6 +872,7 @@ sn_plot_violin <- function(object,
   object[["ident"]] <- Seurat::Idents(object = object)
   group_by <- group_by %||% "ident"
   n <- length(table(object[[group_by]]))
+  n_fill <- if (is.null(split_by)) n else length(table(object[[split_by]]))
   p <- .sn_add_catplot_theme(
     p,
     aspect_ratio = aspect_ratio,
@@ -885,10 +888,16 @@ sn_plot_violin <- function(object,
     guides(x = guide_axis(angle = angle_x)) +
     ggplot2::labs(
       x = x_label %||% NULL,
-      y = y_label %||% NULL,
-      title = title
+      y = y_label %||% NULL
     )
-  p <- .sn_add_discrete_palette(p, palette = palette, n = n, aesthetic = "fill")
+  if (!is.null(title)) {
+    p <- if (inherits(p, "patchwork") && length(features) > 1L) {
+      p + patchwork::plot_annotation(title = title)
+    } else {
+      p + ggplot2::labs(title = title)
+    }
+  }
+  p <- .sn_add_discrete_palette(p, palette = palette, n = n_fill, aesthetic = "fill")
   return(.sn_attach_figure_spec(
     .sn_style_plot(p, style, "distribution"), "violin",
     list(n_points = ncol(object) * length(features), n_groups = n, n_panels = length(features),
@@ -897,21 +906,21 @@ sn_plot_violin <- function(object,
   ))
 }
 
-.sn_resolve_heatmap_features <- function(object, features) {
+.sn_resolve_heatmap_features <- function(available, features) {
   if (is.null(features) || length(features) == 0L) {
     stop("`features` must contain at least one gene or feature name.", call. = FALSE)
   }
   features <- unique(as.character(features))
   features <- features[!is.na(features) & nzchar(features)]
-  missing_features <- setdiff(features, rownames(object))
+  missing_features <- setdiff(features, available)
   if (length(missing_features) > 0L) {
     .sn_log_warn(
-      "Dropped {length(missing_features)} feature(s) not found in the object (e.g. {paste(utils::head(missing_features, 3), collapse = ', ')})."
+      "Dropped {length(missing_features)} feature(s) not found in the selected assay layer (e.g. {paste(utils::head(missing_features, 3), collapse = ', ')})."
     )
   }
-  features <- intersect(features, rownames(object))
+  features <- intersect(features, available)
   if (length(features) == 0L) {
-    stop("None of the requested `features` were found in the object.", call. = FALSE)
+    stop("None of the requested `features` were found in the selected assay layer.", call. = FALSE)
   }
   features
 }
@@ -990,7 +999,8 @@ sn_plot_violin <- function(object,
                                      col_min = -2.5,
                                      col_max = 2.5) {
   average_fun <- match.arg(average_fun)
-  cells <- colnames(object)
+  expr <- SeuratObject::FetchData(object[[assay]], vars = features, layer = layer)
+  cells <- rownames(expr)
   metadata <- object[[]][cells, , drop = FALSE]
   groups <- metadata[[group_by]]
   if (is.factor(groups)) {
@@ -1011,13 +1021,6 @@ sn_plot_violin <- function(object,
       splits <- factor(splits, levels = split_levels)
     }
   }
-
-  expr <- .sn_fetch_feature_matrix(
-    object = object,
-    features = features,
-    assay = assay,
-    layer = layer
-  )
 
   valid <- !is.na(groups) & !is.na(splits)
   groups <- droplevels(groups[valid])
@@ -1316,8 +1319,13 @@ sn_plot_heatmap <- function(object,
     }
   }
 
-  features <- .sn_resolve_heatmap_features(object, features)
   assay <- assay %||% SeuratObject::DefaultAssay(object)
+  available <- if (isTRUE(scale_data) && identical(layer, "scale.data")) {
+    rownames(object[[assay]])
+  } else {
+    SeuratObject::Features(object[[assay]], layer = layer)
+  }
+  features <- .sn_resolve_heatmap_features(available, features)
   if (isTRUE(scale_data)) {
     object <- .sn_scale_heatmap_features(
       object = object,
@@ -1506,23 +1514,24 @@ sn_plot_heatmap <- function(object,
       )
   }
 
+  cells <- SeuratObject::Cells(object[[assay]], layer = layer)
   if (is.null(split_by)) {
-    plot <- build_one(colnames(object), panel_title = title)
+    plot <- build_one(cells, panel_title = title)
     return(.sn_attach_figure_spec(
       .sn_style_plot(plot, style, "heatmap"), "heatmap",
-      list(n_points = length(features) * ncol(object), n_rows = length(features),
-           n_columns = if (identical(mode, "average")) length(unique(object[[group_by, drop = TRUE]])) else ncol(object),
+      list(n_points = length(features) * length(cells), n_rows = length(features),
+           n_columns = length(cells),
            n_features = length(features), labels = features),
       overrides = list(rasterize = isTRUE(raster))
     ))
   }
 
-  split_values <- object[[split_by, drop = TRUE]]
+  split_values <- object[[]][cells, split_by, drop = TRUE]
   split_levels <- unique(as.character(split_values))
   split_levels <- split_levels[!is.na(split_levels)]
   plots <- lapply(split_levels, function(level) {
     panel_title <- if (is.null(title)) paste0(split_by, ": ", level) else paste0(title, " - ", level)
-    build_one(colnames(object)[as.character(split_values) == level], panel_title = panel_title)
+    build_one(cells[as.character(split_values) == level], panel_title = panel_title)
   })
   p <- patchwork::wrap_plots(plots)
   if (isTRUE(collect_legend)) {
@@ -1530,7 +1539,7 @@ sn_plot_heatmap <- function(object,
   }
   .sn_attach_figure_spec(
     .sn_style_plot(p, style, "heatmap"), "heatmap",
-    list(n_points = length(features) * ncol(object), n_rows = length(features), n_columns = ncol(object),
+    list(n_points = length(features) * length(cells), n_rows = length(features), n_columns = length(cells),
          n_panels = length(split_levels), n_features = length(features), labels = features),
     overrides = list(rasterize = isTRUE(raster))
   )
@@ -1598,23 +1607,28 @@ sn_plot_heatmap <- function(object,
 #'   \code{features = "top_markers"}. Defaults to \code{3}.
 #' @param marker_groups Optional subset of DE result groups to include when
 #'   \code{features = "top_markers"}.
-#' @param col_min The minimum value for the color scale. Defaults to -2.5.
-#' @param col_max The maximum value for the color scale. Defaults to 2.5.
+#' @param col_min,col_max Color limits for scaled expression, defaulting to
+#'   -2.5 and 2.5. For unscaled expression, omitted limits use the observed
+#'   range; explicit limits clamp colors without removing valid values.
 #' @param dot_min The minimum value for the dot size scale. Defaults to 0.
 #' @param dot_scale The size of the dots to plot.
 #' @param idents A character vector of identities to plot. Defaults to all identities.
 #' @param group_by A character vector specifying the grouping variable. Defaults to "ident".
 #' @param split_by A character vector specifying the splitting variable.
 #' @param cluster_idents Whether to cluster the identities or not. Defaults to FALSE.
-#' @param scale Whether to scale the dot size or not. Defaults to TRUE.
+#' @param scale Whether to scale average expression per feature. Defaults to
+#'   TRUE. FALSE displays log1p mean expression; without splitting, the colorbar
+#'   is labeled Average expression.
 #' @param scale_by The variable to scale the dot size by. Defaults to "radius".
 #' @param scale_min The minimum value for the dot size scale. Defaults to NA.
 #' @param scale_max The maximum value for the dot size scale. Defaults to NA.
-#' @param palette The palette used for the continuous color scale.
+#' @param palette Continuous expression palette, or condition colors when
+#'   `split_by` is supplied. Named condition colors must cover all plotted splits.
 #' @param direction Direction for the continuous palette. Use \code{1} for the
 #'   default order and \code{-1} to reverse it. Defaults to \code{-1} for
 #'   \code{sn_plot_dot()} so higher expression is mapped to warmer colors when
-#'   using palettes such as \code{"RdBu"}.
+#'   using palettes such as \code{"RdBu"}. Also orders unnamed split colors;
+#'   explicitly named split colors retain their name-to-color mapping.
 #' @param zscore_legend_labels One of \code{"text"} to display \code{"Min"}
 #'   and \code{"Max"} on the Z-score colorbar or \code{"numeric"} to retain
 #'   numeric values.
@@ -1688,29 +1702,92 @@ sn_plot_dot <- function(x,
   )
   features <- feature_info$features
   group_by <- group_by %||% feature_info$group_by
-  colorbar_info <- .sn_colorbar_breaks_labels(
-    limits = c(col_min, col_max),
-    label_mode = if (identical(zscore_legend_labels, "text")) "text" else "numeric"
-  )
-  color_breaks <- colorbar_info$breaks
-  color_labels <- colorbar_info$labels
+  dot_colors <- c("lightgrey", "blue")
+  backend_split <- split_by
+  if (!is.null(split_by)) {
+    cells <- unlist(SeuratObject::CellsByIdentities(
+      object = x, cells = colnames(x[[assay %||% SeuratObject::DefaultAssay(x)]]),
+      idents = idents), use.names = FALSE)
+    split_data <- SeuratObject::FetchData(x, vars = split_by)
+    split_values <- as.character(split_data[cells, split_by])
+    splits <- unique(split_values)
+    groups <- if (is.null(group_by)) SeuratObject::Idents(x)[cells] else x[[group_by, drop = TRUE]][cells]
+    pairs <- unique(data.frame(group = as.character(groups), split = split_values))
+    if (anyDuplicated(paste(pairs$group, pairs$split, sep = "_"))) {
+      stop("Group and split labels produce ambiguous combined identities; rename the labels before plotting.", call. = FALSE)
+    }
+    named_colors <- !is.null(names(palette)) && all(!is.na(names(palette)) & nzchar(names(palette)))
+    if (named_colors) {
+      missing_colors <- setdiff(splits, names(palette))
+      if (length(missing_colors)) stop("`palette` is missing split colors for: ", paste(missing_colors, collapse = ", "), call. = FALSE)
+      dot_colors <- unname(palette[splits])
+    } else {
+      dot_colors <- .sn_resolve_palette_values(palette, n = length(splits), direction = direction)
+    }
+    # Seurat interpolates split labels into a regular expression. Use temporary
+    # plain identifiers, then restore the original labels in the returned data.
+    all_splits <- unique(as.character(split_data[[split_by]]))
+    split_codes <- stats::setNames(paste0("snSplit", seq_along(all_splits)), all_splits)
+    backend_split <- utils::tail(make.unique(c(colnames(x[[]]), ".sn_dotplot_split")), 1L)
+    x[[backend_split]] <- stats::setNames(
+      unname(split_codes[as.character(split_data[[split_by]])]), rownames(split_data)
+    )
+  }
   p <- suppressMessages(Seurat::DotPlot(
     object = x,
     assay = assay,
     features = features,
+    cols = dot_colors,
     col.min = col_min,
     col.max = col_max,
     dot.min = dot_min,
     dot.scale = dot_scale,
     idents = idents,
     group.by = group_by,
-    split.by = split_by,
+    split.by = backend_split,
     cluster.idents = cluster_idents,
     scale = scale,
     scale.by = scale_by,
     scale.min = scale_min,
     scale.max = scale_max
   ))
+  if (!is.null(split_by)) {
+    native_ids <- levels(p$data$id)
+    display_ids <- native_ids
+    for (i in seq_along(split_codes)) {
+      matches <- endsWith(native_ids, paste0("_", split_codes[[i]]))
+      display_ids[matches] <- paste0(
+        substr(native_ids[matches], 1L, nchar(native_ids[matches]) - nchar(split_codes[[i]])),
+        names(split_codes)[[i]]
+      )
+    }
+    levels(p$data$id) <- display_ids
+  }
+  scaled_expression <- isTRUE(scale) && nlevels(p$data$id) > 1L
+  color_title <- if (scaled_expression) "Z score" else "Average expression"
+  if (is.null(split_by)) {
+    color_limits <- c(col_min, col_max)
+    if (!scaled_expression) {
+      values <- p$data$avg.exp.scaled[is.finite(p$data$avg.exp.scaled)]
+      if (length(values)) {
+        if (missing(col_min)) color_limits[[1L]] <- min(values)
+        if (missing(col_max)) color_limits[[2L]] <- max(values)
+        if (missing(col_min)) color_limits[[1L]] <- min(color_limits)
+        if (missing(col_max)) color_limits[[2L]] <- max(color_limits)
+      }
+    }
+    colorbar_info <- .sn_colorbar_breaks_labels(
+      limits = color_limits,
+      label_mode = if (scaled_expression) zscore_legend_labels else "numeric"
+    )
+    p <- .sn_apply_scale_to_plot(p, ggplot2::scale_color_gradientn(
+      colours = .sn_resolve_continuous_palette(palette = palette, n = 256L, direction = direction),
+      limits = color_limits, oob = scales::squish,
+      guide = .sn_colorbar_guide(title = color_title, order = 1),
+      breaks = colorbar_info$breaks, labels = colorbar_info$labels
+    ))
+    p <- p + guides(color = .sn_colorbar_guide(title = color_title, order = 1))
+  }
   if (!is.list(features)) {
     p <- p + coord_fixed()
   }
@@ -1727,8 +1804,7 @@ sn_plot_dot <- function(x,
           stroke = 0.4,
           alpha = 1
         )
-      ),
-      color = .sn_colorbar_guide(title = "Z score", order = 1)
+      )
     )
   p <- suppressMessages(suppressWarnings(
     .sn_add_catplot_theme(
@@ -1750,22 +1826,11 @@ sn_plot_dot <- function(x,
       labs(
         x = x_label %||% NULL,
         y = y_label %||% NULL,
-        color = "Z score",
+        color = color_title,
         size = "Percent (%)",
         title = title
       ) +
-      scale_y_discrete(limits = rev) +
-      ggplot2::scale_color_gradientn(
-        colours = .sn_resolve_continuous_palette(
-          palette = palette,
-          n = 256L,
-          direction = direction
-        ),
-        limits = c(col_min, col_max),
-        guide = .sn_colorbar_guide(title = "Z score", order = 1),
-        breaks = color_breaks,
-        labels = color_labels
-      )
+      scale_y_discrete(limits = rev)
   ))
   return(.sn_attach_figure_spec(
     .sn_style_plot(p, style, "dot"), "dot",

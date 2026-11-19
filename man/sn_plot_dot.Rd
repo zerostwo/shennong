@@ -56,9 +56,9 @@ the canonical Shennong result registry under \code{result_id}.}
 \item{marker_groups}{Optional subset of DE result groups to include when
 \code{features = "top_markers"}.}
 
-\item{col_min}{The minimum value for the color scale. Defaults to -2.5.}
-
-\item{col_max}{The maximum value for the color scale. Defaults to 2.5.}
+\item{col_min, col_max}{Color limits for scaled expression, defaulting to
+-2.5 and 2.5. For unscaled expression, omitted limits use the observed
+range; explicit limits clamp colors without removing valid values.}
 
 \item{dot_min}{The minimum value for the dot size scale. Defaults to 0.}
 
@@ -72,7 +72,9 @@ the canonical Shennong result registry under \code{result_id}.}
 
 \item{cluster_idents}{Whether to cluster the identities or not. Defaults to FALSE.}
 
-\item{scale}{Whether to scale the dot size or not. Defaults to TRUE.}
+\item{scale}{Whether to scale average expression per feature. Defaults to
+TRUE. FALSE displays log1p mean expression; without splitting, the colorbar
+is labeled Average expression.}
 
 \item{scale_by}{The variable to scale the dot size by. Defaults to "radius".}
 
@@ -80,12 +82,14 @@ the canonical Shennong result registry under \code{result_id}.}
 
 \item{scale_max}{The maximum value for the dot size scale. Defaults to NA.}
 
-\item{palette}{The palette used for the continuous color scale.}
+\item{palette}{Continuous expression palette, or condition colors when
+\code{split_by} is supplied. Named condition colors must cover all plotted splits.}
 
 \item{direction}{Direction for the continuous palette. Use \code{1} for the
 default order and \code{-1} to reverse it. Defaults to \code{-1} for
 \code{sn_plot_dot()} so higher expression is mapped to warmer colors when
-using palettes such as \code{"RdBu"}.}
+using palettes such as \code{"RdBu"}. Also orders unnamed split colors;
+explicitly named split colors retain their name-to-color mapping.}
 
 \item{zscore_legend_labels}{One of \code{"text"} to display \code{"Min"}
 and \code{"Max"} on the Z-score colorbar or \code{"numeric"} to retain

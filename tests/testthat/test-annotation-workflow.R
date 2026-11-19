@@ -190,7 +190,9 @@ test_that("SingleR predictions and raw backend evidence are retained", {
   expect_true(all(c("prediction", "pruned", "delta_next") %in% colnames(result$tables$backend_predictions)))
   expect_equal(nrow(result$tables$evidence), ncol(query))
   expect_setequal(unique(result$tables$evidence$method), "singleR")
-  expect_equal(unique(as.character(result$tables$cells$prediction)), c("B cells", "T cells"))
+  raw <- result$tables$backend_predictions
+  expect_setequal(raw$prediction, c("B cells", "T cells"))
+  expect_identical(result$tables$cells$prediction, ifelse(raw$pruned, "unassigned", raw$prediction))
 })
 
 test_that("unified CellTypist annotation uses count-like input by default", {
@@ -393,4 +395,60 @@ test_that("PopV exports required metadata and owns temporary run lifecycle", {
     ),
     "not empty"
   )
+})
+
+test_that("annotation metadata preserves curator-owned column names and records its outputs", {
+  query <- make_annotation_test_object()
+  query$my_label <- "curated"
+  query$backend_label <- "expert"
+  local_mocked_bindings(.sn_annotation_backend = function(object, ...) {
+    object$backend_label <- "reference"
+    mock_annotation_backend(object)
+  }, .package = "Shennong")
+  out <- sn_run_annotation(query, group_by = "cluster", result_id = "my", species = "human")
+  expect_identical(out$my_label, query$my_label)
+  expect_identical(out$backend_label, query$backend_label)
+  expect_identical(unname(out$backend_label.1), rep("reference", ncol(query)))
+  mapping <- sn_get_result(out, "annotation", "my")$tables$metadata_columns
+  label <- mapping$column[mapping$field == "prediction"]
+  expect_length(label, 1L)
+  expect_identical(unname(out[[label, drop = TRUE]]), rep(c("B cells", "T cells"), each = 4))
+})
+
+test_that("SingleR retains upstream raw predictions and respects pruning", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("SingleR")
+  set.seed(728)
+  n_genes <- 100L
+  reference_counts <- matrix(rpois(n_genes * 30, 3), nrow = n_genes)
+  labels <- rep(c("B cells", "T cells"), each = 15)
+  reference_counts[1:30, labels == "B cells"] <- reference_counts[1:30, labels == "B cells"] + 12
+  reference_counts[31:60, labels == "T cells"] <- reference_counts[31:60, labels == "T cells"] + 12
+  query_counts <- cbind(reference_counts, matrix(rpois(n_genes * 8, 3), nrow = n_genes))
+  make_object <- function(counts) {
+    dimnames(counts) <- list(paste0("g", seq_len(nrow(counts))), paste0("c", seq_len(ncol(counts))))
+    object <- SeuratObject::CreateSeuratObject(Matrix::Matrix(counts, sparse = TRUE))
+    object$cluster <- "0"
+    Seurat::NormalizeData(object, verbose = FALSE)
+  }
+  reference <- make_object(reference_counts)
+  reference$type <- labels
+  query <- make_object(query_counts)
+  up <- SingleR::SingleR(test = SeuratObject::LayerData(query, layer = "data"),
+                         ref = SeuratObject::LayerData(reference, layer = "data"), labels = labels)
+  run <- function(...) sn_run_annotation(
+    query, group_by = "cluster", method = "singleR", reference = reference,
+    reference_label_by = "type", species = "human", ontology = FALSE, return_object = FALSE, ...
+  )
+  result <- run()
+  removed <- is.na(up$pruned.labels)
+  raw <- result$tables$backend_predictions
+  expect_true(any(removed))
+  expect_identical(raw$pruned, removed)
+  expect_identical(raw$prediction, as.character(up$labels))
+  expect_identical(raw$pruned_label, as.character(up$pruned.labels))
+  expect_true(all(result$tables$cells$prediction[removed] == "unassigned"))
+  expect_true(all(result$tables$cells$low_confidence[removed]))
+  unpruned <- run(backend_control = list(singleR = list(prune = FALSE)))
+  expect_identical(unpruned$tables$cells$prediction, as.character(up$labels))
 })

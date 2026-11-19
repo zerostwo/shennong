@@ -115,6 +115,13 @@ roe_matrix <- sn_calculate_roe(
 roe_matrix[, seq_len(min(4, ncol(roe_matrix))), drop = FALSE]
 ```
 
+For several `group_by` columns, matrix rows retain each distinct combination.
+The display label joins components with `|`; literal pipes and backslashes in
+the components are escaped with a backslash. For example, `("x|y", "z")` and
+`("x", "y|z")` remain separate rows labeled `x\|y|z` and `x|y\|z`.
+Use the default long-table return when the original grouping columns are
+needed directly. Punctuation in labels also remains distinct during counting.
+
 ```{r plot-composition}
 sn_plot_composition(
   pbmc,

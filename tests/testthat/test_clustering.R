@@ -345,11 +345,13 @@ test_that("parameter-grid checkpoints resume completed combinations", {
 
   object <- make_test_object(seed = 404, prefix = "checkpoint", n_genes = 80, n_cells = 40)
   object$sample <- rep(c("A", "B"), each = 20)
+  adt_counts <- SeuratObject::LayerData(object, assay = "RNA", layer = "counts")[1:4, ]
+  object[["ADT"]] <- SeuratObject::CreateAssayObject(counts = adt_counts)
   checkpoint_dir <- tempfile("sn-cluster-checkpoint-")
   dir.create(checkpoint_dir)
   on.exit(unlink(checkpoint_dir, recursive = TRUE), add = TRUE)
 
-  run_grid <- function() {
+  run_grid <- function(directory = checkpoint_dir) {
     sn_run_cluster(
       object = object,
       batch_by = "sample",
@@ -360,7 +362,7 @@ test_that("parameter-grid checkpoints resume completed combinations", {
       npcs = 6,
       dims = 1:6,
       resolution = c(0.2, 0.4),
-      checkpoint_dir = checkpoint_dir,
+      checkpoint_dir = directory,
       verbose = FALSE
     )
   }
@@ -386,6 +388,28 @@ test_that("parameter-grid checkpoints resume completed combinations", {
   expect_equal(nrow(resumed_comparison$performance), 2L)
   expect_true(file.exists(resumed_comparison$checkpoint$latest_path))
   expect_true(resumed_comparison$performance$reused_embedding[[2L]])
+  object$curator_note <- "updated"
+  changed <- run_grid()
+  expect_false(changed@misc$integration_comparison$checkpoint$resumed)
+  expect_identical(unname(changed$curator_note), rep("updated", ncol(object)))
+
+  adt_counts[1, 1] <- adt_counts[1, 1] + 100
+  SeuratObject::LayerData(object, assay = "ADT", layer = "counts") <- adt_counts
+  changed <- run_grid()
+  expect_false(changed@misc$integration_comparison$checkpoint$resumed)
+  expect_equal(SeuratObject::LayerData(changed, assay = "ADT", layer = "counts"), adt_counts)
+
+  object@misc$curated_result <- list(version = 2L)
+  changed <- run_grid()
+  expect_false(changed@misc$integration_comparison$checkpoint$resumed)
+  expect_identical(changed@misc$curated_result, object@misc$curated_result)
+
+  no_checkpoint <- testthat::with_mocked_bindings(
+    run_grid(NULL),
+    .sn_cluster_checkpoint_signature = function(...) stop("unexpected checkpoint serialization"),
+    .package = "Shennong"
+  )
+  expect_false(no_checkpoint@misc$integration_comparison$checkpoint$enabled)
 })
 
 test_that("sn_run_cluster expands scalar parameter axes and reuses embeddings across resolutions", {
@@ -508,6 +532,20 @@ test_that("sn_run_cluster supports CITE-seq WNN clustering", {
   expect_true("wsnn" %in% names(clustered@graphs))
   expect_equal(clustered@misc$sn_run_cluster$stages$neighbors$snn_graph, "wsnn")
   expect_equal(clustered@misc$sn_run_cluster$stages$umap$reduction, "wnn.umap")
+  changed <- SeuratObject::LayerData(clustered, assay = "ADT", layer = "counts")
+  changed[1:5, 1:20] <- changed[1:5, 1:20] + 100
+  SeuratObject::LayerData(clustered, assay = "ADT", layer = "counts") <- changed
+  rerun <- function(reuse) sn_run_cluster(
+    clustered, modality = "cite_seq", normalization_method = "seurat",
+    nfeatures = 50, block_genes = NULL, npcs = 10, dims = 1:10,
+    adt_npcs = 10, adt_dims = 1:10, reuse = reuse, verbose = FALSE
+  )
+  cached <- rerun(TRUE)
+  fresh <- rerun(FALSE)
+  expect_equal(SeuratObject::LayerData(cached, assay = "ADT", layer = "data"),
+               SeuratObject::LayerData(fresh, assay = "ADT", layer = "data"))
+  expect_equal(as.matrix(cached[["wsnn"]]), as.matrix(fresh[["wsnn"]]))
+
 })
 
 test_that("sn_run_cluster dispatches CITE-seq protein integration backends", {

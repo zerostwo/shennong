@@ -423,8 +423,11 @@ sn_find_spatial_domains <- function(object,
 
 .sn_spatial_cooccurrence <- function(graph, labels, bins = 4L) {
   breaks <- unique(stats::quantile(graph$distance, probs = seq(0, 1, length.out = as.integer(bins) + 1L), na.rm = TRUE))
-  if (length(breaks) < 2L) breaks <- range(graph$distance) + c(-1, 1) * .Machine$double.eps
-  graph$distance_bin <- cut(graph$distance, breaks = breaks, include.lowest = TRUE, ordered_result = TRUE)
+  graph$distance_bin <- if (length(breaks) == 1L) {
+    ordered(graph$distance, levels = breaks)
+  } else {
+    cut(graph$distance, breaks = breaks, include.lowest = TRUE, ordered_result = TRUE)
+  }
   graph$source_group <- unname(labels[graph$source])
   graph$target_group <- unname(labels[graph$target])
   table <- as.data.frame(table(graph$source_group, graph$target_group, graph$distance_bin), stringsAsFactors = FALSE)
