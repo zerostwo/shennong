@@ -2,6 +2,19 @@ All notable changes to this project will be documented in this file.
 
 
 # Shennong (development version)
+
+## Seurat 6 compatibility (2026-11-19)
+
+Shennong delegates variable feature selection, PCA, nearest-neighbor graphs
+and clustering to the native Seurat kernels introduced in 5.6. On these
+versions, `sn_enable_acceleration()` excludes the four superseded patches,
+and explicitly requesting one returns FALSE. Use `Seurat::setThreads(n)`
+to tune native threads. The optional single-covariate scaling regression and
+SeuratObject merge and layer-joining patches remain available. Nested
+acceleration scopes now preserve manually enabled patches on exit.
+Clustering recomputes stages and checkpoints saved with other or unknown
+Seurat/SeuratObject versions.
+
 ## Identity, reproducibility and memory repairs (2026-11-05)
 
 - Supplied-cluster scran splitting preserves original group membership even

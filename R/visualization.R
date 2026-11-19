@@ -940,15 +940,11 @@ sn_plot_violin <- function(object,
   )
   missing_scaled <- if (is.null(scaled)) features else setdiff(features, rownames(scaled))
   if (length(missing_scaled) > 0L) {
-    object <- .sn_with_default_seurat_acceleration(
-      Seurat::ScaleData(
-        object = object,
-        assay = assay,
-        features = unique(features),
-        verbose = verbose
-      ),
+    object <- Seurat::ScaleData(
       object = object,
-      assay = assay
+      assay = assay,
+      features = unique(features),
+      verbose = verbose
     )
   }
   object

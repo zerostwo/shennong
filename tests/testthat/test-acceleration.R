@@ -1,5 +1,7 @@
 test_that("ShennongOpt patch mapping routes supported keys and suppresses gaps", {
   skip_if_not_installed("ShennongOpt")
+  skip_if_not_installed("lisi")
+  skip_if_not_installed("scDblFinder")
   mapped <- Shennong:::.sn_map_acceleration_patches(
     c("lisi", "scdblfinder", "cellchat", "clusterprofiler", "soupx", "tradeseq", "wgcna", "nichenetr")
   )
@@ -10,31 +12,42 @@ test_that("ShennongOpt patch mapping routes supported keys and suppresses gaps",
   )
 })
 
-test_that("granular SeuratOpt patches resolve through umbrella and explicit keys", {
-  skip_if_not_installed("ShennongOpt")
-  mapped <- Shennong:::.sn_map_acceleration_patches("seurat")
-  expect_true(all(c(
-    "seurat_runpca",
-    "seurat_scaledata",
-    "seurat_findneighbors",
-    "seurat_findvariablefeatures",
-    "seurat_findclusters"
-  ) %in% mapped$supported))
-  expect_false(any(grepl("^seuratobject_", mapped$supported)))
-
-  legacy <- Shennong:::.sn_map_acceleration_patches(
-    c("seurat_merge", "seurat_joinlayers")
+test_that("Seurat scopes select only patches needed by the installed upstream", {
+  legacy <- c("seurat_runpca", "seurat_findneighbors",
+              "seurat_findvariablefeatures", "seurat_findclusters")
+  retained <- c("seurat_scaledata", "seuratobject_merge", "seuratobject_joinlayers")
+  registered <- c(legacy, retained, "ucell")
+  enabled <- character()
+  local_mocked_bindings(
+    .sn_acceleration_registered_patches = function(installed = TRUE) registered,
+    .sn_acceleration_available = function() TRUE,
+    .sn_acceleration_call = function(fun, name) {
+      expect_identical(fun, "sn_enable_acceleration")
+      enabled <<- name
+      stats::setNames(rep(TRUE, length(name)), name)
+    },
+    .sn_seurat_has_native_kernels = function() TRUE,
+    .package = "Shennong"
   )
-  expect_setequal(
-    legacy$supported,
-    c("seuratobject_merge", "seuratobject_joinlayers")
-  )
+  expect_setequal(Shennong:::.sn_map_acceleration_patches("seurat")$supported,
+                  "seurat_scaledata")
+  expect_setequal(Shennong:::.sn_map_acceleration_patches(legacy)$unsupported, legacy)
+  expect_setequal(Shennong:::.sn_map_acceleration_patches(
+    c("seurat_scaledata", "seurat_merge", "seurat_joinlayers")
+  )$supported, retained)
+  sn_enable_acceleration()
+  expect_setequal(enabled, c(retained, "ucell"))
+  expect_false(sn_enable_acceleration("seurat_runpca"))
+  expect_identical(sn_enable_acceleration(c("ucell", "seurat_runpca")),
+                   c(ucell = TRUE, seurat_runpca = FALSE))
+  expect_identical(enabled, "ucell")
 
-  # Exact ShennongOpt patch names are accepted by the public controls
-  # directly, without going through the legacy key map.
-  status <- sn_check_acceleration()
-  expect_true("seuratobject_merge" %in% names(status))
-  expect_true("seuratobject_joinlayers" %in% names(status))
+  local_mocked_bindings(.sn_seurat_has_native_kernels = function() FALSE,
+                        .package = "Shennong")
+  expect_setequal(Shennong:::.sn_map_acceleration_patches("seurat")$supported,
+                  c(legacy, "seurat_scaledata"))
+  expect_identical(Shennong:::.sn_map_acceleration_patches("seurat_runpca")$supported,
+                   "seurat_runpca")
 })
 
 test_that("Shennong acceleration bridge uses the current ShennongOpt API", {
@@ -90,26 +103,42 @@ test_that("the seurat_scaledata patch activates inside the wrapper and restores 
   skip_if_not_installed("Seurat")
 
   before <- sn_check_acceleration()[["seurat_scaledata"]]
-  counts <- Matrix::Matrix(matrix(rep(1:20, 15), ncol = 15), sparse = TRUE)
-  object <- SeuratObject::CreateSeuratObject(counts = counts)
-  SeuratObject::DefaultAssay(object) <- "RNA"
+  set.seed(31)
+  counts <- matrix(rpois(300, 2), 20, dimnames = list(paste0("g", 1:20), paste0("c", 1:15)))
+  object <- SeuratObject::CreateSeuratObject(counts = Matrix::Matrix(counts, sparse = TRUE))
+  object$covariate <- seq_len(ncol(object))
   object <- Seurat::NormalizeData(object, verbose = FALSE)
+  scale <- function() Seurat::ScaleData(object, features = rownames(object),
+                                        vars.to.regress = "covariate", verbose = FALSE)
+  reference <- Shennong:::.sn_with_acceleration_disabled(scale())
+  result <- suppressWarnings(Shennong:::.sn_with_default_seurat_acceleration({
+    list(status = sn_check_acceleration()[["seurat_scaledata"]], scaled = scale())
+  }, "seurat_scaledata"))
+  expect_identical(result$status, "active")
+  expect_equal(SeuratObject::LayerData(result$scaled, layer = "scale.data"),
+               SeuratObject::LayerData(reference, layer = "scale.data"), tolerance = 1e-12)
+  expect_identical(sn_check_acceleration()[["seurat_scaledata"]], before)
+})
 
-  result <- Shennong:::.sn_with_default_seurat_acceleration({
-    list(
-      status_during = sn_check_acceleration()[["seurat_scaledata"]],
-      scaled = Seurat::ScaleData(object, verbose = FALSE)
-    )
-  })
-  after <- sn_check_acceleration()[["seurat_scaledata"]]
-
-  expect_identical(result$status_during, "active")
-  expect_s4_class(result$scaled, "Seurat")
-  expect_identical(before, after)
+test_that("nested acceleration scopes preserve manually active patches on error", {
+  activated <- FALSE
+  local_mocked_bindings(
+    .sn_acceleration_registered_patches = function(installed = TRUE) "ucell",
+    .sn_acceleration_available = function() TRUE,
+    .sn_acceleration_call = function(fun, ...) {
+      if (fun == "sn_check_acceleration") return(c(ucell = "active"))
+      activated <<- TRUE
+      TRUE
+    },
+    .package = "Shennong"
+  )
+  expect_error(sn_with_acceleration(stop("inner error"), "ucell"), "inner error")
+  expect_false(activated)
 })
 
 test_that("wrapper provenance records used and suppressed patches", {
   skip_if_not_installed("ShennongOpt")
+  skip_if_not_installed("lisi")
   observed <- new.env(parent = emptyenv())
   local_mocked_bindings(
     .sn_usage_record_acceleration = function(patches) {
@@ -134,11 +163,13 @@ test_that("wrapper provenance records used and suppressed patches", {
 
 test_that("public acceleration helpers round trip", {
   skip_if_not_installed("ShennongOpt")
+  skip_if_not_installed("UCell")
   expect_type(sn_check_acceleration(), "character")
-  status <- sn_enable_acceleration("seurat_runpca")
-  expect_true(isTRUE(status) || isTRUE(sn_check_acceleration()[["seurat_runpca"]] == "active"))
-  sn_disable_acceleration("seurat_runpca")
-  expect_false(isTRUE(sn_check_acceleration()[["seurat_runpca"]] == "active"))
+  status <- sn_enable_acceleration("ucell")
+  expect_true(isTRUE(status))
+  expect_identical(sn_check_acceleration()[["ucell"]], "active")
+  sn_disable_acceleration("ucell")
+  expect_identical(sn_check_acceleration()[["ucell"]], "inactive")
 
   out <- sn_with_acceleration(6L * 7L, name = "ucell")
   expect_identical(out, 42L)

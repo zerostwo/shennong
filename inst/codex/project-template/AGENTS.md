@@ -144,6 +144,11 @@ than treating an empty marker table as proof that no genes were tested.
 
 ## Analysis API contracts
 
+For Seurat 5.6 and later, record the Seurat version and `Seurat::getThreads()`
+when comparing clustering or preprocessing times. Variable features, PCA,
+neighbor graphs and clustering use Seurat's native kernels. Cached stages
+and checkpoints require matching Seurat and SeuratObject versions.
+
 Use `batch_by` for clustering batch metadata, `backend_control` for optional
 backend settings, and `n_workers` for the common parallel-worker control.
 `sn_run_scvi`, `sn_run_scanvi`, and `sn_run_scpoli` are clustering shortcuts.

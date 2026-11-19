@@ -21,6 +21,7 @@ without a ShennongOpt counterpart run unaccelerated and are recorded as
 suppressed in the acceleration provenance context.
 }
 \examples{
-\dontrun{sn_with_acceleration(obj <- Seurat::RunPCA(obj), name = "seurat")}
+\dontrun{sn_with_acceleration(Seurat::ScaleData(obj, vars.to.regress = "nCount_RNA"),
+                             name = "seurat_scaledata")}
 
 }

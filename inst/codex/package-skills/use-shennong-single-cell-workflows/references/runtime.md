@@ -37,8 +37,8 @@ For R acceleration, inspect availability with `sn_check_acceleration()`
    and `ShennongOpt::sn_list_accelerations(installed = TRUE)`. Eligible patches are
    scoped to the compatible workflow call and the prior state must be restored
    after success or error. Option/environment opt-outs block the automatic
-   scope without deactivating manually active patches; explicit helpers ignore
-   them. Paths without a ShennongOpt counterpart run plain upstream code.
+   scope and apply to `sn_with_acceleration()`. Use `sn_enable_acceleration()`
+   for manual activation. Paths without a ShennongOpt counterpart run plain upstream code.
 
 ## 15
 

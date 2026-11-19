@@ -817,6 +817,13 @@ test_that("cluster fingerprints include analysis values and relevant metadata", 
   original_checkpoint <- checkpoint_signature(object)
   expect_false(identical(original_checkpoint, checkpoint_signature(changed_counts)))
 
+  saved <- Shennong:::.sn_record_cluster_stage(object, "pca", list(npcs = 10))
+  can_reuse <- function(x) Shennong:::.sn_can_reuse_cluster_stage(x, "pca", list(npcs = 10))
+  expect_true(can_reuse(saved))
+  unversioned <- saved
+  unversioned@misc$sn_run_cluster$stages$pca$seurat_versions <- NULL
+  expect_false(can_reuse(unversioned))
+
   changed_batch <- object
   changed_batch$batch[[1L]] <- "b"
   expect_false(identical(original_checkpoint, checkpoint_signature(changed_batch)))
@@ -828,6 +835,13 @@ test_that("cluster fingerprints include analysis values and relevant metadata", 
   changed_covariate <- object
   changed_covariate$covariate[[1L]] <- -1
   expect_false(identical(original_checkpoint, checkpoint_signature(changed_covariate)))
+
+  local_mocked_bindings(
+    .sn_cluster_seurat_versions = function() c(Seurat = "older", SeuratObject = "older"),
+    .package = "Shennong"
+  )
+  expect_false(can_reuse(saved))
+  expect_false(identical(original_checkpoint, checkpoint_signature(object)))
 })
 
 test_that("log-normalized clustering records the blocked HVG projection", {

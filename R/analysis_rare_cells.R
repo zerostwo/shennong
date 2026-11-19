@@ -58,15 +58,12 @@
                                         npcs = 20,
                                         dims = 1:10,
                                         resolution = 0.2) {
-  temp_object <- .sn_with_default_seurat_acceleration(
-    suppressWarnings(
-      Seurat::ScaleData(
-        object = object,
-        features = features,
-        verbose = FALSE
-      )
-    ),
-    object = object
+  temp_object <- suppressWarnings(
+    Seurat::ScaleData(
+      object = object,
+      features = features,
+      verbose = FALSE
+    )
   )
   temp_object <- .sn_with_default_seurat_acceleration(
     suppressWarnings(
@@ -78,7 +75,7 @@
         seed.use = 717
       )
     ),
-    object = temp_object
+    patch = "seurat_runpca"
   )
   temp_dims <- dims[dims <= npcs]
   temp_object <- Seurat::FindNeighbors(
