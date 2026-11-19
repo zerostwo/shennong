@@ -66,7 +66,10 @@ sn_run_annotation(
 
 - result_id:
 
-  Stored-result and metadata prefix.
+  Stored-result and metadata prefix. Existing metadata is preserved. The
+  result's `tables$metadata_columns` maps fields to their assigned
+  names. SingleR stores raw and pruned labels in
+  `tables$backend_predictions`; rejected cells are unassigned.
 
 - confidence_threshold:
 

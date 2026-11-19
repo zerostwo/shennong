@@ -283,6 +283,9 @@ installed.</p>
 <span>  result_id <span class="op">=</span> <span class="st">"pbmc_annotated"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Result fields and actual metadata names, including suffixes for existing columns.</span></span>
+<span><span class="va">annotation</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">metadata_columns</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">annotation</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">backend_predictions</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">annotation</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">clusters</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">annotation</span><span class="op">$</span><span class="va">tables</span><span class="op">$</span><span class="va">cells</span><span class="op">)</span></span>
 <span><span class="va">annotation</span><span class="op">$</span><span class="va">diagnostics</span></span>
@@ -293,6 +296,15 @@ installed.</p>
 <span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span>
 <span>  color_by <span class="op">=</span> <span class="st">"prediction"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>SingleR records the upstream label in
+<code>backend_predictions$prediction</code>, the pruned label in
+<code>pruned_label</code>, and the rejection flag in
+<code>pruned</code>. A rejected cell has
+<code>prediction = "unassigned"</code> and
+<code>low_confidence = TRUE</code> in the cell table. With pruning
+disabled, the raw prediction supplies the cell label. Annotation output
+names receive unique suffixes when the object already has a
+corresponding metadata column.</p>
 <p>Every final label remains linked to its backend score, reference
 coverage, and provenance. LLM helpers can explain this evidence but
 cannot replace the stored computational label. Review uncertain
@@ -973,6 +985,9 @@ annotation consumes them.</p>
 <div class="section level2">
 <h2 id="audit-scoring-columns-and-de-backgrounds">Audit scoring columns and DE backgrounds<a class="anchor" aria-label="anchor" href="#audit-scoring-columns-and-de-backgrounds"></a>
 </h2>
+<p>For a partially measured assay, the result records the number of
+measured cells. Group means use those cells, and the score metadata is
+missing for cells outside the source layer.</p>
 <p>Score metadata names remain readable but receive unique suffixes when
 program names normalize to the same text or collide with existing
 metadata. An explicit rerun with the same <code>result_id</code> and

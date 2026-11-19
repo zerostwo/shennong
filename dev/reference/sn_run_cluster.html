@@ -396,9 +396,9 @@ checkpoints. After every completed run Shennong writes the current object,
 comparison manifest, performance records, and completed run IDs to a
 temporary file and atomically publishes it. Only the latest complete
 checkpoint for the call signature is retained. The signature includes a
-blockwise digest of the selected layer plus cell/feature identity and the
-metadata values used by batching, grouped HVGs, regression, or supervised
-integration.
+checksum of the entire serialized input object and a blockwise digest of
+the selected layer. Edits to other assays, metadata, identities or stored
+results invalidate the checkpoint.
 <code>resume</code>: logical; when <code>TRUE</code> (default), resume a matching
 checkpoint in <code>checkpoint_dir</code>. The same content/metadata-aware
 signature also covers Shennong, Seurat and SeuratObject versions, the

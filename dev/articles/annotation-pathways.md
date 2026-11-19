@@ -210,6 +210,9 @@ annotation <- sn_get_result(
   result_id = "pbmc_annotated"
 )
 
+# Result fields and actual metadata names, including suffixes for existing columns.
+annotation$tables$metadata_columns
+head(annotation$tables$backend_predictions)
 head(annotation$tables$clusters)
 head(annotation$tables$cells)
 annotation$diagnostics
@@ -221,6 +224,14 @@ sn_plot_reference_projection(
   color_by = "prediction"
 )
 ```
+
+SingleR records the upstream label in `backend_predictions$prediction`,
+the pruned label in `pruned_label`, and the rejection flag in `pruned`.
+A rejected cell has `prediction = "unassigned"` and
+`low_confidence = TRUE` in the cell table. With pruning disabled, the
+raw prediction supplies the cell label. Annotation output names receive
+unique suffixes when the object already has a corresponding metadata
+column.
 
 Every final label remains linked to its backend score, reference
 coverage, and provenance. LLM helpers can explain this evidence but
@@ -910,6 +921,10 @@ pathways are computed and stored before automated or LLM-assisted
 annotation consumes them.
 
 ## Audit scoring columns and DE backgrounds
+
+For a partially measured assay, the result records the number of
+measured cells. Group means use those cells, and the score metadata is
+missing for cells outside the source layer.
 
 Score metadata names remain readable but receive unique suffixes when
 program names normalize to the same text or collide with existing

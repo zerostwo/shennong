@@ -136,7 +136,10 @@ CellTypist, which uses a pre-trained model instead.</p></dd>
 
 
 <dt id="arg-result-id">result_id<a class="anchor" aria-label="anchor" href="#arg-result-id"></a></dt>
-<dd><p>Stored-result and metadata prefix.</p></dd>
+<dd><p>Stored-result and metadata prefix. Existing metadata is
+preserved. The result's <code>tables$metadata_columns</code> maps fields to
+their assigned names. SingleR stores raw and pruned labels in
+<code>tables$backend_predictions</code>; rejected cells are unassigned.</p></dd>
 
 
 <dt id="arg-confidence-threshold">confidence_threshold<a class="anchor" aria-label="anchor" href="#arg-confidence-threshold"></a></dt>

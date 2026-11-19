@@ -170,6 +170,10 @@ layer to a SingleCellExperiment, calls scDesign3, and returns a
 simulated Seurat object by default. It does not merge original and
 simulated cells unless `combine_original = TRUE`.
 
+Set `n_workers` to choose the number of cores passed to scDesign3. Use
+`return = "counts"` to retrieve the simulated feature-by-cell matrix
+directly.
+
 This optional simulation backend runs only in the `all` profile when
 `scDesign3` is installed.
 

@@ -151,7 +151,7 @@ extraction.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   collection       type  result_id analysis method created_at      n_rows source</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results de    markers   de       wilcox 2026-11-19 09:…    134 <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shennong.results de    markers   de       wilcox 2026-11-19 17:…    134 <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
 <p>Each cluster is compared with the remaining cells. Keep the full
 result for reproducibility, and filter only the table used for
 reporting:</p>
@@ -264,6 +264,14 @@ invent sample IDs by splitting cells.</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">study</span>, type <span class="op">=</span> <span class="st">"de"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/sn_get_de_result.html">sn_get_de_result</a></span><span class="op">(</span><span class="va">study</span>, <span class="st">"T_cell_treated_vs_control"</span>, p_adjusted_cutoff <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The full count layer is validated in bounded sparse blocks. Within
+each stratum, the selected cells contribute their complete gene profiles
+to aggregation, normalization, and model fitting. Set
+<code>features</code> to define a planned test panel. Raw effects and P
+values share the full-assay fitting background, while the backend
+adjusts for multiple tests across the requested panel within that
+comparison. The all-gene by sample-profile pseudobulk matrix must fit in
+memory. BPCells reads the single-cell input in blocks.</p>
 <p>The recipe uses DESeq2 through the pseudobulk path. Inspect retained
 samples and the design, especially after subsetting rare cell types. For
 a paired or covariate-adjusted design, see <a href="bulk-transcriptomics.html">bulk transcriptomics</a> and explicitly

@@ -349,15 +349,12 @@ analysis in place.</p>
 <span><span class="co">#&gt; $package_versions$Shennong</span></span>
 <span><span class="co">#&gt; [1] "0.3.0.9000"</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $package_versions$R</span></span>
-<span><span class="co">#&gt; [1] "4.6.2"</span></span>
 <span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $timestamp</span></span>
+<span><span class="co">#&gt; [1] "2026-11-19 17:58:03 UTC"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $random_seed</span></span>
 <span><span class="co">#&gt; [1] NA</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $timestamp</span></span>
-<span><span class="co">#&gt; [1] "2026-11-19 09:42:44 UTC"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $result_id</span></span>
 <span><span class="co">#&gt; [1] "qc_copy"</span></span>
@@ -434,19 +431,54 @@ digests before promoting output bytes.</p>
 <span><span class="va">handoff</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/result_bundle.html">sn_export_result_bundle</a></span><span class="op">(</span><span class="va">bundle</span>, <span class="va">bundle_path</span><span class="op">)</span></span>
 <span><span class="va">handoff</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"size_bytes"</span>, <span class="st">"digest"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt; $size_bytes</span></span>
-<span><span class="co">#&gt; [1] 2799</span></span>
+<span><span class="co">#&gt; [1] 2850</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $digest</span></span>
 <span><span class="co">#&gt; $digest$algorithm</span></span>
 <span><span class="co">#&gt; [1] "sha256"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $digest$value</span></span>
-<span><span class="co">#&gt; [1] "4bfa13ef408404a973724d32dfa205a578300fbdcf934fbfd519a557d7084d94"</span></span>
+<span><span class="co">#&gt; [1] "ebae83fd3f2e914275a4a3ae9348f5b55504c2f813b8e75ffc0bdec2e89f7932"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">bundle_path</span><span class="op">)</span></span></code></pre></div>
 <p>Replace the placeholder revision and digest with the exact values
 supplied by the data owner. Artifact paths, when present, must be
 bundle-relative. The export return value includes the JSON file’s
 SHA-256 digest for the next trusted boundary to verify.</p>
+<p>Matrix and array values retain their existing JSON paths. The
+exported <code>serialization</code> section uses
+<code>shennong.dev/r-array-metadata/v1</code> to retain dimensions, axis
+labels, axis names, and storage types, including empty and singleton
+dimensions. Its <code>path</code> is an R indexing path: strings select
+named list entries or data-frame columns, and integers select unnamed
+entries using one-based indexing. It is not a JSON Pointer; data frames
+are serialized by row after these source paths are recorded. Consumers
+must retain this section alongside the values. Native R bundles remain
+the input to validation/export; a JSON-decoded list is not a replacement
+for the native result object. Data-frame columns must have non-empty,
+unique names so column selectors remain unambiguous. Ordinary lists may
+mix named and unnamed entries when their resulting JSON field keys are
+unique.</p>
+<p>For example, a consumer can recover a PCA matrix and its sample
+identities:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"gene"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"sample"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">bulk_qc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_assess_bulk_qc.html">sn_assess_bulk_qc</a></span><span class="op">(</span><span class="va">counts</span>, top_variable <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="va">path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".json"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/result_bundle.html">sn_export_result_bundle</a></span><span class="op">(</span><span class="fu"><a href="../reference/result_bundle.html">sn_build_result_bundle</a></span><span class="op">(</span><span class="va">bulk_qc</span><span class="op">)</span>, <span class="va">path</span><span class="op">)</span></span>
+<span><span class="va">json</span> <span class="op">&lt;-</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/jsonlite/man/read_json.html" class="external-link">read_json</a></span><span class="op">(</span><span class="va">path</span>, simplifyVector <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">axes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Filter</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="va">path</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"result"</span>, <span class="st">"embeddings"</span>, <span class="st">"pca"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="va">json</span><span class="op">$</span><span class="va">serialization</span><span class="op">$</span><span class="va">arrays</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">json</span><span class="op">$</span><span class="va">result</span><span class="op">$</span><span class="va">embeddings</span><span class="op">$</span><span class="va">pca</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="va">axes</span><span class="op">$</span><span class="va">dim</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>  byrow <span class="op">=</span> <span class="cn">TRUE</span>, dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">axes</span><span class="op">$</span><span class="va">dimnames</span>, <span class="va">unlist</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dimnames.html" class="external-link">dimnames</a></span><span class="op">(</span><span class="va">pca</span><span class="op">)</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">axes</span><span class="op">$</span><span class="va">axis_names</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="va">pca</span>, <span class="va">bulk_qc</span><span class="op">$</span><span class="va">embeddings</span><span class="op">$</span><span class="va">pca</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span></code></pre></div>
+<p>The installed contract is
+<code>contracts/r-array-metadata-v1.schema.json</code>. Missing or NULL
+validation/provenance records and ambiguous JSON field keys are rejected
+before export. Convert list arrays to lists of atomic arrays first;
+silently dropping nested array identities is not supported.</p>
 </div>
 <div class="section level2">
 <h2 id="audit-and-upgrade-existing-objects">Audit and upgrade existing objects<a class="anchor" aria-label="anchor" href="#audit-and-upgrade-existing-objects"></a>
@@ -465,7 +497,7 @@ older schema are upgraded only when their identity and primary table can
 be reconstructed unambiguously. Malformed payloads and unknown future
 schema versions are reported for manual review rather than guessed into
 the current contract.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">audit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_audit_results.html">sn_audit_results</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span>
 <span><span class="va">audit</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"type"</span>, <span class="st">"result_id"</span>, <span class="st">"contract_scope"</span>, <span class="st">"status"</span>, <span class="st">"schema_version"</span>,</span>
@@ -491,6 +523,11 @@ the current contract.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 8 more variables: status &lt;chr&gt;, unified &lt;lgl&gt;, valid &lt;lgl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   repairable &lt;lgl&gt;, primary_rows &lt;int&gt;, errors &lt;chr&gt;, upgrade_errors &lt;chr&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   warnings &lt;chr&gt;</span></span></span></code></pre></div>
+<p>Upgrading a legacy result keeps its recorded generation date and
+package version. Missing historical package versions remain absent, and
+a missing creation date is recorded as <code>"unknown"</code>. Explicit
+schema upgrades record the migration version and time separately in
+<code>provenance$migration</code>.</p>
 <p>Analytical results and legacy runtime/cache artifacts have different
 deletion APIs. <code><a href="../reference/sn_delete_result.html">sn_delete_result()</a></code> removes one exact
 <code>(type, result_id)</code> entry from the canonical store. A
@@ -498,7 +535,7 @@ registered artifact may still live in a historical top-level
 <code>object@misc</code> collection whose name alone does not prove
 ownership, so <code><a href="../reference/sn_delete_artifact.html">sn_delete_artifact()</a></code> always requires explicit
 confirmation—even when an <code>artifact_id</code> is supplied:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_list_results.html">sn_list_results</a></span><span class="op">(</span><span class="va">object</span>, include_artifacts <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_delete_artifact.html">sn_delete_artifact</a></span><span class="op">(</span></span>
@@ -537,10 +574,10 @@ regression covariate. Other eligible patches include SeuratObject merge
 and layer joining, scran, decontX, scDblFinder, Coralysis, UCell, LISI
 and Rogue. <code><a href="../reference/sn_check_acceleration.html">sn_check_acceleration()</a></code> reports the companion
 registry, including any patches activated directly in the session.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_check_acceleration.html">sn_check_acceleration</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; named character(0)</span></span></code></pre></div>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Temporarily enable the single-covariate regression patch.</span></span>
 <span><span class="va">scaled</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_with_acceleration.html">sn_with_acceleration</a></span><span class="op">(</span></span>
 <span>  <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">ScaleData</a></span><span class="op">(</span><span class="va">object</span>, vars.to.regress <span class="op">=</span> <span class="st">"nCount_RNA"</span><span class="op">)</span>,</span>
@@ -562,7 +599,7 @@ own thread setting.</p>
 </h2>
 <p>Install the packaged Shennong Agent Skills and register the bundled
 stdio MCP server with an MCP-capable client:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_install_codex_skill.html">sn_install_codex_skill</a></span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="st">"~/.agents/skills"</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"package_skills"</span></span>

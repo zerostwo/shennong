@@ -100,7 +100,7 @@ which is licensed under the Artistic License 2.0.</p>
 <span></span>
 <span><span class="fu">.import.rio_h5</span><span class="op">(</span><span class="va">file</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">.import.rio_qs2</span><span class="op">(</span><span class="va">file</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu">.import.rio_qs2</span><span class="op">(</span><span class="va">file</span>, <span class="va">...</span>, bpcells_paths <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">.import.rio_gmt</span><span class="op">(</span><span class="va">file</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -136,6 +136,12 @@ importing a data frame.</p></dd>
 
 <dt id="arg-file">file<a class="anchor" aria-label="anchor" href="#arg-file"></a></dt>
 <dd><p>Input path used by the exported <code>rio</code> adapter methods.</p></dd>
+
+
+<dt id="arg-bpcells-paths">bpcells_paths<a class="anchor" aria-label="anchor" href="#arg-bpcells-paths"></a></dt>
+<dd><p>For QS2, optionally supply a named character vector mapping
+a stored absolute BPCells path to its verified replacement directory.
+Pass this option through <code>...</code> in <code>sn_read()</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

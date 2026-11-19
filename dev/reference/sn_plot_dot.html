@@ -133,12 +133,10 @@ the canonical Shennong result registry under <code>result_id</code>.</p></dd>
 <code>features = "top_markers"</code>.</p></dd>
 
 
-<dt id="arg-col-min">col_min<a class="anchor" aria-label="anchor" href="#arg-col-min"></a></dt>
-<dd><p>The minimum value for the color scale. Defaults to -2.5.</p></dd>
-
-
-<dt id="arg-col-max">col_max<a class="anchor" aria-label="anchor" href="#arg-col-max"></a></dt>
-<dd><p>The maximum value for the color scale. Defaults to 2.5.</p></dd>
+<dt id="arg-col-min-col-max">col_min, col_max<a class="anchor" aria-label="anchor" href="#arg-col-min-col-max"></a></dt>
+<dd><p>Color limits for scaled expression, defaulting to
+-2.5 and 2.5. For unscaled expression, omitted limits use the observed
+range; explicit limits clamp colors without removing valid values.</p></dd>
 
 
 <dt id="arg-dot-min">dot_min<a class="anchor" aria-label="anchor" href="#arg-dot-min"></a></dt>
@@ -166,7 +164,9 @@ the canonical Shennong result registry under <code>result_id</code>.</p></dd>
 
 
 <dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
-<dd><p>Whether to scale the dot size or not. Defaults to TRUE.</p></dd>
+<dd><p>Whether to scale average expression per feature. Defaults to
+TRUE. FALSE displays log1p mean expression; without splitting, the colorbar
+is labeled Average expression.</p></dd>
 
 
 <dt id="arg-scale-by">scale_by<a class="anchor" aria-label="anchor" href="#arg-scale-by"></a></dt>
@@ -182,14 +182,16 @@ the canonical Shennong result registry under <code>result_id</code>.</p></dd>
 
 
 <dt id="arg-palette">palette<a class="anchor" aria-label="anchor" href="#arg-palette"></a></dt>
-<dd><p>The palette used for the continuous color scale.</p></dd>
+<dd><p>Continuous expression palette, or condition colors when
+<code>split_by</code> is supplied. Named condition colors must cover all plotted splits.</p></dd>
 
 
 <dt id="arg-direction">direction<a class="anchor" aria-label="anchor" href="#arg-direction"></a></dt>
 <dd><p>Direction for the continuous palette. Use <code>1</code> for the
 default order and <code>-1</code> to reverse it. Defaults to <code>-1</code> for
 <code>sn_plot_dot()</code> so higher expression is mapped to warmer colors when
-using palettes such as <code>"RdBu"</code>.</p></dd>
+using palettes such as <code>"RdBu"</code>. Also orders unnamed split colors;
+explicitly named split colors retain their name-to-color mapping.</p></dd>
 
 
 <dt id="arg-zscore-legend-labels">zscore_legend_labels<a class="anchor" aria-label="anchor" href="#arg-zscore-legend-labels"></a></dt>

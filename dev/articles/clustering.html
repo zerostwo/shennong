@@ -172,7 +172,10 @@ algorithm when that explicit backend is absent. The top-level
 <code>seed</code> is the workflow seed: it takes precedence over nested
 integration and clustering seeds, is recorded in provenance, and runs
 under a scoped RNG context so the caller’s random state is restored
-afterward.</p>
+afterward. Zero is a valid seed and is passed unchanged to scVI, scANVI,
+totalVI, scPoli, and BBKNN; it does not select the default seed of 717.
+Reproducibility still requires matching inputs, backend versions,
+execution settings, and hardware.</p>
 <p>Variable-feature and PCA diagnostics are produced from the same real
 RNA matrix used for clustering.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -318,6 +321,8 @@ feature prior.</p>
 <div class="section level2">
 <h2 id="cite-seq-rna-and-protein-workflows">CITE-seq RNA and protein workflows<a class="anchor" aria-label="anchor" href="#cite-seq-rna-and-protein-workflows"></a>
 </h2>
+<p>Updates to the selected ADT layer invalidate cached CLR, protein PCA
+and their downstream neighbors.</p>
 <p>For CITE-seq objects with paired RNA and ADT assays, set
 <code>modality = "cite_seq"</code>. The default
 <code>multimodal_method = "wnn"</code> runs the standard RNA PCA path,
@@ -545,14 +550,17 @@ reduction, graph names, cluster column, UMAP, and optional t-SNE so
 downstream integration metrics can iterate over one returned object.</p>
 <p>When <code>checkpoint_dir</code> is supplied, every completed grid
 entry is saved through a <code>.partial</code> file followed by an
-atomic rename. A repeated call with the same selected-layer content
-digest, cell/feature identity, relevant metadata, Shennong, Seurat and
-SeuratObject versions, grid, and analysis arguments resumes
+atomic rename. Shennong streams the complete input object to a temporary
+uncompressed file for its checksum and also hashes the selected
+expression layer in blocks. The checkpoint restores the complete object,
+so changes to another assay, cell metadata, active identities or stored
+results invalidate it. A repeated call with matching inputs, Shennong,
+Seurat and SeuratObject versions, grid and analysis arguments resumes
 automatically (<code>resume = TRUE</code>) and skips completed entries.
-Only the latest complete checkpoint is retained; interrupted
-<code>.partial</code> files are ignored. Set
-<code>checkpoint_compress = TRUE</code> when disk space matters more
-than checkpoint write speed.</p>
+Shennong keeps the latest complete checkpoint for each signature and
+ignores interrupted <code>.partial</code> files. Set
+<code>checkpoint_compress = TRUE</code> to reduce the saved checkpoints’
+size.</p>
 <p>The <code>performance</code> table contains wall-clock seconds, peak
 R heap memory, and integration-specific values. On Linux, pixi/Python
 backends also capture the maximum backend process-tree RSS with GNU

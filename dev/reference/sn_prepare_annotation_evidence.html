@@ -92,11 +92,15 @@
 <dd><p>Optional stored marker-result name in
 the canonical Shennong result registry. When omitted, Shennong prefers
 <code>"default"</code>, then a single available result, and otherwise the most
-recent marker result.</p></dd>
+recent marker result. Annotation evidence requires the marker run's stored
+cell membership fingerprint. Use <code><a href="sn_get_de_result.html">sn_get_de_result()</a></code> to retrieve historical
+marker tables and <code><a href="sn_find_de.html">sn_find_de()</a></code> to recompute markers for annotation.</p></dd>
 
 
 <dt id="arg-cluster-by">cluster_by<a class="anchor" aria-label="anchor" href="#arg-cluster-by"></a></dt>
-<dd><p>Metadata column containing cluster labels.</p></dd>
+<dd><p>Metadata column containing the marker result's original
+cell-to-group assignments. Defaults to the marker result's named grouping
+column, or <code>"seurat_clusters"</code> for active-identity marker analyses.</p></dd>
 
 
 <dt id="arg-n-markers">n_markers<a class="anchor" aria-label="anchor" href="#arg-n-markers"></a></dt>

@@ -149,6 +149,13 @@ result, and cluster column were used.</p>
 <div class="section level2">
 <h2 id="prepare-evidence-before-building-prompts">Prepare evidence before building prompts<a class="anchor" aria-label="anchor" href="#prepare-evidence-before-building-prompts"></a>
 </h2>
+<p>Marker evidence defaults to the metadata grouping recorded by marker
+DE. Marker DE stores a fingerprint of the cell-to-group assignments. A
+second column can supply the same assignments. If the membership has
+changed or a historical marker result lacks the fingerprint, run
+<code><a href="../reference/sn_find_de.html">sn_find_de()</a></code> with a new result ID before preparing
+annotation evidence. The original marker table remains available through
+<code><a href="../reference/sn_get_de_result.html">sn_get_de_result()</a></code>.</p>
 <p>Evidence helpers return ordinary R lists and tables. Inspect them
 before using an LLM; this is the step that keeps interpretation
 transparent.</p>

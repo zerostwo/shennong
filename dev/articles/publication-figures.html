@@ -153,11 +153,13 @@ visual review is still required.</p>
 <h2 id="deterministic-export">Deterministic export<a class="anchor" aria-label="anchor" href="#deterministic-export"></a>
 </h2>
 <p><code><a href="../reference/sn_save_figure.html">sn_save_figure()</a></code> supports PDF, SVG, TIFF, and PNG
-without depending on the current RStudio graphics device. PDF uses base
-R’s portable device. SVG uses the optional <code>svglite</code> package
-rather than a platform-specific X11/Cairo device; when it is
-unavailable, Shennong stops before drawing with an actionable dependency
-message. Explicit dimensions override automatic values.</p>
+without depending on the current RStudio graphics device. PDF embeds
+fonts using Cairo by default. On systems without Cairo, the exporter
+warns, uses the portable PDF device, and returns <code>FALSE</code> in
+the path’s <code>embed_fonts</code> attribute. You can also select this
+device with <code>embed_fonts = FALSE</code>. SVG uses the optional
+<code>svglite</code> package. Explicit dimensions override automatic
+values.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">figure_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"shennong-real-figures"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">figure_dir</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, showWarnings <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -192,7 +194,13 @@ result together.</p>
 <span><span class="va">manifest</span><span class="op">$</span><span class="va">validation</span><span class="op">$</span><span class="va">status</span></span></code></pre></div>
 <p>Result-aware <code><a href="../reference/sn_plot_de.html">sn_plot_de()</a></code>,
 <code><a href="../reference/sn_plot_enrichment.html">sn_plot_enrichment()</a></code>, and <code><a href="../reference/sn_plot_gsea.html">sn_plot_gsea()</a></code>
-attach their standardized plotting tables as bundle source data. The QC,
+attach their standardized plotting tables as bundle source data. Volcano
+plots use adjusted probabilities for significance calls. If the input
+contains raw p-values only, the volcano shows them on a labeled raw
+scale with neutral points. Enrichment probability legends identify the
+supplied statistic. MA plots require a supplied mean-expression
+measurement such as <code>baseMean</code>, <code>AveExpr</code> or
+<code>logCPM</code> and label the x-axis with its source. The QC,
 clustering, integration, annotation projection, bulk, dimensional,
 feature, dot, heatmap, violin, box, bar, composition, and Milo helpers
 also expose figure metadata for automatic sizing and QA.</p>

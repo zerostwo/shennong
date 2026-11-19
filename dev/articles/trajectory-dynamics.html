@@ -94,6 +94,21 @@
 backend and tradeSeq for negative-binomial smooth models. The workflow
 stores a versioned result instead of only adding a single pseudotime
 vector to cell metadata.</p>
+<p>Set <code>seed</code> to a non-negative integer, including
+<code>0</code>, to reproduce trajectory inference and tradeSeq fitting
+with the same input, package versions, and backend settings. The
+effective seed is chosen in this order: top-level <code>seed</code>,
+<code>backend_control$seed</code>, then <code>717L</code>. It also
+controls Monocle 3’s clustering seed. Shennong restores the caller’s
+random state on success or failure and records the effective seed in
+<code>result$provenance$random_seed</code>. For direct Monocle 3,
+<code>backend_control = list(monocle3 = list(use_partition = FALSE))</code>
+learns one graph across all analyzed cells while retaining the original
+cluster partition labels in <code>tables$backend_cells</code>. The
+effective setting is reported in
+<code>diagnostics$backend$use_partition</code>. With partitioned graph
+learning enabled, multiple disconnected partitions remain
+unsupported.</p>
 <p>This article reads the locally materialized Hermann mouse
 spermatogenesis fixture from <code>SHENNONG_REAL_DATA_DIR</code>. The
 analysis runs only when that file is present and
@@ -322,8 +337,10 @@ dependency is already installed. The article does not install packages
 while knitting. The direct Monocle 3 path uses a real <code>umap</code>
 reduction by default and will not relabel PCA coordinates as UMAP. It
 also fails on an <code>end</code> constraint or multiple disconnected
-partitions that cannot be represented faithfully by this adapter; use an
-explicit external result/runner when those semantics are required.</p>
+partitions when partitioned graph learning is enabled. Set
+<code>backend_control$monocle3$use_partition = FALSE</code> to learn one
+graph across the analyzed cells, or use an explicit external
+result/runner when separate partition semantics are required.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  backend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"monocle3"</span>, <span class="st">"palantir"</span><span class="op">)</span>,</span>

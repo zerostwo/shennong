@@ -72,13 +72,11 @@ sn_plot_dot(
   Optional subset of DE result groups to include when
   `features = "top_markers"`.
 
-- col_min:
+- col_min, col_max:
 
-  The minimum value for the color scale. Defaults to -2.5.
-
-- col_max:
-
-  The maximum value for the color scale. Defaults to 2.5.
+  Color limits for scaled expression, defaulting to -2.5 and 2.5. For
+  unscaled expression, omitted limits use the observed range; explicit
+  limits clamp colors without removing valid values.
 
 - dot_min:
 
@@ -107,7 +105,9 @@ sn_plot_dot(
 
 - scale:
 
-  Whether to scale the dot size or not. Defaults to TRUE.
+  Whether to scale average expression per feature. Defaults to TRUE.
+  FALSE displays log1p mean expression; without splitting, the colorbar
+  is labeled Average expression.
 
 - scale_by:
 
@@ -123,14 +123,16 @@ sn_plot_dot(
 
 - palette:
 
-  The palette used for the continuous color scale.
+  Continuous expression palette, or condition colors when `split_by` is
+  supplied. Named condition colors must cover all plotted splits.
 
 - direction:
 
   Direction for the continuous palette. Use `1` for the default order
   and `-1` to reverse it. Defaults to `-1` for `sn_plot_dot()` so higher
   expression is mapped to warmer colors when using palettes such as
-  `"RdBu"`.
+  `"RdBu"`. Also orders unnamed split colors; explicitly named split
+  colors retain their name-to-color mapping.
 
 - zscore_legend_labels:
 

@@ -30,7 +30,10 @@ sn_plot_de(
 
 - adjusted_p_value, log2_fold_change:
 
-  Significance thresholds.
+  Thresholds for highlighting genes with adjusted p-values. Raw-only
+  input is plotted on its own probability scale without significance
+  calls. Explicitly supplying `adjusted_p_value` requires adjusted
+  probabilities.
 
 - n:
 

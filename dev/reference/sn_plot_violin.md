@@ -77,9 +77,14 @@ sn_plot_violin(
   [`catplot::theme_cat()`](https://rdrr.io/pkg/catplot/man/theme_cat.html)
   when available.
 
-- x_label, y_label, title:
+- x_label, y_label:
 
-  Optional plot labels.
+  Optional axis labels.
+
+- title:
+
+  Optional plot title. Multi-feature violin plots keep each feature name
+  as its panel title and use this as an overall title.
 
 - style:
 

@@ -84,6 +84,23 @@ and `warnings`. `sn_export_result_bundle()` invisibly returns the
 normalized file path, byte size, and SHA-256 digest of the exported
 JSON.
 
+## Details
+
+Exported JSON retains numeric array values at their existing paths and
+adds `serialization` with schema `shennong.dev/r-array-metadata/v1`. Its
+`arrays` records preserve each R array's `path`, `storage_type`, `dim`,
+`dimnames`, and `axis_names`, including singleton and empty dimensions.
+Paths are lists of R indexing selectors: names for named entries and
+one-based indices for unnamed entries; data frames are traversed by
+column before row serialization. Data-frame columns must have non-empty,
+unique names. Ordinary lists may mix named and unnamed entries when
+their resulting JSON field keys are unique. Consumers restoring array
+identities must use these records. Only atomic arrays are supported;
+convert list arrays to lists of atomic arrays first. Duplicate JSON
+field keys are rejected rather than renamed. Metadata is generated on
+export; validation/export accept native R bundles, not a JSON-decoded
+object. The outer Result Bundle v1 and value paths are unchanged.
+
 ## Examples
 
 ``` r

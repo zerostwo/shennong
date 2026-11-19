@@ -69,9 +69,14 @@ storage backend.
 ## Details
 
 BPCells matrix directories remain external to a serialized Seurat
-object. Keep them alongside the object when moving an analysis.
-Materializing a layer with `backend = "memory"` does not delete its
-BPCells directory.
+object. With
+[`sn_write()`](https://zerostwo.github.io/shennong/dev/reference/sn_write.md)
+and
+[`sn_read()`](https://zerostwo.github.io/shennong/dev/reference/sn_read.md),
+QS2 snapshots use relative directory paths and verify their content
+fingerprints. Move the matrix directories and snapshot together,
+preserving their relative paths. Materializing a layer with
+`backend = "memory"` does not delete its BPCells directory.
 
 ## Examples
 

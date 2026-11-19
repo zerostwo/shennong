@@ -248,6 +248,9 @@ later. With <code>method = "scdesign3"</code>, it converts the selected
 Seurat layer to a SingleCellExperiment, calls scDesign3, and returns a
 simulated Seurat object by default. It does not merge original and
 simulated cells unless <code>combine_original = TRUE</code>.</p>
+<p>Set <code>n_workers</code> to choose the number of cores passed to
+scDesign3. Use <code>return = "counts"</code> to retrieve the simulated
+feature-by-cell matrix directly.</p>
 <p>This optional simulation backend runs only in the <code>all</code>
 profile when <code>scDesign3</code> is installed.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">

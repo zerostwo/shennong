@@ -37,6 +37,12 @@ knitr::kable(data.frame(
 
 ## Construct biological-sample pseudobulk counts
 
+Use explicit metadata row names or a unique `sample`, `sample_id`,
+`Sample`, or `SampleID` column that matches the expression matrix column
+names. Shennong uses the explicit keys when a data frame has automatic
+row numbers. Two matching keys that imply different row orders raise an
+error.
+
 ``` r
 
 library(Shennong)

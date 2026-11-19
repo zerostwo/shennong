@@ -167,6 +167,14 @@ table.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">roe_matrix</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">roe_matrix</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span></code></pre></div>
+<p>For several <code>group_by</code> columns, matrix rows retain each
+distinct combination. The display label joins components with
+<code>|</code>; literal pipes and backslashes in the components are
+escaped with a backslash. For example, <code>("x|y", "z")</code> and
+<code>("x", "y|z")</code> remain separate rows labeled
+<code>x\|y|z</code> and <code>x|y\|z</code>. Use the default long-table
+return when the original grouping columns are needed directly.
+Punctuation in labels also remains distinct during counting.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_plot_composition.html">sn_plot_composition</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>

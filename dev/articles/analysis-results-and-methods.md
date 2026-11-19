@@ -236,15 +236,12 @@ qc_copy$provenance
 #> $package_versions$Shennong
 #> [1] "0.3.0.9000"
 #> 
-#> $package_versions$R
-#> [1] "4.6.2"
 #> 
+#> $timestamp
+#> [1] "2026-11-19 17:58:03 UTC"
 #> 
 #> $random_seed
 #> [1] NA
-#> 
-#> $timestamp
-#> [1] "2026-11-19 09:42:44 UTC"
 #> 
 #> $result_id
 #> [1] "qc_copy"
@@ -324,14 +321,14 @@ bundle_path <- tempfile(fileext = ".json")
 handoff <- sn_export_result_bundle(bundle, bundle_path)
 handoff[c("size_bytes", "digest")]
 #> $size_bytes
-#> [1] 2799
+#> [1] 2850
 #> 
 #> $digest
 #> $digest$algorithm
 #> [1] "sha256"
 #> 
 #> $digest$value
-#> [1] "4bfa13ef408404a973724d32dfa205a578300fbdcf934fbfd519a557d7084d94"
+#> [1] "ebae83fd3f2e914275a4a3ae9348f5b55504c2f813b8e75ffc0bdec2e89f7932"
 unlink(bundle_path)
 ```
 
@@ -339,6 +336,46 @@ Replace the placeholder revision and digest with the exact values
 supplied by the data owner. Artifact paths, when present, must be
 bundle-relative. The export return value includes the JSON file’s
 SHA-256 digest for the next trusted boundary to verify.
+
+Matrix and array values retain their existing JSON paths. The exported
+`serialization` section uses `shennong.dev/r-array-metadata/v1` to
+retain dimensions, axis labels, axis names, and storage types, including
+empty and singleton dimensions. Its `path` is an R indexing path:
+strings select named list entries or data-frame columns, and integers
+select unnamed entries using one-based indexing. It is not a JSON
+Pointer; data frames are serialized by row after these source paths are
+recorded. Consumers must retain this section alongside the values.
+Native R bundles remain the input to validation/export; a JSON-decoded
+list is not a replacement for the native result object. Data-frame
+columns must have non-empty, unique names so column selectors remain
+unambiguous. Ordinary lists may mix named and unnamed entries when their
+resulting JSON field keys are unique.
+
+For example, a consumer can recover a PCA matrix and its sample
+identities:
+
+``` r
+
+counts <- matrix(seq_len(20), nrow = 5,
+  dimnames = list(paste0("gene", 1:5), paste0("sample", 1:4)))
+bulk_qc <- sn_assess_bulk_qc(counts, top_variable = 4)
+path <- tempfile(fileext = ".json")
+sn_export_result_bundle(sn_build_result_bundle(bulk_qc), path)
+json <- jsonlite::read_json(path, simplifyVector = FALSE)
+axes <- Filter(function(x) identical(x$path, list("result", "embeddings", "pca")),
+  json$serialization$arrays)[[1]]
+pca <- matrix(unlist(json$result$embeddings$pca), nrow = axes$dim[[1]],
+  byrow = TRUE, dimnames = lapply(axes$dimnames, unlist))
+names(dimnames(pca)) <- unlist(axes$axis_names)
+stopifnot(isTRUE(all.equal(pca, bulk_qc$embeddings$pca)))
+unlink(path)
+```
+
+The installed contract is `contracts/r-array-metadata-v1.schema.json`.
+Missing or NULL validation/provenance records and ambiguous JSON field
+keys are rejected before export. Convert list arrays to lists of atomic
+arrays first; silently dropping nested array identities is not
+supported.
 
 ## Audit and upgrade existing objects
 
@@ -384,6 +421,12 @@ sn_audit_results(object, include_artifacts = FALSE)
 #> #   repairable <lgl>, primary_rows <int>, errors <chr>, upgrade_errors <chr>,
 #> #   warnings <chr>
 ```
+
+Upgrading a legacy result keeps its recorded generation date and package
+version. Missing historical package versions remain absent, and a
+missing creation date is recorded as `"unknown"`. Explicit schema
+upgrades record the migration version and time separately in
+`provenance$migration`.
 
 Analytical results and legacy runtime/cache artifacts have different
 deletion APIs.

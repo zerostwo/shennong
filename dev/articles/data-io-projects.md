@@ -6,6 +6,16 @@ without changing APIs for every file type. Dataset discovery, download,
 caching, and publication are handled by the separate `ShennongData`
 package.
 
+For 10x H5 files,
+[`sn_read()`](https://zerostwo.github.io/shennong/dev/reference/sn_read.md)
+forwards reader parameters to
+[`Seurat::Read10X_h5()`](https://satijalab.org/seurat/reference/Read10X_h5.html).
+Use `sn_read("filtered_feature_bc_matrix.h5", use.names = FALSE)` to
+retain feature IDs instead of gene symbols; use
+`unique.features = FALSE` only when the next step can handle duplicate
+feature names. Keep the identifier namespace explicit before joining
+annotation tables.
+
 This article uses a small, provenance-tracked public PBMC subset
 materialized under `SHENNONG_REAL_DATA_DIR`. The data are used locally
 for validation and pkgdown output but are intentionally not stored in
@@ -173,6 +183,31 @@ pbmc <- sn_set_layer_backend(
 )
 
 sn_write(pbmc, file.path(outdir, "pbmc3k_bpcells_bound.qs2"))
+```
+
+Move the QS2 file together with its BPCells directories and keep the
+same relative layout. Reopen the snapshot through
+[`sn_read()`](https://zerostwo.github.io/shennong/dev/reference/sn_read.md).
+Shennong resolves each matrix directory from the snapshot location and
+checks its SHA-256 fingerprint before returning the object. This reads
+the backing files once per unique directory. Lazy matrix operations and
+selected cells are preserved.
+
+For a legacy QS2 snapshot, verify the source directories independently
+and supply the original absolute path as the name of each replacement.
+Saving the recovered object with
+[`sn_write()`](https://zerostwo.github.io/shennong/dev/reference/sn_write.md)
+adds portable references and fingerprints.
+
+``` r
+
+pbmc <- sn_read(file.path(outdir, "pbmc3k_bpcells_bound.qs2"))
+# Example for a legacy snapshot containing one disk-backed counts layer.
+old_counts <- "/old/project/pbmc3k_bpcells/RNA/counts"
+new_counts <- file.path(outdir, "pbmc3k_bpcells", "RNA", "counts")
+recovered <- sn_read(file.path(outdir, "legacy.qs2"),
+                     bpcells_paths = stats::setNames(new_counts, old_counts))
+sn_write(recovered, file.path(outdir, "recovered.qs2"))
 ```
 
 When an operation explicitly requires an in-memory sparse matrix, switch

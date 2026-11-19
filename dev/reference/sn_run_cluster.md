@@ -318,18 +318,18 @@ sn_run_cluster(
   object, comparison manifest, performance records, and completed run
   IDs to a temporary file and atomically publishes it. Only the latest
   complete checkpoint for the call signature is retained. The signature
-  includes a blockwise digest of the selected layer plus cell/feature
-  identity and the metadata values used by batching, grouped HVGs,
-  regression, or supervised integration. `resume`: logical; when `TRUE`
-  (default), resume a matching checkpoint in `checkpoint_dir`. The same
-  content/metadata-aware signature also covers Shennong, Seurat and
-  SeuratObject versions, the grid, and analysis arguments; incomplete
-  `.partial` files are ignored. `checkpoint_compress`: logical; compress
-  RDS checkpoints. It defaults to `FALSE` for faster writes at the cost
-  of more disk space. `return_cluster`: if `TRUE`, return only the
-  cluster assignments. Multi-method calls return a data frame with one
-  cluster column per method. `verbose`: whether to print/log progress
-  messages.
+  includes a checksum of the entire serialized input object and a
+  blockwise digest of the selected layer. Edits to other assays,
+  metadata, identities or stored results invalidate the checkpoint.
+  `resume`: logical; when `TRUE` (default), resume a matching checkpoint
+  in `checkpoint_dir`. The same content/metadata-aware signature also
+  covers Shennong, Seurat and SeuratObject versions, the grid, and
+  analysis arguments; incomplete `.partial` files are ignored.
+  `checkpoint_compress`: logical; compress RDS checkpoints. It defaults
+  to `FALSE` for faster writes at the cost of more disk space.
+  `return_cluster`: if `TRUE`, return only the cluster assignments.
+  Multi-method calls return a data frame with one cluster column per
+  method. `verbose`: whether to print/log progress messages.
 
 ## Value
 

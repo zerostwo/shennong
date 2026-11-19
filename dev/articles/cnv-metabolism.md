@@ -106,6 +106,10 @@ embedding outputs to
 [`sn_run_cnv()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_cnv.md)
 for unified summaries and plots.
 
+Sample fractions use all cells in each sample as the denominator. A
+query cell omitted from the backend scores is reported as `unknown`. The
+subclone column retains named backend subclones for malignant cells.
+
 Malignancy standardization is reference-anchored: its center and spread
 are estimated from at least two finite reference-cell scores only.
 Query-cell variance is never used to rescue an unusable reference,

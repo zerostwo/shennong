@@ -511,7 +511,8 @@ unavailable.</p>
 <p>The neighborhood test uses the actual BANKSY assignments written to
 metadata. Its enrichment P values come from label permutations on the
 retained KNN graph; co-occurrence summarizes graph edges by distance
-bin.</p>
+bin. On a regular grid with a single observed edge distance, all edges
+contribute to one bin.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">spatial_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_run_spatial_neighborhood.html">sn_run_spatial_neighborhood</a></span><span class="op">(</span></span>
 <span>  <span class="va">spatial_object</span>,</span>
@@ -746,6 +747,10 @@ within numerical tolerance.</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span><span class="va">mapped_object</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">tangram</span><span class="op">$</span><span class="va">lymph_node_tangram</span></span></code></pre></div>
+<p>Supplying <code>runtime_dir</code> to a Python object adapter selects
+its Pixi runtime and the default location for retained run files. An
+explicit <code>output_dir</code> selects the run location
+independently.</p>
 <p>Squidpy and SpatialData need no additional biological reference, but
 they remain behind the same explicit already-prepared-environment gate.
 <code><a href="../reference/sn_run_scarches.html">sn_run_stlearn()</a></code> is not included: its exported

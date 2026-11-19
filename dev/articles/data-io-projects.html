@@ -99,6 +99,13 @@ adds explicit sample metadata, and writes reusable analysis artifacts
 without changing APIs for every file type. Dataset discovery, download,
 caching, and publication are handled by the separate
 <code>ShennongData</code> package.</p>
+<p>For 10x H5 files, <code><a href="../reference/sn_read.html">sn_read()</a></code> forwards reader parameters
+to <code><a href="https://satijalab.org/seurat/reference/Read10X_h5.html" class="external-link">Seurat::Read10X_h5()</a></code>. Use
+<code>sn_read("filtered_feature_bc_matrix.h5", use.names = FALSE)</code>
+to retain feature IDs instead of gene symbols; use
+<code>unique.features = FALSE</code> only when the next step can handle
+duplicate feature names. Keep the identifier namespace explicit before
+joining annotation tables.</p>
 <p>This article uses a small, provenance-tracked public PBMC subset
 materialized under <code>SHENNONG_REAL_DATA_DIR</code>. The data are
 used locally for validation and pkgdown output but are intentionally not
@@ -242,11 +249,29 @@ BPCells directories.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_write.html">sn_write</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"pbmc3k_bpcells_bound.qs2"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Move the QS2 file together with its BPCells directories and keep the
+same relative layout. Reopen the snapshot through
+<code><a href="../reference/sn_read.html">sn_read()</a></code>. Shennong resolves each matrix directory from the
+snapshot location and checks its SHA-256 fingerprint before returning
+the object. This reads the backing files once per unique directory. Lazy
+matrix operations and selected cells are preserved.</p>
+<p>For a legacy QS2 snapshot, verify the source directories
+independently and supply the original absolute path as the name of each
+replacement. Saving the recovered object with <code><a href="../reference/sn_write.html">sn_write()</a></code>
+adds portable references and fingerprints.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_read.html">sn_read</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"pbmc3k_bpcells_bound.qs2"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># Example for a legacy snapshot containing one disk-backed counts layer.</span></span>
+<span><span class="va">old_counts</span> <span class="op">&lt;-</span> <span class="st">"/old/project/pbmc3k_bpcells/RNA/counts"</span></span>
+<span><span class="va">new_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"pbmc3k_bpcells"</span>, <span class="st">"RNA"</span>, <span class="st">"counts"</span><span class="op">)</span></span>
+<span><span class="va">recovered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_read.html">sn_read</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"legacy.qs2"</span><span class="op">)</span>,</span>
+<span>                     bpcells_paths <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="va">new_counts</span>, <span class="va">old_counts</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/sn_write.html">sn_write</a></span><span class="op">(</span><span class="va">recovered</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="st">"recovered.qs2"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>When an operation explicitly requires an in-memory sparse matrix,
 switch only the required layer back. This materializes the complete
 selected layer as a <code>dgCMatrix</code>; it does not delete the
 external BPCells matrix directory.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_set_layer_backend.html">sn_set_layer_backend</a></span><span class="op">(</span></span>
 <span>  <span class="va">pbmc</span>,</span>
 <span>  backend <span class="op">=</span> <span class="st">"memory"</span>,</span>
@@ -259,7 +284,7 @@ external BPCells matrix directory.</p>
 <code>IterableMatrix</code> directly and preserves that on-disk backend
 instead of converting the complete matrix to an in-memory sparse
 matrix.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu">BPCells</span><span class="fu">::</span><span class="fu">open_matrix_dir</span><span class="op">(</span><span class="st">"data/processed/pbmc_counts.bpcells"</span><span class="op">)</span></span>
 <span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_initialize_seurat_object.html">sn_initialize_seurat_object</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">counts</span>,</span>
@@ -284,7 +309,7 @@ publication state.</p>
 <p>When a Python workflow exports AnnData metadata or embeddings, use
 <code><a href="../reference/sn_add_data_from_anndata.html">sn_add_data_from_anndata()</a></code> to merge those files back into
 the Seurat object with one explicit import step.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_add_data_from_anndata.html">sn_add_data_from_anndata</a></span><span class="op">(</span></span>
 <span>  object <span class="op">=</span> <span class="va">pbmc</span>,</span>
 <span>  metadata_path <span class="op">=</span> <span class="st">"results/scanpy/obs.csv"</span>,</span>
@@ -300,14 +325,14 @@ instead of leaving them as undocumented slot edits.</p>
 creates a lightweight project scaffold with Shennong/Codex-oriented
 governance files. Use it when the analysis itself needs to be
 reproducible, not just the R object.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_initialize_project.html">sn_initialize_project</a></span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="st">"~/projects/pbmc3k-shennong-demo"</span>,</span>
 <span>  project_name <span class="op">=</span> <span class="st">"pbmc3k-shennong-demo"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Before installing optional backends, inspect what Shennong considers
 required, recommended, or optional for your workflow.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_check_version.html">sn_check_version</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sn_install_shennong.html">sn_install_shennong</a></span><span class="op">(</span>channel <span class="op">=</span> <span class="st">"github"</span>, ref <span class="op">=</span> <span class="st">"main"</span><span class="op">)</span></span>
@@ -321,7 +346,7 @@ required, recommended, or optional for your workflow.</p>
 <span><span class="fu"><a href="../reference/sn_install_dependencies.html">sn_install_dependencies</a></span><span class="op">(</span>scope <span class="op">=</span> <span class="st">"recommended"</span><span class="op">)</span></span></code></pre></div>
 <p>Serialized project objects use <code>.qs2</code> and the
 <code>qs2</code> package:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_write.html">sn_write</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"data/processed/object.qs2"</span><span class="op">)</span></span>
 <span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_read.html">sn_read</a></span><span class="op">(</span><span class="st">"data/processed/object.qs2"</span><span class="op">)</span></span></code></pre></div>
 <p>Legacy <code>.qs</code> import/export and its automatic installer
@@ -333,7 +358,7 @@ not convert the serialization format.</p>
 <p>The package also ships Codex skill assets for Shennong-style analysis
 projects. These helpers expose their installed locations without making
 users search the package directory manually.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sn_get_codex_skill_path.html">sn_get_codex_skill_path</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_install_codex_skill.html">sn_install_codex_skill</a></span><span class="op">(</span>destination <span class="op">=</span> <span class="st">".codex/skills"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -344,7 +369,7 @@ users search the package directory manually.</p>
 RData, and QS2. CSV and other tabular formats continue to write tables.
 Dense numeric and sparse matrices can be written directly to BPCells
 directories or 10x HDF5:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu">SeuratObject</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">LayerData</a></span><span class="op">(</span><span class="va">pbmc</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/sn_write.html">sn_write</a></span><span class="op">(</span><span class="va">counts</span>, <span class="st">"counts.rds"</span>, auto_install <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"counts.rds"</span><span class="op">)</span>, <span class="va">counts</span><span class="op">)</span><span class="op">)</span></span>

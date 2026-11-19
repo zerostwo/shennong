@@ -45,7 +45,8 @@ sn_score_programs(
 
 - assay, layer:
 
-  Expression source.
+  Expression source. Scores and group summaries use cells measured in
+  this layer. Other cells receive missing score metadata.
 
 - group_by:
 

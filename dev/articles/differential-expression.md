@@ -36,7 +36,7 @@ sn_list_results(pbmc, type = "de")
 #> # A tibble: 1 × 8
 #>   collection       type  result_id analysis method created_at      n_rows source
 #>   <chr>            <chr> <chr>     <chr>    <chr>  <chr>            <int> <chr> 
-#> 1 shennong.results de    markers   de       wilcox 2026-11-19 09:…    134 NA
+#> 1 shennong.results de    markers   de       wilcox 2026-11-19 17:…    134 NA
 ```
 
 Each cluster is compared with the remaining cells. Keep the full result
@@ -164,6 +164,15 @@ study <- sn_find_de(
 sn_list_results(study, type = "de")
 head(sn_get_de_result(study, "T_cell_treated_vs_control", p_adjusted_cutoff = 0.05))
 ```
+
+The full count layer is validated in bounded sparse blocks. Within each
+stratum, the selected cells contribute their complete gene profiles to
+aggregation, normalization, and model fitting. Set `features` to define
+a planned test panel. Raw effects and P values share the full-assay
+fitting background, while the backend adjusts for multiple tests across
+the requested panel within that comparison. The all-gene by
+sample-profile pseudobulk matrix must fit in memory. BPCells reads the
+single-cell input in blocks.
 
 The recipe uses DESeq2 through the pseudobulk path. Inspect retained
 samples and the design, especially after subsetting rare cell types. For

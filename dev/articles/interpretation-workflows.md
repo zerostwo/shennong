@@ -61,6 +61,15 @@ sn_list_results(pbmc)
 
 ## Prepare evidence before building prompts
 
+Marker evidence defaults to the metadata grouping recorded by marker DE.
+Marker DE stores a fingerprint of the cell-to-group assignments. A
+second column can supply the same assignments. If the membership has
+changed or a historical marker result lacks the fingerprint, run
+[`sn_find_de()`](https://zerostwo.github.io/shennong/dev/reference/sn_find_de.md)
+with a new result ID before preparing annotation evidence. The original
+marker table remains available through
+[`sn_get_de_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_de_result.md).
+
 Evidence helpers return ordinary R lists and tables. Inspect them before
 using an LLM; this is the step that keeps interpretation transparent.
 

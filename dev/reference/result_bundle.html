@@ -151,6 +151,22 @@ validation report.</p></dd>
 <code>warnings</code>. <code>sn_export_result_bundle()</code> invisibly returns the normalized
 file path, byte size, and SHA-256 digest of the exported JSON.</p>
     </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Exported JSON retains numeric array values at their existing paths and adds
+<code>serialization</code> with schema <code>shennong.dev/r-array-metadata/v1</code>. Its <code>arrays</code>
+records preserve each R array's <code>path</code>, <code>storage_type</code>, <code>dim</code>, <code>dimnames</code>,
+and <code>axis_names</code>, including singleton and empty dimensions. Paths are lists
+of R indexing selectors: names for named entries and one-based indices for
+unnamed entries; data frames are traversed by column before row serialization.
+Data-frame columns must have non-empty, unique names. Ordinary lists may mix
+named and unnamed entries when their resulting JSON field keys are unique.
+Consumers restoring array identities must use these records. Only atomic
+arrays are supported; convert list arrays to lists of atomic arrays first.
+Duplicate JSON field keys are rejected rather than renamed. Metadata is
+generated on export; validation/export accept native R bundles, not a
+JSON-decoded object. The outer Result Bundle v1 and value paths are unchanged.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

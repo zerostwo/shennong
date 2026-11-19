@@ -94,7 +94,10 @@ sn_find_de(
   are stored separately from `input$tested_features`, the features with
   finite backend statistics before marker significance filtering.
   `input$tested_features_by_comparison` retains each comparison's
-  background for downstream ORA. COSG records scored features.
+  background for downstream ORA. Pseudobulk normalization and model
+  fitting use all genes in the selected layer. The requested panel
+  defines the testing and multiple-adjustment family. COSG records
+  scored features.
 
 - method:
 

@@ -68,11 +68,11 @@ visual review is still required.
 
 [`sn_save_figure()`](https://zerostwo.github.io/shennong/dev/reference/sn_save_figure.md)
 supports PDF, SVG, TIFF, and PNG without depending on the current
-RStudio graphics device. PDF uses base R’s portable device. SVG uses the
-optional `svglite` package rather than a platform-specific X11/Cairo
-device; when it is unavailable, Shennong stops before drawing with an
-actionable dependency message. Explicit dimensions override automatic
-values.
+RStudio graphics device. PDF embeds fonts using Cairo by default. On
+systems without Cairo, the exporter warns, uses the portable PDF device,
+and returns `FALSE` in the path’s `embed_fonts` attribute. You can also
+select this device with `embed_fonts = FALSE`. SVG uses the optional
+`svglite` package. Explicit dimensions override automatic values.
 
 ``` r
 
@@ -118,7 +118,13 @@ Result-aware
 [`sn_plot_enrichment()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_enrichment.md),
 and
 [`sn_plot_gsea()`](https://zerostwo.github.io/shennong/dev/reference/sn_plot_gsea.md)
-attach their standardized plotting tables as bundle source data. The QC,
-clustering, integration, annotation projection, bulk, dimensional,
-feature, dot, heatmap, violin, box, bar, composition, and Milo helpers
-also expose figure metadata for automatic sizing and QA.
+attach their standardized plotting tables as bundle source data. Volcano
+plots use adjusted probabilities for significance calls. If the input
+contains raw p-values only, the volcano shows them on a labeled raw
+scale with neutral points. Enrichment probability legends identify the
+supplied statistic. MA plots require a supplied mean-expression
+measurement such as `baseMean`, `AveExpr` or `logCPM` and label the
+x-axis with its source. The QC, clustering, integration, annotation
+projection, bulk, dimensional, feature, dot, heatmap, violin, box, bar,
+composition, and Milo helpers also expose figure metadata for automatic
+sizing and QA.

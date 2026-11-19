@@ -32,7 +32,7 @@ sn_read(path, format, to = NULL, which, row_names = NULL, ...)
 
 .import.rio_h5(file, ...)
 
-.import.rio_qs2(file, ...)
+.import.rio_qs2(file, ..., bpcells_paths = NULL)
 
 .import.rio_gmt(file, ...)
 ```
@@ -67,6 +67,12 @@ sn_read(path, format, to = NULL, which, row_names = NULL, ...)
 - file:
 
   Input path used by the exported `rio` adapter methods.
+
+- bpcells_paths:
+
+  For QS2, optionally supply a named character vector mapping a stored
+  absolute BPCells path to its verified replacement directory. Pass this
+  option through `...` in `sn_read()`.
 
 ## Value
 

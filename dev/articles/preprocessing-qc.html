@@ -337,7 +337,11 @@ of at most <code>max.cluster.size</code> cells (the scran default is
 3,000); both the original counts and normalized <code>data</code> layer
 remain BPCells-backed. Without supplied clusters,
 <code>scran::quickCluster()</code> still requires one full sparse
-materialization, though the normalized output remains lazy.</p>
+materialization, though the normalized output remains lazy. Chunk
+membership preserves the supplied clusters even when labels contain
+hyphens or resemble generated chunk names (for example, <code>A</code>
+and <code>A-1</code>). Renaming those labels does not change the size
+factors.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">reference</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sn_normalize_data.html">sn_normalize_data</a></span><span class="op">(</span></span>
 <span>  <span class="va">reference</span>,</span>

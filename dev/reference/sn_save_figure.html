@@ -112,7 +112,9 @@
 
 
 <dt id="arg-embed-fonts">embed_fonts<a class="anchor" aria-label="anchor" href="#arg-embed-fonts"></a></dt>
-<dd><p>Use Cairo PDF output for embedded/subsettable fonts.</p></dd>
+<dd><p>Use Cairo PDF output for embedded fonts. If Cairo is
+unavailable the portable PDF device is used with a warning. The returned
+path's <code>embed_fonts</code> attribute records the device choice.</p></dd>
 
 
 <dt id="arg-validate">validate<a class="anchor" aria-label="anchor" href="#arg-validate"></a></dt>

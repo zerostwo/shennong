@@ -111,8 +111,10 @@ sn_run_trajectory(
   argument lists for direct backends. Palantir accepts `runner` or
   `result`; the same explicit adapter boundary can override Monocle 3
   for externally managed execution. The direct Monocle 3 path rejects
-  terminal-cluster constraints and disconnected partitions that it
-  cannot faithfully encode as one lineage.
+  terminal-cluster constraints and multiple partitions when graph
+  learning uses partitions. Set `monocle3$use_partition = FALSE` to
+  learn one graph across the cells; original partition labels remain in
+  the result.
 
 - return_object:
 
@@ -120,9 +122,11 @@ sn_run_trajectory(
 
 - seed:
 
-  Top-level reproducibility seed. Precedence: `seed` \>
-  `backend_control$seed` \> task default, and the resolved value is
-  stamped into result provenance.
+  Non-negative integer reproducibility seed, including zero. Precedence:
+  `seed` \> `backend_control$seed` \> `717L`. The resolved seed scopes
+  trajectory inference and tradeSeq fitting, overrides Monocle 3's
+  clustering seed, and is recorded in provenance. The caller's random
+  state is restored, including when a backend fails.
 
 - verbose:
 

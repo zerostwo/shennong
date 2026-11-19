@@ -142,7 +142,9 @@ storage backend.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>BPCells matrix directories remain external to a serialized Seurat object.
-Keep them alongside the object when moving an analysis. Materializing a
+With <code><a href="sn_write.html">sn_write()</a></code> and <code><a href="sn_read.html">sn_read()</a></code>, QS2 snapshots use relative
+directory paths and verify their content fingerprints. Move the matrix
+directories and snapshot together, preserving their relative paths. Materializing a
 layer with <code>backend = "memory"</code> does not delete its BPCells directory.</p>
     </div>
 

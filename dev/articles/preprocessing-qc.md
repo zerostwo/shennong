@@ -275,7 +275,9 @@ chunks of at most `max.cluster.size` cells (the scran default is 3,000);
 both the original counts and normalized `data` layer remain
 BPCells-backed. Without supplied clusters, `scran::quickCluster()` still
 requires one full sparse materialization, though the normalized output
-remains lazy.
+remains lazy. Chunk membership preserves the supplied clusters even when
+labels contain hyphens or resemble generated chunk names (for example,
+`A` and `A-1`). Renaming those labels does not change the size factors.
 
 ``` r
 

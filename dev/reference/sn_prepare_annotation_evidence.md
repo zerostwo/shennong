@@ -31,10 +31,18 @@ sn_prepare_annotation_evidence(
   Optional stored marker-result name in the canonical Shennong result
   registry. When omitted, Shennong prefers `"default"`, then a single
   available result, and otherwise the most recent marker result.
+  Annotation evidence requires the marker run's stored cell membership
+  fingerprint. Use
+  [`sn_get_de_result()`](https://zerostwo.github.io/shennong/dev/reference/sn_get_de_result.md)
+  to retrieve historical marker tables and
+  [`sn_find_de()`](https://zerostwo.github.io/shennong/dev/reference/sn_find_de.md)
+  to recompute markers for annotation.
 
 - cluster_by:
 
-  Metadata column containing cluster labels.
+  Metadata column containing the marker result's original cell-to-group
+  assignments. Defaults to the marker result's named grouping column, or
+  `"seurat_clusters"` for active-identity marker analyses.
 
 - n_markers:
 

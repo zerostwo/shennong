@@ -51,7 +51,9 @@ sn_save_figure(
 
 - embed_fonts:
 
-  Use Cairo PDF output for embedded/subsettable fonts.
+  Use Cairo PDF output for embedded fonts. If Cairo is unavailable the
+  portable PDF device is used with a warning. The returned path's
+  `embed_fonts` attribute records the device choice.
 
 - validate:
 
