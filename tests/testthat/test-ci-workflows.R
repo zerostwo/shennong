@@ -11,6 +11,7 @@ test_that("routine package checks avoid duplicate full tests", {
   expect_match(text, "windows-latest, r: 'release'", fixed = TRUE)
   expect_match(text, "macos-latest, r: 'release'", fixed = TRUE)
   expect_match(text, "r-lib/actions/setup-pandoc@v2", fixed = TRUE)
+  expect_true(all(c("any::knitr", "any::rmarkdown") %in% trimws(workflow)))
   expect_lt(
     regexpr("r-lib/actions/setup-pandoc@v2", text, fixed = TRUE)[[1L]],
     regexpr("r-lib/actions/setup-r-dependencies@v2", text, fixed = TRUE)[[1L]]

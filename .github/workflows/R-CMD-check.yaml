@@ -69,6 +69,8 @@ jobs:
           dependencies: '"hard"'
           extra-packages: |
             any::rcmdcheck
+            any::knitr
+            any::rmarkdown
             any::testthat
             any::Seurat
             any::SeuratObject
