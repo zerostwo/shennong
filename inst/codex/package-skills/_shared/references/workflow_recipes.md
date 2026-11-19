@@ -50,7 +50,9 @@ canonical envelope with `sn_get_result()`.
 ## Recipe: Use ShennongOpt acceleration
 
 1. Hot paths are accelerated by the companion R package **ShennongOpt**.
-   Registered patches cover Seurat `RunPCA`/`ScaleData`, scran, decontX,
+   Seurat 5.6 and later handle variable features, PCA, neighbors and clustering
+   natively. Use `Seurat::setThreads(n)` for those kernels. Companion patches
+   cover single-covariate scaling regression, SeuratObject merge/JoinLayers, scran, decontX,
    scDblFinder, Coralysis, UCell, LISI, and Rogue. Inspect availability and
    state with `sn_check_acceleration()`; list installable patch names with
    `ShennongOpt::sn_list_accelerations(installed = TRUE)`.
@@ -59,14 +61,14 @@ canonical envelope with `sn_get_result()`.
    upstream code, so outputs remain bit-exact by construction.
 3. Set `options(shennong.acceleration = FALSE)` or
    `SHENNONG_ACCELERATION_DISABLED=true` to block automatic scopes. Neither
-   setting deactivates a manually active patch, and explicit
-   `sn_with_acceleration({...}, name = ...)` ignores them. Manage manual
+   setting deactivates a manually active patch. Scoped `sn_with_acceleration()`
+   also respects these settings. Manage manual
    activation with `sn_enable_acceleration(name)` /
    `sn_disable_acceleration(name)`.
 4. Cap accelerated parallel sections with `shennong.opt.threads` (or the
    `SHENNONG_OPT_THREADS` environment variable).
 5. Paths without a ShennongOpt counterpart (CellChat, NicheNetR, SoupX,
-   clusterProfiler caches, tradeSeq, WGCNA, Seurat merge/JoinLayers) currently
+   clusterProfiler caches, tradeSeq, WGCNA) currently
    execute plain upstream code. Provenance records requested-but-unavailable
    patches as suppressed; do not claim acceleration for those paths until a
    matching patch ships.

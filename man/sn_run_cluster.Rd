@@ -279,7 +279,8 @@ metadata values used by batching, grouped HVGs, regression, or supervised
 integration.
 \code{resume}: logical; when \code{TRUE} (default), resume a matching
 checkpoint in \code{checkpoint_dir}. The same content/metadata-aware
-signature also covers package version, grid, and analysis arguments;
+signature also covers Shennong, Seurat and SeuratObject versions, the
+grid, and analysis arguments;
 incomplete \code{.partial} files are ignored.
 \code{checkpoint_compress}: logical; compress RDS checkpoints. It defaults
 to \code{FALSE} for faster writes at the cost of more disk space.

@@ -171,17 +171,13 @@
     }
     receiver_object <- subset(object, cells = receiver_cells)
     Seurat::Idents(receiver_object) <- receiver_object[[condition_col, drop = TRUE]]
-    de <- .sn_with_default_seurat_acceleration(
-      Seurat::FindMarkers(
-        receiver_object,
-        ident.1 = condition_oi,
-        ident.2 = condition_reference,
-        assay = assay,
-        slot = layer,
-        ...
-      ),
-      object = receiver_object,
-      assay = assay
+    de <- Seurat::FindMarkers(
+      receiver_object,
+      ident.1 = condition_oi,
+      ident.2 = condition_reference,
+      assay = assay,
+      slot = layer,
+      ...
     )
     de$gene <- rownames(de)
     p_col <- intersect(c("p_val_adj", "p_val"), colnames(de))[[1]] %||% NULL

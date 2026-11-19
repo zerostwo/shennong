@@ -212,11 +212,7 @@
   assay <- assay %||% SeuratObject::DefaultAssay(object = object)
   if (identical(layer, "data") && !"data" %in% SeuratObject::Layers(object = object[[assay]])) {
     if (verbose) .sn_log_info("Normalizing query object before Coralysis reference mapping.")
-    object <- .sn_with_default_seurat_acceleration(
-      Seurat::NormalizeData(object = object, assay = assay, verbose = verbose),
-      object = object,
-      assay = assay
-    )
+    object <- Seurat::NormalizeData(object = object, assay = assay, verbose = verbose)
   }
 
   expr <- SeuratObject::LayerData(object = object, assay = assay, layer = layer)

@@ -470,6 +470,11 @@ sn_get_integration_control_template <- function(method = NULL) {
   rerun_from
 }
 
+.sn_cluster_seurat_versions <- function() {
+  c(Seurat = as.character(getNamespaceVersion("Seurat")),
+    SeuratObject = as.character(getNamespaceVersion("SeuratObject")))
+}
+
 .sn_can_reuse_cluster_stage <- function(object,
                                         stage,
                                         signature,
@@ -484,7 +489,8 @@ sn_get_integration_control_template <- function(method = NULL) {
   }
   stages <- object@misc$sn_run_cluster$stages %||% list()
   stage_info <- stages[[stage]] %||% NULL
-  if (is.null(stage_info) || !identical(stage_info$signature, signature)) {
+  if (!identical(stage_info$signature, signature) ||
+      !identical(stage_info$seurat_versions, .sn_cluster_seurat_versions())) {
     return(FALSE)
   }
   if (is.function(required)) {
@@ -500,6 +506,7 @@ sn_get_integration_control_template <- function(method = NULL) {
   object@misc$sn_run_cluster$stages[[stage]] <- c(
     list(
       signature = signature,
+      seurat_versions = .sn_cluster_seurat_versions(),
       created_at = as.character(Sys.time())
     ),
     metadata
@@ -561,8 +568,7 @@ sn_get_integration_control_template <- function(method = NULL) {
   if (is_null(split_by) || identical(split_by, "global")) {
     object <- .sn_with_default_seurat_acceleration(
       Seurat::FindVariableFeatures(object, nfeatures = nfeatures, verbose = verbose),
-      object = object,
-      assay = assay
+      patch = "seurat_findvariablefeatures"
     )
     return(list(
       object = object,
@@ -626,8 +632,7 @@ sn_get_integration_control_template <- function(method = NULL) {
         nfeatures = nfeatures,
         verbose = FALSE
       ),
-      object = current_object,
-      assay = assay
+      patch = "seurat_findvariablefeatures"
     )
     Seurat::VariableFeatures(current_object)
   })
@@ -1125,7 +1130,8 @@ sn_get_integration_control_template <- function(method = NULL) {
 #'   integration.
 #'   \code{resume}: logical; when \code{TRUE} (default), resume a matching
 #'   checkpoint in \code{checkpoint_dir}. The same content/metadata-aware
-#'   signature also covers package version, grid, and analysis arguments;
+#'   signature also covers Shennong, Seurat and SeuratObject versions, the
+#'   grid, and analysis arguments;
 #'   incomplete \code{.partial} files are ignored.
 #'   \code{checkpoint_compress}: logical; compress RDS checkpoints. It defaults
 #'   to \code{FALSE} for faster writes at the cost of more disk space.
@@ -1483,8 +1489,7 @@ sn_run_cluster <- function(object,
       object = object,
       args = cluster_args
     ),
-    object = object,
-    assay = args$assay
+    patch = "seurat_findclusters"
   )
 }
 
@@ -1533,6 +1538,7 @@ sn_run_cluster <- function(object,
     list(
       schema_version = 1L,
       package_version = as.character(utils::packageVersion("Shennong")),
+      seurat_versions = .sn_cluster_seurat_versions(),
       object = object_signature,
       arguments = signature_args,
       grid = grid[, setdiff(colnames(grid), ".backend_control"), drop = FALSE]
@@ -2276,19 +2282,15 @@ sn_run_cluster <- function(object,
       if (length(user_hvg) > 0L) {
         sct_args$return.only.var.genes <- FALSE
       }
-      object <- .sn_with_default_seurat_acceleration(
-        .sn_with_auto_future_globals(
-          .sn_call_with_symbolic_object(
-            fun_call = quote(Seurat::SCTransform),
-            object = object,
-            args = sct_args
-          ),
+      object <- .sn_with_auto_future_globals(
+        .sn_call_with_symbolic_object(
+          fun_call = quote(Seurat::SCTransform),
           object = object,
-          context = "SCTransform",
-          verbose = verbose
+          args = sct_args
         ),
         object = object,
-        assay = assay
+        context = "SCTransform",
+        verbose = verbose
       )
       object <- .sn_record_cluster_stage(object, "normalize", normalization_signature)
     }
@@ -2385,8 +2387,7 @@ sn_run_cluster <- function(object,
             verbose = verbose,
             seed.use = workflow_seed
           ),
-          object = object,
-          assay = "SCT"
+          patch = "seurat_runpca"
         )
         object <- .sn_record_cluster_stage(object, "pca", pca_signature, reduction = "pca")
       }
@@ -2408,14 +2409,10 @@ sn_run_cluster <- function(object,
       standard_counts <- identical(layer, "counts") &&
         !isTRUE(prepared$context$needs_temp_counts)
       object <- if (standard_counts) {
-        .sn_with_default_seurat_acceleration(
-          Seurat::NormalizeData(
-            object = object,
-            assay = assay,
-            verbose = verbose
-          ),
+        Seurat::NormalizeData(
           object = object,
-          assay = assay
+          assay = assay,
+          verbose = verbose
         )
       } else {
         .sn_with_acceleration_disabled(
@@ -2607,8 +2604,7 @@ sn_run_cluster <- function(object,
             features = hvg,
             verbose = verbose
           ),
-          object = object,
-          assay = assay
+          patch = if (length(vars_to_regress) == 1L) "seurat_scaledata"
         )
 
         if (verbose) .sn_log_info("[5/6] Running PCA.")
@@ -2620,8 +2616,7 @@ sn_run_cluster <- function(object,
             verbose = verbose,
             seed.use = workflow_seed
           ),
-          object = object,
-          assay = assay
+          patch = "seurat_runpca"
         )
         object <- .sn_record_cluster_stage(object, "pca", pca_signature, reduction = "pca")
       }
@@ -2696,15 +2691,11 @@ sn_run_cluster <- function(object,
         )
       )
       if (isTRUE(needs_adt_pca)) {
-        object <- .sn_with_default_seurat_acceleration(
-          Seurat::ScaleData(
-            object = object,
-            assay = adt_assay,
-            features = adt_feature_set,
-            verbose = verbose
-          ),
+        object <- Seurat::ScaleData(
           object = object,
-          assay = adt_assay
+          assay = adt_assay,
+          features = adt_feature_set,
+          verbose = verbose
         )
         object <- .sn_with_default_seurat_acceleration(
           Seurat::RunPCA(
@@ -2717,8 +2708,7 @@ sn_run_cluster <- function(object,
             verbose = verbose,
             seed.use = workflow_seed
           ),
-          object = object,
-          assay = adt_assay
+          patch = "seurat_runpca"
         )
         object <- .sn_record_cluster_stage(object, "adt", adt_signature, reduction = "apca")
       } else {
@@ -3125,8 +3115,7 @@ sn_run_cluster <- function(object,
               dims = dims,
               verbose = verbose
             ),
-            object = object,
-            assay = assay
+            patch = "seurat_findneighbors"
           )
         } else {
           object <- .sn_with_default_seurat_acceleration(
@@ -3140,8 +3129,7 @@ sn_run_cluster <- function(object,
               ),
               verbose = verbose
             ),
-            object = object,
-            assay = assay
+            patch = "seurat_findneighbors"
           )
         }
       }
@@ -3239,8 +3227,7 @@ sn_run_cluster <- function(object,
         object = object,
         args = find_clusters_args
       ),
-      object = object,
-      assay = assay
+      patch = "seurat_findclusters"
     )
     object <- .sn_record_cluster_stage(object, "clusters", cluster_signature, cluster_column = cluster_column)
   }

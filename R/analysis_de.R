@@ -199,21 +199,17 @@
     threshold <- dots$return.thresh %||% if (method == "roc") 0.7 else 0.01
     dots$return.thresh <- if (method == "roc") 0 else Inf
     find_all <- function(...) do.call(Seurat::FindAllMarkers, c(list(...), dots))
-    result <- .sn_with_default_seurat_acceleration(
-      find_all(
-        object = object,
-        assay = assay,
-        slot = target_layer,
-        features = features,
-        group.by = group_by,
-        test.use = method,
-        only.pos = only_pos,
-        min.pct = min_pct,
-        logfc.threshold = logfc_threshold,
-        verbose = verbose
-      ),
+    result <- find_all(
       object = object,
-      assay = assay
+      assay = assay,
+      slot = target_layer,
+      features = features,
+      group.by = group_by,
+      test.use = method,
+      only.pos = only_pos,
+      min.pct = min_pct,
+      logfc.threshold = logfc_threshold,
+      verbose = verbose
     )
     tested <- .sn_de_tested_table(result)
     if (nrow(result)) {
@@ -225,24 +221,20 @@
   }
 
   only_pos <- only_pos %||% FALSE
-  result <- .sn_with_default_seurat_acceleration(
-    Seurat::FindMarkers(
-      object = object,
-      ident.1 = ident_1,
-      ident.2 = ident_2,
-      group.by = group_by,
-      assay = assay,
-      slot = target_layer,
-      features = features,
-      test.use = method,
-      only.pos = only_pos,
-      min.pct = min_pct,
-      logfc.threshold = logfc_threshold,
-      verbose = verbose,
-      ...
-    ),
+  result <- Seurat::FindMarkers(
     object = object,
-    assay = assay
+    ident.1 = ident_1,
+    ident.2 = ident_2,
+    group.by = group_by,
+    assay = assay,
+    slot = target_layer,
+    features = features,
+    test.use = method,
+    only.pos = only_pos,
+    min.pct = min_pct,
+    logfc.threshold = logfc_threshold,
+    verbose = verbose,
+    ...
   )
   attr(result, "shennong_tested_features") <- .sn_de_tested_table(result)
   result

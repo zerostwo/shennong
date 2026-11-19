@@ -737,14 +737,10 @@
       )
       variable_features <- rownames(selected_expression)[feature_order]
       SeuratObject::VariableFeatures(working) <- variable_features
-      working <- .sn_with_default_seurat_acceleration(
-        Seurat::ScaleData(
-          working,
-          features = variable_features,
-          verbose = FALSE
-        ),
-        object = working,
-        assay = "RNA"
+      working <- Seurat::ScaleData(
+        working,
+        features = variable_features,
+        verbose = FALSE
       )
       npcs <- min(
         backend_control$npcs %||% 20L,
@@ -759,8 +755,7 @@
           npcs = npcs,
           verbose = FALSE
         )),
-        object = working,
-        assay = "RNA"
+        patch = "seurat_runpca"
       )
       working <- Seurat::FindNeighbors(
         working,

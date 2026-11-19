@@ -70,7 +70,6 @@
     metric = "cosine",
     seed.use = 717L,
     n.neighbors = 10L,
-    n.threads = 1L,
     verbose = FALSE
   ))
 }
@@ -90,13 +89,14 @@
 }
 
 test_that("sn_run_cluster matches the declared no-batch Seurat pipeline stage by stage", {
+  withr::local_options(list(Seurat.nthreads = 1L))
   object <- .make_conformance_cluster_object()
   before <- .conformance_fingerprint(object)
 
   upstream <- .conformance_without_acceleration(
     .run_seurat_cluster_oracle(object)
   )
-  candidate <- .conformance_without_acceleration(sn_run_cluster(
+  run_candidate <- function() sn_run_cluster(
     object = object,
     batch_by = NULL,
     normalization_method = "seurat",
@@ -115,9 +115,10 @@ test_that("sn_run_cluster matches the declared no-batch Seurat pipeline stage by
     dims = 1:8,
     reuse = FALSE,
     auto_install = FALSE,
-    umap_control = list(n.neighbors = 10L, n.threads = 1L),
+    umap_control = list(n.neighbors = 10L),
     verbose = FALSE
-  ))
+  )
+  candidate <- .conformance_without_acceleration(run_candidate())
 
   expect_equal(
     .cluster_stage_projection(candidate),
@@ -125,4 +126,22 @@ test_that("sn_run_cluster matches the declared no-batch Seurat pipeline stage by
     tolerance = 1e-12
   )
   .conformance_expect_unchanged(object, before, "clustering input")
+
+  if (utils::packageVersion("Seurat") >= "5.6.0") {
+    withr::local_options(list(shennong.acceleration = TRUE))
+    withr::local_envvar(SHENNONG_ACCELERATION_DISABLED = "")
+    activation_requests <- character()
+    local_mocked_bindings(
+      .sn_acceleration_call = function(fun, ...) {
+        if (fun == "sn_enable_acceleration") {
+          activation_requests <<- c(activation_requests, ...)
+        }
+        do.call(Shennong:::.sn_acceleration_get_export(fun), list(...))
+      },
+      .package = "Shennong"
+    )
+    expect_equal(.cluster_stage_projection(run_candidate()),
+                 .cluster_stage_projection(upstream), tolerance = 1e-12)
+    expect_length(activation_requests, 0L)
+  }
 })

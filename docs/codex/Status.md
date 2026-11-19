@@ -1,12 +1,47 @@
 # Shennong Maintainer Status
 
-Last updated: 2026-11-04
+Last updated: 2026-11-19
 
 This file describes what is true now. Git history and `docs/codex/archive/`
 hold point-in-time evidence, `Decisions.md` holds durable rationale, and
 `NEWS.md` records user-visible changes.
 
-## Package audit validation
+## Seurat 6 compatibility
+
+- The normalization and unintegrated clustering contracts target Seurat 6.0.0
+  with SeuratObject 5.4.0. All 48 qualified Seurat symbols and 22 qualified
+  SeuratObject symbols referenced by the R sources, including setters,
+  resolve in those namespaces. The default clustering workflow passes the
+  direct stage comparison with automatic companion patches enabled. The
+  strict backend suite passed 584 assertions with two Scrublet argument
+  warnings. Isolated Seurat 5.5.1 and 5.6.0 installations passed the focused
+  compatibility tests.
+- On 10x PBMC3k, 13,714 genes passed the three-cell filter in 2,700 cells.
+  With 1,000 variable genes, 20 PCs, Louvain resolution 0.4, seed 717 and
+  two Seurat threads, Shennong and direct Seurat agreed within `1e-12` on
+  counts, normalized expression, variable features, scaled values, PCA, NN,
+  SNN, clusters and UMAP for each storage backend. Both workflows found eight
+  clusters with in-memory sparse counts and seven with BPCells 0.3.1. The
+  preceding Shennong revision `4e49a88` also matched on the in-memory fixture
+  but repeatedly warned that the PCA patch target had changed.
+- The optional sparse single-covariate regression entered the companion's
+  compiled kernel and matched the native scaled matrix within `1e-12`.
+  Session-wide activation left the four superseded Seurat bindings intact.
+  The retained SeuratObject merge and JoinLayers patches reproduced the
+  native joined counts and cell metadata on a two-sample fixture.
+  A clustering object saved in 5.5.1 recomputed its stages in 6.0.0 and
+  matched a forced rerun for PCA and cluster labels. A legacy `Assay` object
+  (object version 4.0.0) also completed clustering in Seurat 6.
+- The clean source build and `R CMD check --no-manual --no-tests` passed,
+  including examples and vignette rebuilding. Eight optional Suggests were
+  unavailable for this check. The full local pkgdown build and readback of
+  the clustering and acceleration documentation passed.
+- The 69 test files passed 6,264 assertions in total, with 17 warnings and
+  zero failures or errors. The plotting file was rerun with the Kotliarov
+  fixture under `SHENNONG_REAL_DATA_DIR` to cover the single initial skip.
+  Totals count each file once.
+
+## Package audit validation (2026-11-04)
 
 - Marker DE now retains its tested background through the public Seurat API,
   including Seurat 5.6.0 fast Wilcoxon and ordinary t-test paths. Program

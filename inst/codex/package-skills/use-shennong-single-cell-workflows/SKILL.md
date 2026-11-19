@@ -62,8 +62,10 @@ assay/layer semantics, biological replicates, and stored-result provenance.
   for direct managed-Python commands (the family-specific `sn_call_*()`
   aliases are deprecated); reserve `sn_run_*()` Python wrappers for
   object-level workflows that export/import a Seurat object
-- expect only ShennongOpt patches (Seurat RunPCA/ScaleData, scran, decontX,
-  scDblFinder, Coralysis, UCell, LISI, Rogue) to activate lazily inside
+- use native Seurat threading from 5.6 onward for variable features, PCA,
+  neighbors and clustering. Eligible ShennongOpt patches (single-covariate
+  scaling regression, SeuratObject merge/JoinLayers, scran, decontX,
+  scDblFinder, Coralysis, UCell, LISI, Rogue) activate lazily inside
   compatible workflow calls with guarded upstream fallback and prior-state
   restore; paths without a patch run plain upstream code;
   never apply the Seurat fast patch

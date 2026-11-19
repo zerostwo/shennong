@@ -2,8 +2,7 @@
 
 .sn_acceleration_option_name <- "shennong.acceleration"
 
-# Legacy wrapper patch keys -> ShennongOpt patch names. Keys without a mapping
-# run upstream unaccelerated until a matching ShennongOpt patch exists.
+# Translate legacy workflow keys. Scoped calls also accept exact registry names.
 .sn_acceleration_patch_map <- c(
   "coralysis" = "coralysis",
   "decontx" = "decontx",
@@ -20,6 +19,19 @@
 
 .sn_acceleration_available <- function() {
   requireNamespace("ShennongOpt", quietly = TRUE)
+}
+
+.sn_seurat_has_native_kernels <- function() {
+  requireNamespace("Seurat", quietly = TRUE) &&
+    getNamespaceVersion("Seurat") >= numeric_version("5.6.0")
+}
+
+.sn_native_seurat_replacements <- function(patches) {
+  overlap <- intersect(patches, c(
+    "seurat_findvariablefeatures", "seurat_runpca",
+    "seurat_findneighbors", "seurat_findclusters"
+  ))
+  if (length(overlap) && .sn_seurat_has_native_kernels()) overlap else character()
 }
 
 .sn_acceleration_legacy_exports <- c(
@@ -65,10 +77,16 @@
 .sn_map_acceleration_patches <- function(patches) {
   patches <- unique(tolower(trimws(as.character(patches))))
   patches <- patches[!is.na(patches) & nzchar(patches)]
-  mapped <- unname(.sn_acceleration_patch_map[patches])
-  supported <- unique(mapped[!is.na(mapped)])
   registered <- .sn_acceleration_registered_patches(installed = FALSE)
   installable <- .sn_acceleration_registered_patches(installed = TRUE)
+  mapped <- unname(.sn_acceleration_patch_map[patches])
+  exact <- registered[match(patches, tolower(registered))]
+  mapped[is.na(mapped)] <- exact[is.na(mapped)]
+  # Older companion releases named the single-covariate regression patch "seurat".
+  if ("seurat" %in% registered && !"seurat_scaledata" %in% registered) {
+    mapped[patches == "seurat_scaledata"] <- "seurat"
+  }
+  supported <- unique(mapped[!is.na(mapped)])
   # Umbrella keys expand to every registered patch sharing their prefix so
   # granular ShennongOpt patch registries stay compatible with family
   # requests such as "seurat" or "scran".
@@ -83,14 +101,12 @@
     )
     if (length(prefix_matches) > 0L) prefix_matches else target
   }), use.names = FALSE))
-  supported <- intersect(expanded, registered)
+  native <- .sn_native_seurat_replacements(expanded)
+  supported <- setdiff(intersect(expanded, installable), native)
   list(
     requested = patches,
-    supported = intersect(supported, installable),
-    unsupported = c(
-      setdiff(patches, names(.sn_acceleration_patch_map)),
-      setdiff(supported, installable)
-    )
+    supported = supported,
+    unsupported = union(patches[is.na(mapped)], setdiff(expanded, supported))
   )
 }
 
@@ -128,8 +144,10 @@ sn_check_acceleration <- function() {
 #'
 #' Rebinds accelerated implementations into their upstream namespaces.
 #' Activation is process-local and idempotent; pass patch names to activate a
-#' subset, or nothing to activate every registered patch whose upstream package
-#' is installed. See `ShennongOpt::sn_list_accelerations()` for available names.
+#' subset, or omit names to activate eligible installed patches. On Seurat
+#' 5.6 and later, Seurat handles variable feature selection, PCA, neighbor
+#' graphs and clustering. Requests for those four companion patches return
+#' FALSE. The single-covariate ScaleData regression patch remains eligible.
 #'
 #' @param name Optional patch name(s) to activate.
 #' @return Invisible named logical vector of activation results.
@@ -145,7 +163,15 @@ sn_enable_acceleration <- function(name = NULL) {
   if (!.sn_acceleration_available()) {
     stop("ShennongOpt is not installed; acceleration is unavailable.", call. = FALSE)
   }
-  invisible(.sn_acceleration_call("sn_enable_acceleration", name))
+  if (is.null(name)) name <- .sn_acceleration_registered_patches(installed = TRUE)
+  native <- .sn_native_seurat_replacements(name)
+  if (!length(native)) return(invisible(.sn_acceleration_call("sn_enable_acceleration", name)))
+  eligible <- !name %in% native
+  status <- stats::setNames(rep(FALSE, length(name)), name)
+  if (any(eligible)) {
+    status[eligible] <- .sn_acceleration_call("sn_enable_acceleration", name[eligible])
+  }
+  invisible(if (length(status) == 1L) status[[1L]] else status)
 }
 
 #' Deactivate ShennongOpt acceleration patches
@@ -175,7 +201,8 @@ sn_disable_acceleration <- function(name = NULL) {
 #' @return The value of \code{expr}.
 #'
 #' @examples
-#' \dontrun{sn_with_acceleration(obj <- Seurat::RunPCA(obj), name = "seurat")}
+#' \dontrun{sn_with_acceleration(Seurat::ScaleData(obj, vars.to.regress = "nCount_RNA"),
+#'                              name = "seurat_scaledata")}
 #'
 #' @export
 sn_with_acceleration <- function(expr, name = NULL) {
@@ -190,17 +217,15 @@ sn_with_acceleration <- function(expr, name = NULL) {
   previously_active <- character(0)
   activated <- character(0)
   if (enabled) {
-    previously_active <- names(which(unname(
-      .sn_acceleration_call("sn_check_acceleration")
-    ) == "active"))
+    status <- .sn_acceleration_call("sn_check_acceleration")
+    previously_active <- names(status)[status == "active"]
     newly <- setdiff(mapped$supported, previously_active)
     if (length(newly) > 0L) {
       result <- suppressMessages(tryCatch(
         .sn_acceleration_call("sn_enable_acceleration", newly),
         error = function(e) NULL
       ))
-      result <- if (is.null(result)) logical(0) else as.logical(result)
-      names(result) <- if (is.null(names(result))) newly else names(result)
+      if (length(result) == length(newly) && is.null(names(result))) names(result) <- newly
       activated <- names(result)[result & !is.na(result)]
     }
   }
@@ -221,10 +246,9 @@ sn_with_acceleration <- function(expr, name = NULL) {
   .sn_with_acceleration_impl(expr, patches)
 }
 
-.sn_with_default_seurat_acceleration <- function(expr, ...) {
-  dots <- list(...)
-  patches <- unique(c("seurat", as.character(dots$patches)))
-  .sn_with_acceleration_impl(expr, patches)
+.sn_with_default_seurat_acceleration <- function(expr, patch) {
+  if (!length(patch) || length(.sn_native_seurat_replacements(patch))) return(force(expr))
+  .sn_with_acceleration_impl(expr, patch)
 }
 
 .sn_with_explicit_acceleration_or_disabled <- function(expr, patches) {

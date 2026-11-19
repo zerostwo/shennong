@@ -15,8 +15,10 @@ Invisible named logical vector of activation results.
 \description{
 Rebinds accelerated implementations into their upstream namespaces.
 Activation is process-local and idempotent; pass patch names to activate a
-subset, or nothing to activate every registered patch whose upstream package
-is installed. See \code{ShennongOpt::sn_list_accelerations()} for available names.
+subset, or omit names to activate eligible installed patches. On Seurat
+5.6 and later, Seurat handles variable feature selection, PCA, neighbor
+graphs and clustering. Requests for those four companion patches return
+FALSE. The single-covariate ScaleData regression patch remains eligible.
 }
 \examples{
 \dontrun{

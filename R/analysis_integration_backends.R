@@ -634,14 +634,10 @@
   if (!exists("IntegrateLayers", envir = asNamespace("Seurat"), inherits = FALSE)) {
     stop("Seurat layer integration requires Seurat >= 5 with `IntegrateLayers()`.", call. = FALSE)
   }
-  integration_fun <- .sn_with_default_seurat_acceleration(
-    switch(
-      method,
-      seurat_cca = Seurat::CCAIntegration,
-      seurat_rpca = Seurat::RPCAIntegration
-    ),
-    object = object,
-    assay = assay
+  integration_fun <- switch(
+    method,
+    seurat_cca = Seurat::CCAIntegration,
+    seurat_rpca = Seurat::RPCAIntegration
   )
   new_reduction <- switch(
     method,

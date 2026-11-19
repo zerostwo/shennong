@@ -1,6 +1,20 @@
 # Shennong Modernization Decisions
 
-Last updated: 2026-09-23
+Last updated: 2026-11-19
+
+## Native Seurat kernels
+
+From Seurat 5.6 onward, upstream owns sparse VST, dense PCA, Annoy/SNN graph
+construction and Louvain clustering optimizations. Shennong selects by the
+loaded Seurat version, including for bulk patch activation. Older versions
+can still use an operation-specific companion patch. The SeuratObject merge
+and JoinLayers patches target a separate package. The sparse single-numeric-
+covariate regression patch also has a distinct input contract. Seurat's
+fused scaling path requires absent regression covariates. Native thread
+settings belong to the caller. Clustering records both upstream versions
+in its stage metadata and checkpoint key so previously patched outputs
+are recomputed when an older or unversioned object is reused. [Seurat 5.6 release](https://github.com/satijalab/seurat/releases/tag/v5.6.0)
+
 
 ## 2026-10-02: Atlas figure styles and supplied-value renderers
 
