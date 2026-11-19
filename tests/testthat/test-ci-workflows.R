@@ -35,13 +35,15 @@ test_that("managed Pixi environments cannot enter source packages", {
   expect_true(".pixi/" %in% gitignore)
 })
 
-test_that("coverage CI installs dependencies exercised by enrichment contracts", {
+test_that("coverage CI installs dependencies exercised by enrichment and storage contracts", {
   path <- test_path("..", "..", ".github", "workflows", "test-coverage.yaml")
   skip_if_not(file.exists(path), "Repository-only workflow is excluded from source packages.")
   workflow <- paste(readLines(path, warn = FALSE), collapse = "\n")
 
   expect_match(workflow, "any::clusterProfiler", fixed = TRUE)
   expect_match(workflow, "any::msigdbr", fixed = TRUE)
+  expect_match(workflow, "github::bnprks/BPCells/r", fixed = TRUE)
+  expect_match(workflow, "any::qs2", fixed = TRUE)
   expect_match(workflow, "fail_ci_if_error: true", fixed = TRUE)
 })
 

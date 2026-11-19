@@ -62,6 +62,8 @@ jobs:
             any::rio
             any::anndataR
             any::hdf5r
+            github::bnprks/BPCells/r
+            any::qs2
             any::data.table
             any::clusterProfiler
             any::msigdbr
@@ -78,6 +80,14 @@ jobs:
             bioc::rtracklayer
             bioc::DESeq2
             bioc::edgeR
+
+      - name: Verify BPCells and qs2 storage tests run
+        shell: Rscript {0}
+        run: |
+          results <- testthat::test_local(filter = "^bpcells-qs2$", stop_on_failure = TRUE)
+          cases <- as.data.frame(results)
+          print(cases[c("test", "passed", "skipped")], row.names = FALSE)
+          stopifnot(nrow(cases) > 0L, all(cases$passed > 0L), !any(cases$skipped))
 
       - name: Test coverage
         run: |
@@ -106,6 +116,14 @@ jobs:
           name: coverage-test-output
           path: ${{ runner.temp }}/coverage-library/**/*.Rout*
           if-no-files-found: ignore
+
+      - name: Archive line coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-cobertura
+          path: coverage.xml
+          if-no-files-found: error
+          retention-days: 14
 
       - uses: codecov/codecov-action@v5
         with:
