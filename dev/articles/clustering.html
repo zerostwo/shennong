@@ -180,8 +180,9 @@ RNA matrix used for clustering.</p>
 <span><span class="fu"><a href="../reference/sn_plot_elbow.html">sn_plot_elbow</a></span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"pca"</span>, ndims <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span></code></pre></div>
 <p>When the input already contains <code><a href="../reference/sn_run_cluster.html">sn_run_cluster()</a></code> stage
 metadata, the function reuses a stage only when its parameters,
-selected-layer content digest, cell and feature identities, and relevant
-metadata values still match. This makes safe resolution tuning cheap:
+selected-layer content digest, cell and feature identities, relevant
+metadata and loaded Seurat/SeuratObject versions still match. Stages
+saved before version recording are recomputed on first use. For example,
 <code>sn_run_cluster(pbmc, resolution = 1.0)</code> reuses
 normalization, HVGs, PCA, the neighbor graph, and UMAP, then recomputes
 only the cluster labels. Use <code>rerun_from = "integration"</code>
@@ -545,10 +546,10 @@ downstream integration metrics can iterate over one returned object.</p>
 <p>When <code>checkpoint_dir</code> is supplied, every completed grid
 entry is saved through a <code>.partial</code> file followed by an
 atomic rename. A repeated call with the same selected-layer content
-digest, cell/feature identity, relevant metadata, package version, grid,
-and analysis arguments resumes automatically
-(<code>resume = TRUE</code>) and skips completed entries. Only the
-latest complete checkpoint is retained; interrupted
+digest, cell/feature identity, relevant metadata, Shennong, Seurat and
+SeuratObject versions, grid, and analysis arguments resumes
+automatically (<code>resume = TRUE</code>) and skips completed entries.
+Only the latest complete checkpoint is retained; interrupted
 <code>.partial</code> files are ignored. Set
 <code>checkpoint_compress = TRUE</code> when disk space matters more
 than checkpoint write speed.</p>
@@ -788,8 +789,11 @@ unrestricted metadata.</p>
 <p>These Python environments execute plain upstream implementations; no
 Python acceleration layer is bundled. scVI/scANVI training, scPoli,
 Tangram, MMoCHi, infercnvpy, scIB, and the current Squidpy path all run
-their original code. R-side hot paths are accelerated separately by
-ShennongOpt and can be disabled with
+their original code. Seurat 5.6 and later use native kernels for
+variable features, PCA, neighbors and clustering. Set their thread
+budget with <code>Seurat::setThreads(n)</code>. ShennongOpt can
+accelerate eligible single-covariate regression and other R backends.
+Disable its automatic activation with
 <code>SHENNONG_ACCELERATION_DISABLED=true</code>.</p>
 <p>The raw-count layer contract also applies to scANVI and scPoli: their
 negative-binomial models require finite, non-negative, integer-like

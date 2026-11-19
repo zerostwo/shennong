@@ -82,5 +82,4 @@ milo_df <- data.frame(
   cell_type = c("T", "B", "Myeloid")
 )
 sn_plot_milo(milo_df, annotation_by = "cell_type")
-
 ```

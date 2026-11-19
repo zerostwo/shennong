@@ -34,34 +34,4 @@ A named list of runtime paths.
 
 ``` r
 sn_get_pixi_paths("scvi", runtime_dir = tempfile("shennong-home-"))
-#> $environment
-#> [1] "scvi"
-#> 
-#> $family
-#> [1] "scvi"
-#> 
-#> $runtime_dir
-#> [1] "/tmp/RtmpaJcQ2r/shennong-home-1a5f42e6e622"
-#> 
-#> $pixi_root
-#> [1] "/tmp/RtmpaJcQ2r/shennong-home-1a5f42e6e622/pixi"
-#> 
-#> $pixi_home
-#> [1] "/tmp/RtmpaJcQ2r/shennong-home-1a5f42e6e622/pixi/home"
-#> 
-#> $project_dir
-#> [1] "/tmp/RtmpaJcQ2r/shennong-home-1a5f42e6e622/pixi/scvi"
-#> 
-#> $source_config_path
-#> [1] "/tmp/Rtmp0Iwg4p/temp_libpath1a093afe9c45/Shennong/pixi/scvi/pixi.toml"
-#> 
-#> $manifest_path
-#> [1] "/tmp/RtmpaJcQ2r/shennong-home-1a5f42e6e622/pixi/scvi/pixi.toml"
-#> 
-#> $workspace_env_dir
-#> [1] "/tmp/RtmpaJcQ2r/shennong-home-1a5f42e6e622/pixi/scvi/.pixi/envs"
-#> 
-#> $runs_dir
-#> [1] "/tmp/RtmpaJcQ2r/shennong-home-1a5f42e6e622/runs"
-#> 
 ```

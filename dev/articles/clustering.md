@@ -103,8 +103,9 @@ sn_plot_elbow(pbmc, reduction = "pca", ndims = 20)
 When the input already contains
 [`sn_run_cluster()`](https://zerostwo.github.io/shennong/dev/reference/sn_run_cluster.md)
 stage metadata, the function reuses a stage only when its parameters,
-selected-layer content digest, cell and feature identities, and relevant
-metadata values still match. This makes safe resolution tuning cheap:
+selected-layer content digest, cell and feature identities, relevant
+metadata and loaded Seurat/SeuratObject versions still match. Stages
+saved before version recording are recomputed on first use. For example,
 `sn_run_cluster(pbmc, resolution = 1.0)` reuses normalization, HVGs,
 PCA, the neighbor graph, and UMAP, then recomputes only the cluster
 labels. Use `rerun_from = "integration"` after changing an integration
@@ -504,11 +505,12 @@ integration metrics can iterate over one returned object.
 When `checkpoint_dir` is supplied, every completed grid entry is saved
 through a `.partial` file followed by an atomic rename. A repeated call
 with the same selected-layer content digest, cell/feature identity,
-relevant metadata, package version, grid, and analysis arguments resumes
-automatically (`resume = TRUE`) and skips completed entries. Only the
-latest complete checkpoint is retained; interrupted `.partial` files are
-ignored. Set `checkpoint_compress = TRUE` when disk space matters more
-than checkpoint write speed.
+relevant metadata, Shennong, Seurat and SeuratObject versions, grid, and
+analysis arguments resumes automatically (`resume = TRUE`) and skips
+completed entries. Only the latest complete checkpoint is retained;
+interrupted `.partial` files are ignored. Set
+`checkpoint_compress = TRUE` when disk space matters more than
+checkpoint write speed.
 
 The `performance` table contains wall-clock seconds, peak R heap memory,
 and integration-specific values. On Linux, pixi/Python backends also
@@ -768,9 +770,11 @@ sn_prepare_pixi_environment(
 These Python environments execute plain upstream implementations; no
 Python acceleration layer is bundled. scVI/scANVI training, scPoli,
 Tangram, MMoCHi, infercnvpy, scIB, and the current Squidpy path all run
-their original code. R-side hot paths are accelerated separately by
-ShennongOpt and can be disabled with
-`SHENNONG_ACCELERATION_DISABLED=true`.
+their original code. Seurat 5.6 and later use native kernels for
+variable features, PCA, neighbors and clustering. Set their thread
+budget with `Seurat::setThreads(n)`. ShennongOpt can accelerate eligible
+single-covariate regression and other R backends. Disable its automatic
+activation with `SHENNONG_ACCELERATION_DISABLED=true`.
 
 The raw-count layer contract also applies to scANVI and scPoli: their
 negative-binomial models require finite, non-negative, integer-like

@@ -44,5 +44,4 @@ installed <- sn_install_codex_skill(
   overwrite = TRUE
 )
 all(dir.exists(installed))
-#> [1] TRUE
 ```

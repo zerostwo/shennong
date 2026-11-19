@@ -244,7 +244,7 @@ qc_copy$provenance
 #> [1] NA
 #> 
 #> $timestamp
-#> [1] "2026-11-16 09:53:56 UTC"
+#> [1] "2026-11-19 09:36:21 UTC"
 #> 
 #> $result_id
 #> [1] "qc_copy"
@@ -331,7 +331,7 @@ handoff[c("size_bytes", "digest")]
 #> [1] "sha256"
 #> 
 #> $digest$value
-#> [1] "056081c8d3a6a21f2e9dcd9ecccf33fd82858278ac3e32cda8605e8eb9e87167"
+#> [1] "8708f3547791a06a7c21cfd562606e62b4645f499ad88f6689df9ea701ca2d18"
 unlink(bundle_path)
 ```
 
@@ -426,13 +426,20 @@ when the full envelope, diagnostics, or provenance is required.
 
 ## Use optional ShennongOpt acceleration
 
-Shennong never patches another package during loading. Selected hot
-paths are accelerated by the companion R package **ShennongOpt**, which
-registers guarded fast replacements (Seurat `RunPCA`/`ScaleData`, scran,
-decontX, scDblFinder, Coralysis, UCell, LISI, and Rogue) and rebinds
-them only while a compatible Shennong workflow call runs. Unsupported
-inputs fall back to the captured upstream implementation, so results
-stay bit-exact by construction.
+On Seurat 5.6 and later, including 6.0, Shennong uses Seurat’s native
+variable feature selection, PCA, nearest-neighbor and clustering
+kernels. Normalization, marker testing and scaling without regression
+also call Seurat directly. Set the native thread budget in your R
+session with `Seurat::setThreads(4)` and inspect it with
+[`Seurat::getThreads()`](https://satijalab.org/seurat/reference/getThreads.html).
+
+ShennongOpt provides a separate sparse scaling kernel for one numeric
+regression covariate. Other eligible patches include SeuratObject merge
+and layer joining, scran, decontX, scDblFinder, Coralysis, UCell, LISI
+and Rogue.
+[`sn_check_acceleration()`](https://zerostwo.github.io/shennong/dev/reference/sn_check_acceleration.md)
+reports the companion registry, including any patches activated directly
+in the session.
 
 ``` r
 
@@ -440,38 +447,25 @@ sn_check_acceleration()
 #> named character(0)
 ```
 
-Automatic workflow scopes can be disabled per session:
-
 ``` r
 
-# Prevent automatic workflow scopes in this R session.
-options(shennong.acceleration = FALSE)
-
-# Explicit helpers intentionally ignore the automatic opt-out.
-out <- sn_with_acceleration(
-  sn_run_cluster(object, resolution = 0.8),
-  name = "seurat"
+# Temporarily enable the single-covariate regression patch.
+scaled <- sn_with_acceleration(
+  Seurat::ScaleData(object, vars.to.regress = "nCount_RNA"),
+  name = "seurat_scaledata"
 )
 
-# Keep a patch active for direct upstream calls until it is disabled again.
-sn_enable_acceleration("seurat")
-sn_disable_acceleration("seurat")
+# Disable automatic companion patches for subsequent workflows.
+options(shennong.acceleration = FALSE)
 ```
 
-`options(shennong.acceleration = FALSE)` or
-`SHENNONG_ACCELERATION_DISABLED=true` block automatic scopes; neither
-deactivates a patch that was activated manually. Set
-`shennong.opt.threads` (or `SHENNONG_OPT_THREADS`) to cap the thread
-budget used by accelerated parallel sections. Accelerated paths never
-change scientific output; conformance contracts compare candidate calls
-against direct upstream oracles with acceleration disabled.
-
-Hot paths without a ShennongOpt counterpart (for example CellChat,
-NicheNetR, SoupX, clusterProfiler caches, tradeSeq, WGCNA, and Seurat
-merge/JoinLayers) currently execute their plain upstream
-implementations. They will gain accelerations as new ShennongOpt patches
-become available; provenance records which patches each run used and
-which were requested but unavailable.
+[`sn_enable_acceleration()`](https://zerostwo.github.io/shennong/dev/reference/sn_enable_acceleration.md)
+skips the four superseded patches when the native kernels are available.
+An explicit request for one of them returns FALSE. On earlier Seurat
+releases, workflows request the companion patch for the individual
+operation. Set `shennong.opt.threads` or `SHENNONG_OPT_THREADS` to limit
+threads used by ShennongOpt. Native Seurat kernels use Seurat’s own
+thread setting.
 
 ## Give agents a read-only discovery surface
 

@@ -30,19 +30,4 @@ orthographic projection shared by both renderers.
 ``` r
 camera <- sn_get_plot_camera(list(azimuth = 45, elevation = 20))
 camera
-#> $azimuth
-#> [1] 45
-#> 
-#> $elevation
-#> [1] 20
-#> 
-#> $roll
-#> [1] 0
-#> 
-#> $zoom
-#> [1] 1
-#> 
-#> $pan
-#> [1] 0 0
-#> 
 ```

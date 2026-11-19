@@ -35,7 +35,6 @@ Model Context Protocol specification:
 ``` r
 config <- sn_get_mcp_server_config()
 config$transport
-#> [1] "stdio"
 if (FALSE) { # \dontrun{
 sn_run_mcp_server()
 } # }

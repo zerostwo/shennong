@@ -28,5 +28,6 @@ The value of `expr`.
 ## Examples
 
 ``` r
-if (FALSE) sn_with_acceleration(obj <- Seurat::RunPCA(obj), name = "seurat") # \dontrun{}
+if (FALSE) sn_with_acceleration(Seurat::ScaleData(obj, vars.to.regress = "nCount_RNA"),
+                             name = "seurat_scaledata") # \dontrun{}
 ```
