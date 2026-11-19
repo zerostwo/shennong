@@ -29,7 +29,8 @@ bundled signature query vector.}
 
 \item{method}{Scoring backend. UCell is the default for per-cell data.}
 
-\item{assay, layer}{Expression source.}
+\item{assay, layer}{Expression source. Scores and group summaries use cells
+measured in this layer. Other cells receive missing score metadata.}
 
 \item{group_by}{Optional metadata column identifying groups to aggregate.}
 

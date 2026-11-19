@@ -2,6 +2,31 @@
 
 Last updated: 2026-11-19
 
+## 2026-11-19: Preserve input identities across storage, inference and rendering
+
+- QS2 retains the relative location and SHA-256 identity of each unique
+  BPCells matrix directory. Streaming fingerprints support transformed and
+  subsetted file-backed layers without materializing the assay. Legacy files
+  with no recorded identity can use an explicit, operator-verified mapping.
+  Storage-specific traversal and validation live in `R/data_io_bpcells.R`.
+- The full pseudobulk gene matrix defines normalization and model fitting.
+  A feature panel determines the testing and adjustment family. Bulk metadata
+  alignment checks explicit identifiers and rejects conflicting mappings.
+- A sorted cell-to-group digest freezes marker membership. A grid checkpoint
+  restores a complete saved object. Its identity includes the serialized caller
+  state so a change to another assay, reduction, metadata or stored result
+  invalidates reuse. Marker results predating the membership digest remain
+  retrievable and require recomputation before joining to current cell groups.
+  The CITE-seq stage hashes its ADT input as well as the RNA input.
+- SingleR raw labels and pruning evidence remain available when the reported
+  label is unassigned. Annotation records the actual metadata output names.
+  PDF exports use Cairo for requested font embedding when available. The
+  base-device fallback reports its effective state in headless environments.
+- Statistical plots expose the supplied probability and abundance measures.
+  Cells missing backend measurements retain an explicit missing or unknown
+  value in the relevant denominator. These corrections extend the regression
+  coverage in the existing domains without adding dependencies or exports.
+
 ## Native Seurat kernels
 
 From Seurat 5.6 onward, upstream owns sparse VST, dense PCA, Annoy/SNN graph

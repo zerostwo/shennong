@@ -385,21 +385,22 @@ test_that("BPCells pseudobulk validates and aggregates in bounded sparse blocks"
   expect_equal(actual$input$tested_features_by_comparison, reference$input$tested_features_by_comparison)
   # Compare with an independently aggregated, direct upstream edgeR call.
   aggregated <- vapply(unique(metadata$sample), function(sample) {
-    Matrix::rowSums(counts[1:40, metadata$sample == sample & metadata$cell_type == "T", drop = FALSE])
-  }, numeric(40))
-  rownames(aggregated) <- rownames(counts)[1:40]
+    Matrix::rowSums(counts[, metadata$sample == sample & metadata$cell_type == "T", drop = FALSE])
+  }, numeric(nrow(counts)))
+  rownames(aggregated) <- rownames(counts)
   design <- stats::model.matrix(~factor(rep(c("control", "treated"), each = 3)))
   dge <- edgeR::calcNormFactors(edgeR::DGEList(counts = aggregated))
   dge <- edgeR::estimateDisp(dge, design)
   fit <- edgeR::glmQLFit(dge, design)
-  oracle <- edgeR::topTags(edgeR::glmQLFTest(fit, contrast = c(0, 1)), n = Inf, sort.by = "none")$table
+  test <- edgeR::glmQLFTest(fit, contrast = c(0, 1))
+  oracle <- edgeR::topTags(test[1:40, ], n = Inf, sort.by = "none")$table
   columns <- c("logFC", "logCPM", "F", "PValue", "FDR")
   observed <- as.data.frame(actual$tables$primary)
   expect_equal(unname(as.matrix(observed[, columns])),
     unname(as.matrix(oracle[observed$gene, columns])), tolerance = 1e-10)
   expect_true(length(materialized) > 1L)
   expect_lte(max(vapply(materialized, `[[`, integer(1), 2L)), 1024L)
-  expect_true(any(vapply(materialized, `[[`, integer(1), 1L) == 40L))
+  expect_true(all(vapply(materialized, `[[`, integer(1), 1L) == nrow(counts)))
   expect_true(Shennong:::.sn_is_iterable_matrix(SeuratObject::LayerData(on_disk, layer = "counts")))
 
   # The whole layer remains validated, including genes/cells omitted from DE.

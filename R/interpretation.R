@@ -777,7 +777,6 @@ sn_interpret_annotation <- function(object,
                                     show_progress = interactive(),
                                     ...) {
   result_id <- .sn_validate_result_id(result_id)
-  cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   marker_selection <- match.arg(marker_selection)
   enrichment_selection <- match.arg(enrichment_selection)
@@ -802,6 +801,7 @@ sn_interpret_annotation <- function(object,
     reduction = reduction,
     n_neighbor_clusters = n_neighbor_clusters
   )
+  cluster_by <- evidence$cluster_col
   progress_state <- .sn_interpret_progress_step(progress_state, "Building annotation prompt")
 
   if (identical(annotation_mode, "agentic")) {
@@ -1140,7 +1140,6 @@ sn_write_results <- function(object,
                              show_progress = interactive(),
                              ...) {
   result_id <- .sn_validate_result_id(result_id)
-  cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(
     task = "write_results",
@@ -1242,7 +1241,6 @@ sn_write_figure_legend <- function(object,
                                    show_progress = interactive(),
                                    ...) {
   result_id <- .sn_validate_result_id(result_id)
-  cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(
     task = "write_figure_legend",
@@ -1345,7 +1343,6 @@ sn_write_presentation_summary <- function(object,
                                           show_progress = interactive(),
                                           ...) {
   result_id <- .sn_validate_result_id(result_id)
-  cluster_by <- cluster_by %||% "seurat_clusters"
   output_format <- match.arg(output_format)
   progress_state <- .sn_interpret_progress_start(
     task = "write_presentation_summary",

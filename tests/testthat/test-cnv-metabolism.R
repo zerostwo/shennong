@@ -65,6 +65,7 @@ test_that("unified CNV workflow stores malignancy, subclones, and sample evidenc
   expect_true(all(c("tumor_cnv_cnv_score", "tumor_cnv_malignant_score") %in% colnames(updated[[]])))
   expect_identical(result$input$layer, "data")
   expect_identical(result$input$association_layer, "data")
+  expect_identical(result$tables$primary$subclone[25:48], rep(c("subclone_0", "subclone_1"), 12))
   expect_gt(nrow(result$tables$expression_association), 0L)
 })
 
@@ -76,7 +77,7 @@ test_that("CopyKAT predictions override threshold calls without requiring packag
       ifelse(seq_along(colnames(object)) > 24, "aneuploid", "diploid"),
       colnames(object)
     )
-    result$scores[[13]] <- NA_real_
+    result$scores <- result$scores[-13]
     result$prediction[[13]] <- NA_character_
     result
   }
@@ -86,6 +87,8 @@ test_that("CopyKAT predictions override threshold calls without requiring packag
   )
   expect_true(all(result$tables$primary$malignant_call[25:48] == "malignant"))
   expect_identical(result$tables$primary$malignant_call[[13]], "unknown")
+  expect_equal(result$diagnostics$unknown_cells, 1L)
+  expect_equal(result$tables$sample_summary$unknown_fraction[result$tables$sample_summary$sample == "S3"], 1/6)
   expect_true(all(result$tables$primary$malignant_call[14:24] == "non_malignant"))
 })
 
@@ -96,6 +99,9 @@ test_that("CNV fallback subclones tolerate incomplete chromosome evidence", {
   subclones <- Shennong:::.sn_cnv_subclones(chromosomes, calls, k = 2L)
 
   expect_identical(unname(subclones[c("c1", "c2", "c3")]), c("subclone_1", NA, "reference"))
+  partial <- Shennong:::.sn_cnv_subclones(chromosomes, calls, existing = c(c2 = "1"))
+  expect_identical(unname(partial["c2"]), "subclone_1")
+  expect_false(identical(unname(partial["c1"]), unname(partial["c2"])))
   expect_error(
     Shennong:::.sn_cnv_subclones(chromosomes, calls, k = 0),
     "positive integer"

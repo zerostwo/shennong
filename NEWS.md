@@ -3,6 +3,34 @@ All notable changes to this project will be documented in this file.
 
 # Shennong (development version)
 
+## Package audit repairs (2026-11-19)
+
+- QS2 snapshots written through `sn_write()` record verified, relocatable
+  BPCells matrix directories. `sn_read()` accepts an explicit `bpcells_paths`
+  map for relocating legacy snapshots. BPCells overwrite checks protect
+  unrelated files. bedGraph import recognizes the standard extension.
+  Result migrations preserve the recorded generating package version.
+- Bulk models align expression columns with explicit sample identifiers.
+  Pseudobulk fits use the full gene background for the selected sample
+  profiles. A requested panel defines the tests and their adjustment family.
+- CITE-seq caches include protein layer values. Grid checkpoints verify the complete caller
+  object before restoring a saved object. Marker evidence verifies the recorded
+  cell-to-group membership. Historical markers without this record remain
+  readable and require recomputation for cell-group annotation evidence. SingleR preserves raw predictions and
+  pruning, marks rejected cells unassigned, and records the metadata columns
+  written by annotation. Program scores account for partial assay coverage.
+- Evidence summaries handle sample grouping and fractional GeneRatio values.
+  CNV summaries include unknown cells in their denominator and retain named
+  subclones. Spatial neighborhood bins support equally spaced coordinates.
+  scDesign3 uses the installed backend's core-count parameter. Python object
+  adapters use the explicit runtime directory for Pixi and run artifacts.
+- DE and enrichment figures label nominal and adjusted probabilities;
+  adjusted thresholds require adjusted values. MA plots require a measured
+  abundance axis. Heatmaps use the requested assay, distinct pathway IDs
+  can share a display name, and communication chords render self-interactions.
+  Font embedding uses Cairo when available and reports the effective state.
+  A single ComplexHeatmap exports to one PDF page.
+
 ## Seurat 6 compatibility (2026-11-19)
 
 Shennong delegates variable feature selection, PCA, nearest-neighbor graphs

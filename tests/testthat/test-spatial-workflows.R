@@ -432,3 +432,11 @@ test_that("legacy spatial aliases warn and forward to canonical workflows", {
   expect_identical(mapping$reference_object, reference)
   expect_identical(mapping$marker, "mapping")
 })
+
+test_that("spatial cooccurrence retains a single observed distance on a regular grid", {
+  graph <- data.frame(source = c("a", "b"), target = c("b", "a"), distance = c(10, 10))
+  result <- Shennong:::.sn_spatial_cooccurrence(graph, c(a = "T", b = "B"))
+  expect_length(unique(result$distance_bin), 1L)
+  expect_equal(sum(result$count), 2L)
+  expect_equal(sum(result$proportion), 1)
+})

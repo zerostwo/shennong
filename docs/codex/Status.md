@@ -41,51 +41,18 @@ hold point-in-time evidence, `Decisions.md` holds durable rationale, and
   fixture under `SHENNONG_REAL_DATA_DIR` to cover the single initial skip.
   Totals count each file once.
 
-## Package audit validation (2026-11-04)
+## Package audit repairs on the integration branch
 
-- Supplied-cluster scran and composition/RoE retain compound group identities.
-  The original scran relabeling counterexample now has exactly zero change in
-  size factors or normalized expression; RoE retains both colliding groups.
-- Trajectory seeds govern Slingshot/tradeSeq and Monocle3 computation and
-  restore caller RNG state. Python clustering preserves seed zero. Monocle3
-  unified graphs respect the effective partition policy.
-- DotPlot retains unscaled expression ranges and split colors; violin palettes
-  apply to every panel and preserve feature titles. Runtime render assertions
-  and inspected PNGs cover the corrected outputs.
-- Result Bundle JSON preserves array axes through a versioned additive metadata
-  contract; required validation/provenance and unambiguous JSON field names
-  are enforced. H5 imports forward requested feature-ID/uniqueness controls.
-- BPCells pseudobulk validates the complete layer and aggregates selected data
-  in bounded sparse blocks. A 2,400-cell fixture matches independently
-  aggregated direct edgeR output while preserving on-disk source storage.
-- Portable IO/result tests now execute in every R-CMD-check platform job.
-  Documentation pushes retry the identical commit without force. The prior
-  current-main publication failure was retried successfully: Pages built
-  `959181674d043ae3b4d211c6b5e414513f4ce3c6` for source `4e49a88`.
-  That publication is distinct from this repair branch.
-- The consolidated source suite passes 6,468 assertions with zero failures or
-  errors, 288 warnings (predominantly existing ShennongOpt/Seurat drift), and
-  one skip for an unavailable local public-data fixture. The subsequent empty
-  data-frame column guard passes 57 focused Bundle/independent-consumer
-  assertions without failures, warnings or skips. The final affected Bundle,
-  plot, architecture, CI and installed-Codex-asset checks pass 344 assertions
-  with no failures, errors, warnings or skips. Strict backend
-  conformance passes 582 assertions with two expected Scrublet parameter
-  warnings and no failures, errors or skips.
-- `R CMD build` and `R CMD check --no-manual --no-tests` pass with `Status: OK`,
-  including examples and vignette rebuilding. Tests run separately as above;
-  `_R_CHECK_FORCE_SUGGESTS_=false` permits unavailable optional packages.
-  A full pkgdown rebuild succeeds from an isolated source installation, and
-  the changed guides, references and NEWS are read back from rendered HTML.
-  Independent Python consumption restores 15 arrays from real and edge-case
-  Result Bundle outputs and rejects changed values or sample identities.
-  Source-file checksums match the build snapshot; local validation logs remain
-  under `/tmp/shennong-fixes-20261105/` and `/tmp/shennong-fixes-20261106/`.
-  Remote CI and branch publication are
-  reported separately from these completed local checks.
-- No sibling service deployment or whole-atlas performance benchmark is
-  claimed. The pre-existing Runtime analysis-schema mismatch is recorded in
-  `Ecosystem.md`; method admission remains separate from these defect repairs.
+The repaired workflows preserve the original sample, cell group, gene and
+matrix identities across DE, annotation and storage. QS2 checks BPCells
+content on read. The CITE-seq cache follows ADT changes and checkpoint reuse
+checks the serialized caller object. Slingshot/tradeSeq respects its resolved seed.
+Plotting regressions exercise ggplot builds, PDF output and font embedding.
+
+The regression cases cover the 35 findings from the November 19 audit,
+including historical Result Bundle consumers and direct backend comparisons.
+This describes the integration branch. Publication follows the main-branch
+CI and pkgdown workflows.
 
 ## Atlas figure styles
 

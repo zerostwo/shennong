@@ -127,13 +127,13 @@ sn_list_results(study, type = "de")
 head(sn_get_de_result(study, "T_cell_treated_vs_control", p_adjusted_cutoff = 0.05))
 ```
 
-BPCells count layers are validated in bounded sparse blocks, then the selected
-features and cells are aggregated in blocks. The complete single-cell matrix
-is not materialized; the feature-by-profile pseudobulk matrix still needs to
-fit in memory for DESeq2, edgeR, or limma. Validation continues to inspect the
-whole selected count layer, including values outside `features` or
-`subset_levels`, so invalid counts are not hidden by subsetting. The source
-BPCells layer and its backing directory remain unchanged.
+The full count layer is validated in bounded sparse blocks. Within each stratum,
+the selected cells contribute their complete gene profiles to aggregation,
+normalization, and model fitting. Set `features` to define a planned test
+panel. Raw effects and P values share the full-assay fitting background, while
+the backend adjusts for multiple tests across the requested panel within that
+comparison. The all-gene by sample-profile pseudobulk matrix must fit in
+memory. BPCells reads the single-cell input in blocks.
 
 The recipe uses DESeq2 through the pseudobulk path. Inspect retained samples
 and the design, especially after subsetting rare cell types. For a paired or

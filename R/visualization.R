@@ -906,21 +906,21 @@ sn_plot_violin <- function(object,
   ))
 }
 
-.sn_resolve_heatmap_features <- function(object, features) {
+.sn_resolve_heatmap_features <- function(available, features) {
   if (is.null(features) || length(features) == 0L) {
     stop("`features` must contain at least one gene or feature name.", call. = FALSE)
   }
   features <- unique(as.character(features))
   features <- features[!is.na(features) & nzchar(features)]
-  missing_features <- setdiff(features, rownames(object))
+  missing_features <- setdiff(features, available)
   if (length(missing_features) > 0L) {
     .sn_log_warn(
-      "Dropped {length(missing_features)} feature(s) not found in the object (e.g. {paste(utils::head(missing_features, 3), collapse = ', ')})."
+      "Dropped {length(missing_features)} feature(s) not found in the selected assay layer (e.g. {paste(utils::head(missing_features, 3), collapse = ', ')})."
     )
   }
-  features <- intersect(features, rownames(object))
+  features <- intersect(features, available)
   if (length(features) == 0L) {
-    stop("None of the requested `features` were found in the object.", call. = FALSE)
+    stop("None of the requested `features` were found in the selected assay layer.", call. = FALSE)
   }
   features
 }
@@ -999,7 +999,8 @@ sn_plot_violin <- function(object,
                                      col_min = -2.5,
                                      col_max = 2.5) {
   average_fun <- match.arg(average_fun)
-  cells <- colnames(object)
+  expr <- SeuratObject::FetchData(object[[assay]], vars = features, layer = layer)
+  cells <- rownames(expr)
   metadata <- object[[]][cells, , drop = FALSE]
   groups <- metadata[[group_by]]
   if (is.factor(groups)) {
@@ -1020,13 +1021,6 @@ sn_plot_violin <- function(object,
       splits <- factor(splits, levels = split_levels)
     }
   }
-
-  expr <- .sn_fetch_feature_matrix(
-    object = object,
-    features = features,
-    assay = assay,
-    layer = layer
-  )
 
   valid <- !is.na(groups) & !is.na(splits)
   groups <- droplevels(groups[valid])
@@ -1325,8 +1319,13 @@ sn_plot_heatmap <- function(object,
     }
   }
 
-  features <- .sn_resolve_heatmap_features(object, features)
   assay <- assay %||% SeuratObject::DefaultAssay(object)
+  available <- if (isTRUE(scale_data) && identical(layer, "scale.data")) {
+    rownames(object[[assay]])
+  } else {
+    SeuratObject::Features(object[[assay]], layer = layer)
+  }
+  features <- .sn_resolve_heatmap_features(available, features)
   if (isTRUE(scale_data)) {
     object <- .sn_scale_heatmap_features(
       object = object,
@@ -1515,23 +1514,24 @@ sn_plot_heatmap <- function(object,
       )
   }
 
+  cells <- SeuratObject::Cells(object[[assay]], layer = layer)
   if (is.null(split_by)) {
-    plot <- build_one(colnames(object), panel_title = title)
+    plot <- build_one(cells, panel_title = title)
     return(.sn_attach_figure_spec(
       .sn_style_plot(plot, style, "heatmap"), "heatmap",
-      list(n_points = length(features) * ncol(object), n_rows = length(features),
-           n_columns = if (identical(mode, "average")) length(unique(object[[group_by, drop = TRUE]])) else ncol(object),
+      list(n_points = length(features) * length(cells), n_rows = length(features),
+           n_columns = length(cells),
            n_features = length(features), labels = features),
       overrides = list(rasterize = isTRUE(raster))
     ))
   }
 
-  split_values <- object[[split_by, drop = TRUE]]
+  split_values <- object[[]][cells, split_by, drop = TRUE]
   split_levels <- unique(as.character(split_values))
   split_levels <- split_levels[!is.na(split_levels)]
   plots <- lapply(split_levels, function(level) {
     panel_title <- if (is.null(title)) paste0(split_by, ": ", level) else paste0(title, " - ", level)
-    build_one(colnames(object)[as.character(split_values) == level], panel_title = panel_title)
+    build_one(cells[as.character(split_values) == level], panel_title = panel_title)
   })
   p <- patchwork::wrap_plots(plots)
   if (isTRUE(collect_legend)) {
@@ -1539,7 +1539,7 @@ sn_plot_heatmap <- function(object,
   }
   .sn_attach_figure_spec(
     .sn_style_plot(p, style, "heatmap"), "heatmap",
-    list(n_points = length(features) * ncol(object), n_rows = length(features), n_columns = ncol(object),
+    list(n_points = length(features) * length(cells), n_rows = length(features), n_columns = length(cells),
          n_panels = length(split_levels), n_features = length(features), labels = features),
     overrides = list(rasterize = isTRUE(raster))
   )

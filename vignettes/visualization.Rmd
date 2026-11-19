@@ -317,8 +317,10 @@ sn_plot_heatmap(
 Use `mode = "average"` when the comparison is about the group-level pattern
 rather than every individual cell. This averages expression within each group
 and then z-scores each gene by default, giving a compact marker-panel summary.
-The selected `layer` is used directly; the default `scale.data` layer is filled
-for requested features when needed.
+Feature selection and measurements use the requested `assay` and `layer`.
+For example, `assay = "ADT", layer = "counts"` displays protein counts even
+when RNA is the default assay. Group means use cells measured in that layer.
+The default `scale.data` layer is filled for requested features when needed.
 
 ```{r plot-heatmap-average}
 sn_plot_heatmap(

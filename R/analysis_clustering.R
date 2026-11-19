@@ -1125,9 +1125,9 @@ sn_get_integration_control_template <- function(method = NULL) {
 #'   comparison manifest, performance records, and completed run IDs to a
 #'   temporary file and atomically publishes it. Only the latest complete
 #'   checkpoint for the call signature is retained. The signature includes a
-#'   blockwise digest of the selected layer plus cell/feature identity and the
-#'   metadata values used by batching, grouped HVGs, regression, or supervised
-#'   integration.
+#'   checksum of the entire serialized input object and a blockwise digest of
+#'   the selected layer. Edits to other assays, metadata, identities or stored
+#'   results invalidate the checkpoint.
 #'   \code{resume}: logical; when \code{TRUE} (default), resume a matching
 #'   checkpoint in \code{checkpoint_dir}. The same content/metadata-aware
 #'   signature also covers Shennong, Seurat and SeuratObject versions, the
@@ -1501,38 +1501,15 @@ sn_run_cluster <- function(object,
   signature_args$checkpoint_compress <- NULL
   signature_args$verbose <- NULL
   object <- args$object
+  # A checkpoint restores the entire object. Stream its serialized state to disk
+  # to avoid allocating another object-sized raw vector for the checksum.
+  state_file <- tempfile("sn-cluster-input-")
+  on.exit(unlink(state_file), add = TRUE)
+  saveRDS(object, state_file, compress = FALSE)
   object_signature <- list(
-    cells = colnames(object),
-    features = rownames(object),
-    assays = names(object@assays),
-    assay = args$assay,
-    layer = args$layer,
-    analysis_input = .sn_cluster_analysis_input_signature(
-      object = object,
-      assay = args$assay,
-      layer = args$layer
-    ),
-    layer_class = if (args$assay %in% names(object@assays)) {
-      class(.sn_get_seurat_layer_data(object, assay = args$assay, layer = args$layer))
-    } else {
-      NULL
-    },
-    batch = if (!is.null(args$batch) && args$batch %in% colnames(object[[]])) {
-      as.character(object[[args$batch, drop = TRUE]])
-    } else {
-      NULL
-    },
-    metadata = .sn_cluster_metadata_signature(
-      object = object,
-      columns = c(
-        args$batch,
-        args$hvg_group_by,
-        args$rare_feature_group_by,
-        args$vars_to_regress,
-        args$group_by_vars,
-        .sn_cluster_control_metadata_columns(args$backend_control)
-      )
-    )
+    state = digest::digest(file = state_file, algo = "sha256"),
+    # Serialized on-disk matrix references omit their backing values.
+    analysis_input = .sn_cluster_analysis_input_signature(object, args$assay, args$layer)
   )
   digest::digest(
     list(
@@ -1646,7 +1623,7 @@ sn_run_cluster <- function(object,
   if (!is.logical(checkpoint_compress) || length(checkpoint_compress) != 1L || is.na(checkpoint_compress)) {
     stop("`checkpoint_compress` must be `TRUE` or `FALSE`.", call. = FALSE)
   }
-  checkpoint_signature <- .sn_cluster_checkpoint_signature(args, grid)
+  checkpoint_signature <- if (!is.null(checkpoint_dir)) .sn_cluster_checkpoint_signature(args, grid)
   checkpoint_dir <- if (!is.null(checkpoint_dir)) {
     dir.create(path.expand(checkpoint_dir), recursive = TRUE, showWarnings = FALSE)
     normalizePath(path.expand(checkpoint_dir), winslash = "/", mustWork = TRUE)
@@ -2632,7 +2609,7 @@ sn_run_cluster <- function(object,
       multimodal_method = multimodal_method,
       assay = adt_assay,
       layer = adt_layer,
-      layer_source_version = 2L,
+      analysis_input = .sn_cluster_analysis_input_signature(object, adt_assay, adt_layer),
       normalization_method = "CLR",
       margin = 2L,
       npcs = adt_npcs,

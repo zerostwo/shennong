@@ -81,31 +81,37 @@
     labels = ref$labels
   )
   prediction <- do.call(SingleR::SingleR, utils::modifyList(defaults, backend_control, keep.null = TRUE))
-  labels <- as.character(prediction$pruned.labels)
-  missing_pruned <- is.na(labels) | !nzchar(labels)
-  labels[missing_pruned] <- as.character(prediction$labels[missing_pruned])
+  cells <- rownames(prediction) %||% colnames(query$matrix)
+  if (anyDuplicated(cells) || !setequal(cells, colnames(query$matrix))) {
+    stop("SingleR must return one prediction per query cell.", call. = FALSE)
+  }
+  raw_labels <- as.character(prediction$labels)
+  has_pruning <- !is.null(prediction$pruned.labels)
+  pruned_labels <- if (has_pruning) as.character(prediction$pruned.labels) else rep(NA_character_, length(cells))
+  pruned <- has_pruning & (is.na(pruned_labels) | !nzchar(pruned_labels))
+  labels <- if (has_pruning) pruned_labels else raw_labels
   scores <- as.matrix(prediction$scores)
-  if (is.null(rownames(scores))) rownames(scores) <- colnames(object)
-  scores <- scores[colnames(object), , drop = FALSE]
+  if (!is.null(rownames(scores))) scores <- scores[cells, , drop = FALSE]
   best_scores <- apply(scores, 1, function(row) {
     finite <- row[is.finite(row)]
     if (length(finite)) max(finite) else NA_real_
   })
   evidence <- tibble::tibble(
-    entity = colnames(object),
+    entity = cells,
     label = labels,
     score = unname(best_scores),
     method = "singleR",
     reference_coverage = length(common) / length(unique(c(rownames(query$matrix), rownames(ref$matrix))))
   )
-  delta_next <- as.numeric(prediction$delta.next %||% rep(NA_real_, ncol(object)))
+  delta_next <- as.numeric(prediction$delta.next %||% rep(NA_real_, length(cells)))
   list(
     object = object,
     evidence = evidence,
     raw_predictions = tibble::tibble(
-      cell = colnames(object),
-      prediction = labels,
-      pruned = !missing_pruned,
+      cell = cells,
+      prediction = raw_labels,
+      pruned_label = pruned_labels,
+      pruned = pruned,
       delta_next = delta_next
     ),
     input = list(
@@ -492,6 +498,7 @@
     input_dir = input_dir,
     output_dir = result_dir,
     config_path = config_path,
+    runtime_dir = backend_control$runtime_dir,
     quiet = isTRUE(backend_control$quiet)
   )
 
@@ -710,7 +717,10 @@
 #' @param tissue,disease Optional biological context recorded in provenance.
 #' @param species \code{"human"} or \code{"mouse"}; inferred when possible.
 #' @param ontology Map labels to the bundled Cell Ontology snapshot.
-#' @param result_id Stored-result and metadata prefix.
+#' @param result_id Stored-result and metadata prefix. Existing metadata is
+#'   preserved. The result's \code{tables$metadata_columns} maps fields to
+#'   their assigned names. SingleR stores raw and pruned labels in
+#'   \code{tables$backend_predictions}; rejected cells are unassigned.
 #' @param confidence_threshold Optional minimum backend score. Scores are
 #'   backend-specific and are not assumed to be calibrated across methods. By
 #'   default, only missing/non-finite/non-positive scores and explicit
@@ -789,7 +799,23 @@ sn_run_annotation <- function(object,
     layer = layer,
     backend_control = backend_control
   )
+  # Some reference adapters write their own metadata before returning predictions.
+  # Preserve caller-owned fields there as well as in the unified output below.
+  original_metadata <- object[[]]
   object <- backend$object
+  returned_metadata <- object[[]]
+  shared <- intersect(names(original_metadata), names(returned_metadata))
+  if (!identical(rownames(original_metadata), rownames(returned_metadata))) {
+    original_metadata <- original_metadata[rownames(returned_metadata), shared, drop = FALSE]
+  }
+  changed <- shared[!vapply(shared, function(name) identical(original_metadata[[name]], returned_metadata[[name]]),
+                            logical(1))]
+  backend_columns <- utils::tail(make.unique(c(names(returned_metadata), changed)), length(changed))
+  if (length(changed)) {
+    moved <- returned_metadata[changed]
+    names(moved) <- backend_columns
+    object <- SeuratObject::AddMetaData(object, cbind(original_metadata[changed], moved))
+  }
 
   cells_table <- .sn_annotation_cell_table(backend$evidence, colnames(object))
   level_1 <- .sn_annotation_label_hierarchy(cells_table$prediction)
@@ -816,16 +842,15 @@ sn_run_annotation <- function(object,
     confidence_threshold = confidence_threshold
   )
 
-  safe_result_id <- gsub("[^[:alnum:]_]+", "_", result_id)
-  cell_indices <- match(colnames(object), cells_table$cell)
-  metadata <- data.frame(row.names = colnames(object))
-  metadata[[paste0(safe_result_id, "_label")]] <- cells_table$prediction[cell_indices]
-  metadata[[paste0(safe_result_id, "_level_1")]] <- cells_table$level_1[cell_indices]
-  metadata[[paste0(safe_result_id, "_level_2")]] <- cells_table$level_2[cell_indices]
-  metadata[[paste0(safe_result_id, "_level_3")]] <- cells_table$level_3[cell_indices]
-  metadata[[paste0(safe_result_id, "_score")]] <- cells_table$prediction_score[cell_indices]
-  metadata[[paste0(safe_result_id, "_low_confidence")]] <- cells_table$low_confidence[cell_indices]
-  metadata[[paste0(safe_result_id, "_ontology_id")]] <- cells_table$ontology_id[cell_indices]
+  fields <- c(label = "prediction", level_1 = "level_1", level_2 = "level_2",
+              level_3 = "level_3", score = "prediction_score",
+              low_confidence = "low_confidence", ontology_id = "ontology_id")
+  prefix <- gsub("[^[:alnum:]_]+", "_", result_id)
+  desired <- paste(prefix, names(fields), sep = "_")
+  columns <- utils::tail(make.unique(c(colnames(object[[]]), desired)), length(fields))
+  metadata <- as.data.frame(cells_table[match(colnames(object), cells_table$cell), unname(fields)])
+  names(metadata) <- columns
+  rownames(metadata) <- colnames(object)
   object <- SeuratObject::AddMetaData(object, metadata = metadata)
 
   result <- list(
@@ -861,6 +886,8 @@ sn_run_annotation <- function(object,
       cells = tibble::as_tibble(cells_table),
       clusters = tibble::as_tibble(clusters_table),
       evidence = tibble::as_tibble(cells_table),
+      metadata_columns = tibble::tibble(field = unname(fields), column = columns),
+      backend_renamed_columns = tibble::tibble(original = changed, column = backend_columns),
       backend_predictions = tibble::as_tibble(backend$raw_predictions %||% tibble::tibble())
     ),
     embeddings = backend$embeddings %||% list(),

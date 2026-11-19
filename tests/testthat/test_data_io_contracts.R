@@ -683,3 +683,13 @@ test_that("retired qs formats fail before IO or automatic installation", {
   expect_error(sn_write(list(a = 1), to = "QS"), "no longer supported; use .qs2")
   expect_false(dir.exists(root))
 })
+
+test_that("bedGraph tracks use the rtracklayer importer", {
+  skip_if_not_installed("rtracklayer")
+  skip_if_not_installed("rio")
+  bed <- tempfile(fileext = ".bedGraph")
+  writeLines("chr1\t0\t100\t2", bed)
+  expected <- rtracklayer::import(bed, format = "bedGraph")
+  expect_equal(sn_read(bed), expected)
+  expect_equal(sn_read(bed, format = "BEDGRAPH"), expected)
+})

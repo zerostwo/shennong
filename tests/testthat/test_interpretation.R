@@ -980,3 +980,32 @@ test_that("agentic annotation can return its staged prompt bundle", {
   expect_true(is.list(prompt$broad_prompt))
   expect_match(prompt$note, "Focused refinement prompt")
 })
+
+test_that("marker evidence verifies source membership and common evidence formats", {
+  object <- make_interpretation_object()
+  object$seurat_clusters <- ifelse(object$cell_type == "Tcell", "Bcell", "Tcell")
+  collect <- function(...) sn_prepare_annotation_evidence(object, reduction = NULL, include_qc = FALSE, ...)
+  expect_identical(collect()$cluster_col, "cell_type")
+  expect_error(collect(cluster_by = "seurat_clusters"), "membership")
+  object$cell_type <- object$seurat_clusters
+  expect_error(collect(), "membership")
+  expect_silent(sn_prepare_results_evidence(object, cluster_by = "sample"))
+  terms <- data.frame(ID = c("a", "b"), GeneRatio = c("1/20", "1/2"), p.adjust = c(.01, .02))
+  expect_identical(sn_prepare_enrichment_evidence(result = terms)$top_terms$ID, c("b", "a"))
+})
+
+test_that("historical marker tables stay readable but cannot establish cluster membership", {
+  skip_if_not_installed("Seurat")
+  object <- make_interpretation_object()
+  id <- "celltype_markers"
+  original <- sn_get_de_result(object, result_id = id)
+  legacy <- sn_get_result(object, "de", id)
+  legacy$input$marker_membership <- NULL
+  object <- sn_store_result(object, "de", id, legacy, overwrite = TRUE)
+  object$cell_type <- ifelse(object$cell_type == "Tcell", "Bcell", "Tcell")
+  expect_identical(sn_get_de_result(object, result_id = id), original)
+  expect_error(sn_prepare_annotation_evidence(object, de_result_id = id),
+               "stored cell membership.*recompute")
+  expect_error(sn_interpret_annotation(object, de_result_id = id, cluster_by = "cell_type",
+                                       return_prompt = TRUE), "stored cell membership")
+})

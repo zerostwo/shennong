@@ -194,6 +194,26 @@ pbmc <- sn_set_layer_backend(
 sn_write(pbmc, file.path(outdir, "pbmc3k_bpcells_bound.qs2"))
 ```
 
+Move the QS2 file together with its BPCells directories and keep the same
+relative layout. Reopen the snapshot through `sn_read()`. Shennong resolves
+each matrix directory from the snapshot location and checks its SHA-256
+fingerprint before returning the object. This reads the backing files once
+per unique directory. Lazy matrix operations and selected cells are preserved.
+
+For a legacy QS2 snapshot, verify the source directories independently and
+supply the original absolute path as the name of each replacement. Saving
+the recovered object with `sn_write()` adds portable references and fingerprints.
+
+```{r relocated-bpcells-snapshot, eval = FALSE}
+pbmc <- sn_read(file.path(outdir, "pbmc3k_bpcells_bound.qs2"))
+# Example for a legacy snapshot containing one disk-backed counts layer.
+old_counts <- "/old/project/pbmc3k_bpcells/RNA/counts"
+new_counts <- file.path(outdir, "pbmc3k_bpcells", "RNA", "counts")
+recovered <- sn_read(file.path(outdir, "legacy.qs2"),
+                     bpcells_paths = stats::setNames(new_counts, old_counts))
+sn_write(recovered, file.path(outdir, "recovered.qs2"))
+```
+
 When an operation explicitly requires an in-memory sparse matrix, switch only
 the required layer back. This materializes the complete selected layer as a
 `dgCMatrix`; it does not delete the external BPCells matrix directory.

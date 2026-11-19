@@ -236,6 +236,12 @@ stopifnot(all(
 sn_audit_results(object, include_artifacts = FALSE)
 ```
 
+Upgrading a legacy result keeps its recorded generation date and package
+version. Missing historical package versions remain absent, and a missing
+creation date is recorded as `"unknown"`. Explicit schema upgrades record
+the migration version and time separately in `provenance$migration`.
+
+
 Analytical results and legacy runtime/cache artifacts have different deletion
 APIs. `sn_delete_result()` removes one exact `(type, result_id)` entry from the
 canonical store. A registered artifact may still live in a historical

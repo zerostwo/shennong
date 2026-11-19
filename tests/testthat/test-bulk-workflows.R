@@ -749,3 +749,16 @@ test_that("external backends cannot leave the session directory deleted", {
   )
   expect_true(dir.exists(directory))
 })
+
+test_that("bulk sample keys distinguish automatic row numbers from explicit identifiers", {
+  fixture <- bulk_fixture()
+  samples <- as.character(seq_len(ncol(fixture$counts)))
+  colnames(fixture$counts) <- samples
+  ids <- rev(samples)
+  metadata <- data.frame(sample_id = ids, condition = rev(fixture$metadata$condition))
+  aligned <- Shennong:::.sn_bulk_input(fixture$counts, metadata)$metadata
+  expect_identical(aligned$sample_id, samples)
+  expect_identical(aligned$condition, fixture$metadata$condition)
+  rownames(metadata) <- samples
+  expect_error(Shennong:::.sn_bulk_input(fixture$counts, metadata), "conflicting")
+})

@@ -148,6 +148,11 @@ canonical envelope with `sn_get_result()`.
 
 ## Recipe: Switch Seurat layer storage backends
 
+QS2 snapshots written by `sn_write()` carry BPCells directory fingerprints.
+Read a relocated snapshot with `sn_read()`. For legacy snapshots, verify
+the backing store before supplying an explicit old-to-new `bpcells_paths` map.
+
+
 1. Use `sn_set_layer_backend(object, backend = "bpcells", directory = ...)`
    to write selected assay layers to external BPCells matrix directories and
    rebind them without changing layer names. Keep those directories alongside

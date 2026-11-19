@@ -42,7 +42,10 @@ CellTypist, which uses a pre-trained model instead.}
 
 \item{ontology}{Map labels to the bundled Cell Ontology snapshot.}
 
-\item{result_id}{Stored-result and metadata prefix.}
+\item{result_id}{Stored-result and metadata prefix. Existing metadata is
+preserved. The result's \code{tables$metadata_columns} maps fields to
+their assigned names. SingleR stores raw and pruned labels in
+\code{tables$backend_predictions}; rejected cells are unassigned.}
 
 \item{confidence_threshold}{Optional minimum backend score. Scores are
 backend-specific and are not assumed to be calibrated across methods. By

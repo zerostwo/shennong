@@ -206,7 +206,7 @@
     }
     columns[[i]] <- column
     occupied <- c(occupied, column)
-    metadata[[column]] <- as.numeric(scores[i, colnames(object)])
+    metadata[[column]] <- as.numeric(scores[i, match(colnames(object), colnames(scores))])
   }
   list(object = SeuratObject::AddMetaData(object, metadata = metadata),
        mapping = tibble::tibble(program = rownames(scores), column = columns))
@@ -224,7 +224,8 @@
 #' @param signatures Named list, program/gene data frame, named gene vector, or
 #'   bundled signature query vector.
 #' @param method Scoring backend. UCell is the default for per-cell data.
-#' @param assay,layer Expression source.
+#' @param assay,layer Expression source. Scores and group summaries use cells
+#'   measured in this layer. Other cells receive missing score metadata.
 #' @param group_by Optional metadata column identifying groups to aggregate.
 #' @param aggregate Required with \code{group_by}: \code{"expression"} averages
 #'   expression before scoring, while \code{"scores"} averages per-cell scores
@@ -290,6 +291,7 @@ sn_score_programs <- function(object,
     }
     groups <- as.character(object[[group_by, drop = TRUE]])
     names(groups) <- colnames(object)
+    groups <- groups[colnames(matrix)]
     if (anyNA(groups) || any(!nzchar(groups))) stop("`group_by` must not contain missing or empty labels.", call. = FALSE)
     if (identical(aggregate, "expression")) matrix <- .sn_group_average_matrix(matrix, groups[colnames(matrix)])
     level <- "group"
@@ -333,7 +335,7 @@ sn_score_programs <- function(object,
     input = list(
       assay = expression$assay,
       layer = expression$layer,
-      cells = ncol(object),
+      cells = ncol(expression$matrix),
       features = nrow(expression$matrix),
       group_by = group_by,
       species = species

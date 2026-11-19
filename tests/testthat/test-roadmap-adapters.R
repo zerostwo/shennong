@@ -194,3 +194,17 @@ test_that("roadmap keeps backend adapters internal and multimodal public", {
   expect_identical(delegated$multimodal_method, "totalvi")
   expect_identical(delegated$controls$batch, "sample")
 })
+
+test_that("scDesign3 accepts the public worker count and returns simulated counts", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("scDesign3")
+  set.seed(123)
+  counts <- matrix(rpois(20 * 30, 6), 20,
+    dimnames = list(paste0("g", 1:20), paste0("c", 1:30)))
+  object <- SeuratObject::CreateSeuratObject(Matrix::Matrix(counts, sparse = TRUE))
+  object$label <- factor(rep(c("A", "B"), each = 15))
+  simulated <- sn_simulate(object, celltype = "label", n_workers = 1, return = "counts")
+  expect_equal(dim(simulated), dim(counts))
+  expect_identical(rownames(simulated), rownames(counts))
+  expect_true(all(is.finite(simulated@x) & simulated@x >= 0 & simulated@x == floor(simulated@x)))
+})

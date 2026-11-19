@@ -31,7 +31,7 @@ test_that("managed Pixi environments cannot enter source packages", {
   gitignore <- readLines(gitignore_path, warn = FALSE)
   expect_true("^inst/pixi/.*/[.]pixi(/|$)" %in% buildignore)
   expect_true("^[.]codegraph(/|$)" %in% buildignore)
-  expect_true(all(c("^[.]github$", "^README[.]Rmd$") %in% buildignore))
+  expect_true(all(c("^[.]git$", "^[.]github$", "^README[.]Rmd$") %in% buildignore))
   expect_true(".pixi/" %in% gitignore)
 })
 

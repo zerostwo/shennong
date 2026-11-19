@@ -102,12 +102,13 @@
   subclone <- stats::setNames(rep(NA_character_, length(cells)), cells)
   malignant <- cells[malignant_calls == "malignant"]
   if (!is_null(existing)) {
-    existing <- as.character(existing[cells])
+    existing <- stats::setNames(as.character(existing[cells]), cells)
     keep <- malignant[!is.na(existing[malignant]) & nzchar(existing[malignant])]
     subclone[keep] <- paste0("subclone_", existing[keep])
     malignant <- setdiff(malignant, keep)
   }
-  if (length(malignant) == 1L) subclone[malignant] <- "subclone_1"
+  groups <- integer()
+  if (length(malignant) == 1L) groups <- stats::setNames(1L, malignant)
   if (length(malignant) >= 2L && nrow(chromosomes) > 0L) {
     wide <- stats::reshape(
       as.data.frame(chromosomes[chromosomes$cell %in% malignant, c("cell", "chromosome", "cnv")]),
@@ -121,14 +122,19 @@
     )
     matrix[!is.finite(matrix)] <- 0
     if (nrow(matrix) == 1L) {
-      subclone[rownames(matrix)] <- "subclone_1"
+      groups <- stats::setNames(1L, rownames(matrix))
     } else if (nrow(matrix) >= 2L) {
       groups <- stats::cutree(
         stats::hclust(stats::dist(matrix)),
         k = min(k, nrow(matrix))
       )
-      subclone[names(groups)] <- paste0("subclone_", groups)
     }
+  }
+  if (length(groups)) {
+    used <- unique(subclone[!is.na(subclone)])
+    labels <- paste0("subclone_", seq_len(max(groups)))
+    labels <- utils::tail(make.unique(c(used, labels)), length(labels))
+    subclone[names(groups)] <- labels[groups]
   }
   subclone[malignant_calls == "reference"] <- "reference"
   subclone
@@ -517,7 +523,10 @@ sn_run_cnv <- function(object,
   object <- backend$object %||% object
   scores <- backend$scores
   if (is.null(names(scores))) stop("CNV backend scores must be named by cell.", call. = FALSE)
-  scores <- scores[colnames(object)]
+  if (anyNA(names(scores)) || any(!nzchar(names(scores))) || anyDuplicated(names(scores))) {
+    stop("CNV backend scores require unique, non-empty cell names.", call. = FALSE)
+  }
+  scores <- stats::setNames(scores[colnames(object)], colnames(object))
   malignancy <- .sn_cnv_malignancy(scores, reference_cells, threshold = malignant_threshold)
   if (!is_null(backend$prediction)) {
     predictions <- tolower(as.character(backend$prediction[colnames(object)]))

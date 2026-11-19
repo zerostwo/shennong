@@ -134,6 +134,7 @@
       input_dir = input_dir,
       output_dir = result_dir,
       config_path = config_path,
+      runtime_dir = runtime_dir,
       ...
     )
     NULL
@@ -1325,6 +1326,7 @@
       input_dir = input$input_dir,
       output_dir = result_dir,
       config_path = config_path,
+      runtime_dir = runtime_dir,
       ...
     )
     NULL

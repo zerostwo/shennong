@@ -212,3 +212,11 @@ bounds, and supplied network/tree topology. No automatic P-values, BCR trees,
 CoVarNet discovery or imputation. Reusable source tables survive PDF/PNG bundle
 export. Consult `extdata/zhang-atlas-layouts.csv` and the rendered atlas article;
 synthetic layout examples must not be described as original cancer results.
+
+## Statistical figures and PDF export
+
+A nominal P value is displayed on its nominal scale. Provide an adjusted
+probability for adjusted thresholds, and a measured mean abundance for an
+MA plot. For a PDF requiring embedded fonts, inspect the `embed_fonts`
+attribute returned by `sn_save_figure()`. Headless systems lacking Cairo
+can use the base PDF fallback with a warning.

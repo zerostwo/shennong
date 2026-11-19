@@ -61,11 +61,29 @@
     xend = .data$x_target, yend = .data$y_target,
     linewidth = abs(.data$score), colour = .data$score
   )
-  if (isTRUE(curved)) {
-    plot + ggplot2::geom_curve(data = links, mapping = link_mapping, curvature = 0.25, arrow = grid::arrow(length = grid::unit(2, "mm")), alpha = 0.75)
-  } else {
-    plot + ggplot2::geom_segment(data = links, mapping = link_mapping, arrow = grid::arrow(length = grid::unit(2, "mm")), alpha = 0.75)
+  is_loop <- !is.na(links$source) & !is.na(links$target) & links$source == links$target
+  edges <- links[!is_loop, , drop = FALSE]
+  arrow <- grid::arrow(length = grid::unit(2, "mm"))
+  if (nrow(edges)) {
+    plot <- if (isTRUE(curved)) {
+      plot + ggplot2::geom_curve(data = edges, mapping = link_mapping, curvature = 0.25, arrow = arrow, alpha = 0.75)
+    } else {
+      plot + ggplot2::geom_segment(data = edges, mapping = link_mapping, arrow = arrow, alpha = 0.75)
+    }
   }
+  if (any(is_loop)) {
+    loops <- links[is_loop, , drop = FALSE]
+    theta <- seq(0, 2 * pi, length.out = 41L)
+    loops$edge <- seq_len(nrow(loops))
+    loops <- loops[rep(loops$edge, each = length(theta)), , drop = FALSE]
+    # Inward-facing circles touch the node at both ends.
+    loops$x <- loops$x_source * (0.88 + 0.12 * cos(theta)) - loops$y_source * 0.12 * sin(theta)
+    loops$y <- loops$y_source * (0.88 + 0.12 * cos(theta)) + loops$x_source * 0.12 * sin(theta)
+    plot <- plot + ggplot2::geom_path(data = loops, ggplot2::aes(
+      x = .data$x, y = .data$y, group = .data$edge, linewidth = abs(.data$score), colour = .data$score
+    ), arrow = arrow, alpha = 0.75)
+  }
+  plot
 }
 
 #' Plot standardized cell-cell communication results

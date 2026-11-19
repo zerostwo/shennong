@@ -828,7 +828,7 @@
     dplyr::rename(cluster = dplyr::all_of(cluster_col)) |>
     dplyr::mutate(fraction = .data$n_cells / sum(.data$n_cells))
 
-  sample_columns <- intersect(c("sample", "study", "tissue"), colnames(metadata))
+  sample_columns <- setdiff(intersect(c("sample", "study", "tissue"), colnames(metadata)), cluster_col)
   if (length(sample_columns) > 0) {
     sample_summary <- lapply(sample_columns, function(current_col) {
       dplyr::count(metadata, .data[[cluster_col]], .data[[current_col]], name = "n_cells") |>
@@ -1085,7 +1085,7 @@
   } else if (rank_col %in% c("p.adjust", "pvalue")) {
     -log10(pmax(working[[rank_col]], .Machine$double.xmin))
   } else {
-    abs(working[[rank_col]])
+    if (identical(rank_col, "GeneRatio")) .sn_parse_gene_ratio(working[[rank_col]]) else abs(working[[rank_col]])
   }
   working$..specificity_freq <- .sn_specificity_frequency(
     table = working,
@@ -1444,8 +1444,12 @@
 #' @param de_result_id Optional stored marker-result name in
 #'   the canonical Shennong result registry. When omitted, Shennong prefers
 #'   \code{"default"}, then a single available result, and otherwise the most
-#'   recent marker result.
-#' @param cluster_by Metadata column containing cluster labels.
+#'   recent marker result. Annotation evidence requires the marker run's stored
+#'   cell membership fingerprint. Use [sn_get_de_result()] to retrieve historical
+#'   marker tables and [sn_find_de()] to recompute markers for annotation.
+#' @param cluster_by Metadata column containing the marker result's original
+#'   cell-to-group assignments. Defaults to the marker result's named grouping
+#'   column, or \code{"seurat_clusters"} for active-identity marker analyses.
 #' @param n_markers Number of top markers to retain per cluster.
 #' @param marker_selection How to choose marker genes for annotation evidence:
 #'   \code{"specific"} prefers genes that are relatively unique to one cluster,
@@ -1510,7 +1514,6 @@ sn_prepare_annotation_evidence <- function(object,
                                            reduction = "umap",
                                            n_neighbor_clusters = 3) {
   .sn_validate_seurat_object(object)
-  cluster_by <- cluster_by %||% "seurat_clusters"
   marker_selection <- match.arg(marker_selection)
   enrichment_selection <- match.arg(enrichment_selection)
 
@@ -1521,6 +1524,23 @@ sn_prepare_annotation_evidence <- function(object,
     preferred_analysis = "markers"
   )
   de_result <- sn_get_result(object = object, type = "de", result_id = de_result_id)
+  frozen <- de_result$input$marker_membership
+  if (is.null(frozen)) {
+    stop(
+      "Marker result '", de_result_id, "' has no stored cell membership fingerprint; ",
+      "recompute markers for this grouping with sn_find_de() before preparing annotation evidence.",
+      call. = FALSE
+    )
+  }
+  cluster_by <- cluster_by %||% de_result$group_by %||% "seurat_clusters"
+  metadata <- object[[]]
+  if (!cluster_by %in% names(metadata)) {
+    stop("Marker evidence requires a metadata column with the original cell membership: ", cluster_by, call. = FALSE)
+  }
+  groups <- as.character(metadata[[cluster_by]])
+  if (!identical(frozen, .sn_marker_membership_signature(rownames(metadata), groups))) {
+    stop("Cluster membership differs from the stored marker grouping; recompute markers for this grouping.", call. = FALSE)
+  }
   cluster_summary <- .sn_prepare_cluster_summary(object = object, cluster_col = cluster_by)
   marker_summary <- .sn_prepare_marker_summary(
     de_result = de_result,
@@ -1726,7 +1746,13 @@ sn_prepare_enrichment_evidence <- function(object = NULL,
   rank_candidates <- c("NES", "Count", "GeneRatio", "p.adjust", "pvalue")
   rank_hits <- rank_candidates[rank_candidates %in% colnames(table)]
   rank_col <- if (length(rank_hits) > 0L) rank_hits[[1L]] else NULL
-  ordered <- if (is_null(rank_col)) table else table[order(if (rank_col == "p.adjust" || rank_col == "pvalue") table[[rank_col]] else -abs(table[[rank_col]])), , drop = FALSE]
+  ordered <- table
+  if (!is.null(rank_col)) {
+    values <- table[[rank_col]]
+    if (identical(rank_col, "GeneRatio")) values <- .sn_parse_gene_ratio(values)
+    rank <- if (rank_col %in% c("p.adjust", "pvalue")) values else -abs(values)
+    ordered <- table[order(rank), , drop = FALSE]
+  }
 
   list(
     task = "enrichment",
@@ -1791,7 +1817,13 @@ sn_prepare_results_evidence <- function(object,
                                         n_markers = 5,
                                         n_terms = 10) {
   .sn_validate_seurat_object(object)
-  cluster_by <- cluster_by %||% "seurat_clusters"
+  marker_evidence <- NULL
+  if (!is.null(cluster_de_result_id)) {
+    marker_evidence <- sn_prepare_annotation_evidence(
+      object, de_result_id = cluster_de_result_id, cluster_by = cluster_by, n_markers = n_markers
+    )
+  }
+  cluster_by <- cluster_by %||% marker_evidence$cluster_col %||% "seurat_clusters"
 
   evidence <- list(
     task = "results",
@@ -1804,14 +1836,7 @@ sn_prepare_results_evidence <- function(object,
     cluster_summary = .sn_prepare_cluster_summary(object = object, cluster_col = cluster_by)
   )
 
-  if (!is_null(cluster_de_result_id)) {
-    evidence$cluster_markers <- sn_prepare_annotation_evidence(
-      object = object,
-      de_result_id = cluster_de_result_id,
-      cluster_by = cluster_by,
-      n_markers = n_markers
-    )$cluster_summary
-  }
+  if (!is.null(marker_evidence)) evidence$cluster_markers <- marker_evidence$cluster_summary
 
   if (!is_null(contrast_de_result_id)) {
     evidence$de_summary <- sn_prepare_de_evidence(

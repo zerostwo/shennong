@@ -10,6 +10,9 @@
 #' @param which Optional archive member index for compressed archives.
 #' @param row_names Optional column index or name to promote to row names when
 #'   importing a data frame.
+#' @param bpcells_paths For QS2, optionally supply a named character vector mapping
+#'   a stored absolute BPCells path to its verified replacement directory.
+#'   Pass this option through \code{...} in \code{sn_read()}.
 #' @param file Input path used by the exported `rio` adapter methods.
 #' @param ... Additional arguments forwarded to the underlying importer.
 #'
@@ -369,9 +372,9 @@ sn_list_10x_paths <- function(path,
 
 #' @rdname sn_read
 #' @export
-.import.rio_qs2 <- function(file, ...) {
+.import.rio_qs2 <- function(file, ..., bpcells_paths = NULL) {
   check_installed(pkg = "qs2", reason = "to read qs2 files.")
-  qs2::qs_read(file = file, ...)
+  .sn_restore_qs2_bpcells(qs2::qs_read(file = file, ...), file, bpcells_paths)
 }
 
 #' @title Import GMT files (from clusterProfiler)
@@ -444,7 +447,7 @@ sn_list_10x_paths <- function(path,
   }
 }
 
-.genomic_exts <- c("gtf", "gff", "gff1", "gff2", "gff3", "wig", "bed", "bed15", "bedGraph", "bw")
+.genomic_exts <- c("gtf", "gff", "gff1", "gff2", "gff3", "wig", "bed", "bed15", "bedgraph", "bw")
 
 #' Write tabular and bioinformatics file formats
 #'
@@ -690,6 +693,8 @@ sn_write <- function(x,
     )
   }
 
+  for (target in existing) .sn_check_bpcells_overwrite(target)
+
   staged <- rep(NA_character_, length(targets))
   backups <- rep(NA_character_, length(targets))
   committed <- rep(FALSE, length(targets))
@@ -730,6 +735,7 @@ sn_write <- function(x,
       for (i in seq_along(targets)) {
         target <- targets[[i]]
         if (dir.exists(target)) {
+          if (!isTRUE(overwrite)) stop("BPCells layer directory already exists: ", target, call. = FALSE)
           backups[[i]] <- tempfile(
             pattern = paste0(".", basename(target), "-backup-"),
             tmpdir = dirname(target)
@@ -737,6 +743,7 @@ sn_write <- function(x,
           if (!file.rename(target, backups[[i]])) {
             stop("Could not move the existing BPCells directory aside: ", target, call. = FALSE)
           }
+          .sn_check_bpcells_overwrite(backups[[i]])
         }
         if (!file.rename(staged[[i]], target)) {
           if (!is.na(backups[[i]]) && dir.exists(backups[[i]])) {
@@ -789,7 +796,9 @@ sn_write <- function(x,
 #' \code{dgCMatrix} objects.
 #'
 #' BPCells matrix directories remain external to a serialized Seurat object.
-#' Keep them alongside the object when moving an analysis. Materializing a
+#' With \code{sn_write()} and \code{sn_read()}, QS2 snapshots use relative
+#' directory paths and verify their content fingerprints. Move the matrix
+#' directories and snapshot together, preserving their relative paths. Materializing a
 #' layer with \code{backend = "memory"} does not delete its BPCells directory.
 #'
 #' @param object A Seurat object.
@@ -1084,6 +1093,7 @@ sn_convert_bpcells <- function(object,
   if (!inherits(x, "IterableMatrix")) {
     x <- methods::as(.sn_as_sparse_matrix(x), "IterableMatrix")
   }
+  if ((isTRUE(overwrite) || is.character(overwrite)) && dir.exists(file)) .sn_check_bpcells_overwrite(file)
   BPCells::write_matrix_dir(mat = x, dir = file, overwrite = overwrite, ...)
 }
 
@@ -1124,7 +1134,7 @@ sn_convert_bpcells <- function(object,
 #' @export
 .export.rio_qs2 <- function(file, x, ...) {
   check_installed(pkg = "qs2", reason = "to write qs2 files.")
-  qs2::qs_save(object = x, file = file, ...)
+  qs2::qs_save(object = .sn_prepare_qs2_bpcells(x, file), file = file, ...)
 }
 
 #' Add metadata and embeddings exported from AnnData

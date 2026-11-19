@@ -178,8 +178,13 @@ that namespace before annotation joins. Composition matrix group labels escape
 literal pipes and backslashes; retain the original columns from the long table
 for joins. Supplied-cluster scran must be invariant to relabeling. BPCells
 pseudobulk validates the complete count layer in bounded blocks, then aggregates
-selected features/cells without materializing the whole atlas; the final
-feature-by-profile aggregate still needs memory.
+all genes for the selected profiles. Budget memory for the final gene-by-profile
+aggregate. The requested feature panel determines testing and adjustment.
+Verify explicit sample IDs before bulk modeling. Read relocated QS2 snapshots
+with `sn_read()` and keep BPCells directories with the snapshot.
+Preserve SingleR pruning when reviewing uncertain assignments and retrieve
+annotation metadata names from `tables$metadata_columns`. Use the marker
+result's recorded grouping for annotation evidence.
 
 ## Styled embedding figures
 
